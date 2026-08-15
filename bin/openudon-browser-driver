@@ -1,0 +1,4 @@
+#!/bin/sh
+set -eu
+driver_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+exec node "$driver_root/dist/index.js" "$@"

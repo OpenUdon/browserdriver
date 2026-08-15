@@ -1,0 +1,25 @@
+{
+  "name": "@openudon/browserdriver",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Trusted Playwright implementation of udon.browser-driver.v2",
+  "type": "module",
+  "bin": {
+    "openudon-browser-driver": "bin/openudon-browser-driver"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test dist/test/*.test.js",
+    "check": "npm test && npm audit --omit=dev"
+  },
+  "dependencies": {
+    "playwright": "1.62.1"
+  },
+  "devDependencies": {
+    "@types/node": "24.5.2",
+    "typescript": "5.9.2"
+  }
+}
