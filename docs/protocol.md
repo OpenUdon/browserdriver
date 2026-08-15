@@ -29,3 +29,6 @@ Credential and OTP values are runtime-private. Credential values are resolved
 by the driver from the named process environment. OTP responses travel only on
 stdin and are discarded after use. Session bindings, browser storage, raw page
 material, screenshots, and driver stderr never appear in protocol results.
+An opaque reuse binding is resolved only against the driver's private
+`--session-store`; inline or protocol-carried Playwright storage state is not
+accepted.

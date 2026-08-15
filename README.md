@@ -8,9 +8,10 @@ named in-memory session and later `uws.browser.1.5` actions can consume it.
 The driver accepts only reviewed, closed browser macros. Credentials are read
 from environment-variable names mapped by Udon; values never appear in UWS,
 arguments, reports, or failure messages. MFA is mediated by Udon's local
-terminal or authenticated challenge API. Sessions are not persisted unless an
-operator explicitly provides a private `base64:` Playwright storage-state
-binding for reuse.
+terminal or authenticated challenge API. Sessions are not persisted by
+default. An operator may provide an opaque reference for reuse together with a
+private driver-owned storage directory; cookies and Playwright storage state
+never cross the protocol.
 
 ## Build
 
@@ -37,6 +38,12 @@ udon \
 
 Use `--headed` as a trusted driver argument when WebAuthn or operator-visible
 browser interaction requires a window.
+
+Reusable sessions require the trusted `--session-store /absolute/private/dir`
+driver argument. The store contains Playwright storage-state JSON under the
+SHA-256 digest of the opaque reference (`<digest>.json`); files are regular,
+non-symlink entries no larger than 1 MiB. Udon sends only the opaque reference,
+and the driver performs the lookup locally.
 
 ## Security boundary
 

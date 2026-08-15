@@ -1,9 +1,10 @@
-import { chromium, type Browser, type BrowserContext, type Locator, type Page } from "playwright";
+import { chromium, type Browser, type BrowserContext, type Locator, type Page, type Route } from "playwright";
 import {
   type ActionMessage, type AuthenticateMessage, type AuthenticationStep, type BrowserOutput, type BrowserWait,
   type ChallengeKind, type ChallengeResponseMessage, DriverFailure, challenge, failure, status, success,
 } from "./protocol.js";
 import { assertAllowedURL, credentialValue, exactOrigin, totp } from "./security.js";
+import type { SessionStateStore } from "./session-store.js";
 
 export interface MessageSource {
   next(): Promise<IteratorResult<string>>;
@@ -15,29 +16,40 @@ interface NamedSession {
   context: BrowserContext;
   page: Page;
   visited: string[];
+  navigation: NavigationGuard;
 }
 
 export class PersistentBrowserDriver {
   private browser: Browser | undefined;
   private readonly sessions = new Map<string, NamedSession>();
 
-  constructor(private readonly lines: MessageSource, private readonly emit: Emit, private readonly headed = false) {}
+  constructor(
+    private readonly lines: MessageSource,
+    private readonly emit: Emit,
+    private readonly headed = false,
+    private readonly sessionStore?: SessionStateStore,
+  ) {}
 
   async authenticate(request: AuthenticateMessage): Promise<void> {
+    let context: BrowserContext | undefined;
     try {
       validateAuthenticationMessage(request);
       this.emit(status(request.requestId, "resolving"));
       const allowed = new Set(request.allowedOrigins.map(exactOrigin));
       const flow = request.profile.flows[request.flow]!;
-      const context = await this.createContext(request.sessionBinding);
+      context = await this.createContext(request.sessionBinding);
       const visited: string[] = [];
+      const navigation = new NavigationGuard(context, visited, allowed);
+      await navigation.install();
       const page = await context.newPage();
-      trackPage(page, visited);
       this.emit(status(request.requestId, request.sessionBinding ? "refreshing" : "logging_in"));
       for (const step of flow.sequence) {
         await rejectCaptcha(page);
-        await this.authenticationStep(request, step, page, allowed);
-		assertVisited(visited, allowed);
+        try {
+          await this.authenticationStep(request, step, page, allowed);
+        } finally {
+          navigation.assertSafe();
+        }
       }
       await rejectCaptcha(page);
       assertAllowedURL(page.url(), allowed);
@@ -45,9 +57,11 @@ export class PersistentBrowserDriver {
       await exactLocator(page, flow.success.locator);
       const previous = this.sessions.get(request.session);
       if (previous) await previous.context.close();
-      this.sessions.set(request.session, { context, page, visited });
+      this.sessions.set(request.session, { context, page, visited, navigation });
+      context = undefined;
       this.emit(success(request.requestId));
     } catch (error) {
+      await context?.close().catch(() => undefined);
       this.emit(failure(request.requestId, failureCode(error)));
     }
   }
@@ -61,19 +75,30 @@ export class PersistentBrowserDriver {
       if (!session) throw new DriverFailure("session_expired");
       const allowed = new Set(request.action.allowedOrigins.map(exactOrigin));
       const visitedStart = session.visited.length;
+      session.navigation.setAllowed(allowed);
+      assertAllowedURL(session.page.url(), allowed);
       this.emit(status(request.requestId, "executing"));
       for (const step of request.action.action.sequence) {
         await rejectCaptcha(session.page);
-        await browserStep(session.page, step as Record<string, unknown>, allowed);
-		assertVisited(session.visited.slice(visitedStart), allowed);
+        try {
+          await browserStep(session.page, step as Record<string, unknown>, allowed);
+        } finally {
+          session.navigation.assertSafe();
+        }
       }
       await rejectCaptcha(session.page);
       assertAllowedURL(session.page.url(), allowed);
       const outputs = await extractOutputs(session.page, request.action.action.outputs ?? {});
       this.emit(success(request.requestId, {
-        status: "success", outputs, visitedUrls: unique(session.visited.slice(visitedStart)), ambiguities: [],
+        status: "success", outputs,
+        visitedUrls: attestedVisitedURLs(session.page.url(), session.visited.slice(visitedStart)), ambiguities: [],
       }));
     } catch (error) {
+      if (failureCode(error) === "origin_rejected") {
+        const session = this.sessions.get(request.session);
+        this.sessions.delete(request.session);
+        await session?.context.close().catch(() => undefined);
+      }
       this.emit(failure(request.requestId, failureCode(error)));
     }
   }
@@ -87,16 +112,10 @@ export class PersistentBrowserDriver {
 
   private async createContext(binding?: string): Promise<BrowserContext> {
     this.browser ??= await chromium.launch({ headless: !this.headed });
-    if (!binding) return this.browser.newContext();
-    try {
-      if (!binding.startsWith("base64:")) throw new DriverFailure("session_expired");
-      const decoded: unknown = JSON.parse(Buffer.from(binding.slice(7), "base64").toString("utf8"));
-      if (typeof decoded !== "object" || decoded === null) throw new DriverFailure("session_expired");
-      return await this.browser.newContext({ storageState: decoded as never });
-    } catch (error) {
-      if (error instanceof DriverFailure) throw error;
-      throw new DriverFailure("session_expired");
-    }
+    if (!binding) return this.browser.newContext({ serviceWorkers: "block" });
+    if (!this.sessionStore) throw new DriverFailure("session_expired");
+    const storageState = await this.sessionStore.load(binding);
+    return this.browser.newContext({ serviceWorkers: "block", storageState: storageState as never });
   }
 
   private async authenticationStep(request: AuthenticateMessage, step: AuthenticationStep, page: Page, allowed: Set<string>): Promise<void> {
@@ -222,13 +241,20 @@ async function optionalWait(page: Page, wait?: BrowserWait): Promise<void> {
   await page.waitForLoadState(state);
 }
 
-export async function exactLocator(page: Page, spec: import("./protocol.js").LocatorSpec): Promise<Locator> {
+function locatorFor(page: Page, spec: import("./protocol.js").LocatorSpec): Locator {
   if (!spec || typeof spec.role !== "string") throw new DriverFailure("invalid_response");
-  let locator = page.getByRole(spec.role as Parameters<Page["getByRole"]>[0], { ...(spec.name ? { name: spec.name, exact: true } : {}) });
-  if (spec.text) locator = locator.filter({ hasText: spec.text });
+  let locator = page.getByRole(spec.role as Parameters<Page["getByRole"]>[0], {
+    ...(spec.name !== undefined ? { name: spec.name, exact: true } : {}),
+  });
+  if (spec.text !== undefined) locator = locator.filter({ hasText: spec.text });
+  return locator;
+}
+
+export async function exactLocator(page: Page, spec: import("./protocol.js").LocatorSpec): Promise<Locator> {
+  const locator = locatorFor(page, spec);
   await locator.first().waitFor({ state: "visible" });
   if (await locator.count() !== 1) throw new DriverFailure("ambiguous_locator");
-  if (spec.value && await locator.inputValue() !== spec.value) throw new DriverFailure("ambiguous_locator");
+  if (spec.value !== undefined && await locator.inputValue() !== spec.value) throw new DriverFailure("ambiguous_locator");
   return locator;
 }
 
@@ -250,25 +276,64 @@ async function uniqueNumberMatch(page: Page): Promise<string> {
   return values[0]!;
 }
 
-function trackPage(page: Page, visited: string[]): void {
-  page.on("framenavigated", (frame) => {
-    if (frame !== page.mainFrame()) return;
-    const url = frame.url();
-		if (url !== "about:blank") visited.push(url);
-  });
+export class NavigationGuard {
+  private blocked = false;
+
+  constructor(
+    private readonly context: Pick<BrowserContext, "route">,
+    private readonly visited: string[],
+    private allowed: ReadonlySet<string>,
+  ) {}
+
+  async install(): Promise<void> {
+    await this.context.route("**/*", async (route) => this.handle(route));
+  }
+
+  setAllowed(allowed: ReadonlySet<string>): void {
+    this.allowed = allowed;
+  }
+
+  assertSafe(): void {
+    if (this.blocked) throw new DriverFailure("origin_rejected");
+  }
+
+  private async handle(route: Route): Promise<void> {
+    const request = route.request();
+    if (!request.isNavigationRequest() || request.frame().parentFrame() !== null) {
+      await route.continue();
+      return;
+    }
+    const url = request.url();
+    if (url !== "about:blank") this.visited.push(url);
+    try {
+      assertAllowedURL(url, this.allowed);
+    } catch {
+      this.blocked = true;
+      await route.abort("blockedbyclient");
+      return;
+    }
+    await route.continue();
+  }
 }
 
-function assertVisited(visited: string[], allowed: Set<string>): void {
-	for (const url of visited) assertAllowedURL(url, allowed);
+export function attestedVisitedURLs(currentURL: string, visited: string[]): string[] {
+  return unique([...visited, currentURL].filter((value) => value !== "about:blank"));
 }
 
-async function extractOutputs(page: Page, outputs: Record<string, BrowserOutput>): Promise<Record<string, unknown>> {
+export async function extractOutputs(page: Page, outputs: Record<string, BrowserOutput>): Promise<Record<string, unknown>> {
   const result: Record<string, unknown> = {};
   for (const [name, output] of Object.entries(outputs)) {
     if (output.source === "a11y") {
       if (!output.locator) throw new DriverFailure("invalid_response");
-      const locator = await exactLocator(page, output.locator);
-      result[name] = await locatorOutput(locator, output);
+      if (output.presence !== undefined) {
+        const locator = locatorFor(page, output.locator);
+        const count = await locator.count();
+        if (count > 1) throw new DriverFailure("ambiguous_locator");
+        result[name] = count === 1;
+      } else {
+        const locator = await exactLocator(page, output.locator);
+        result[name] = await locatorOutput(locator, output);
+      }
     } else if (output.source === "css") {
       if (!output.selector) throw new DriverFailure("invalid_response");
       const locator = page.locator(output.selector);
@@ -279,9 +344,9 @@ async function extractOutputs(page: Page, outputs: Record<string, BrowserOutput>
         result[name] = await locatorOutput(locator, output);
       }
     } else if (output.source === "jsonld") {
-      result[name] = await jsonLDOutput(page, output.property);
+      result[name] = await jsonLDOutput(page, output.property ?? name);
     } else if (output.source === "microdata") {
-      result[name] = await microdataOutput(page, output.property, output.attribute);
+      result[name] = await microdataOutput(page, output.property ?? name, output.attribute);
     } else {
       throw new DriverFailure("invalid_response");
     }
