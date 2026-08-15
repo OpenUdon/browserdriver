@@ -7,7 +7,7 @@ import { assertAllowedURL, credentialValue, exactOrigin, totp } from "./security
 import type { SessionStateStore } from "./session-store.js";
 
 export interface MessageSource {
-  next(): Promise<IteratorResult<string>>;
+  next(signal?: AbortSignal): Promise<IteratorResult<string>>;
 }
 
 export type Emit = (message: object) => void;
@@ -19,6 +19,16 @@ interface NamedSession {
   navigation: NavigationGuard;
 }
 
+export interface PersistentBrowserDriverOptions {
+  headed?: boolean;
+  sessionStore?: SessionStateStore;
+  challengeTimeoutMs?: number;
+  numberMatchSelector?: string;
+}
+
+export const defaultChallengeTimeoutMs = 120_000;
+export const maxVisitedURLsPerWindow = 1_024;
+
 export class PersistentBrowserDriver {
   private browser: Browser | undefined;
   private readonly sessions = new Map<string, NamedSession>();
@@ -26,9 +36,15 @@ export class PersistentBrowserDriver {
   constructor(
     private readonly lines: MessageSource,
     private readonly emit: Emit,
-    private readonly headed = false,
-    private readonly sessionStore?: SessionStateStore,
-  ) {}
+    private readonly options: PersistentBrowserDriverOptions = {},
+  ) {
+    const timeout = options.challengeTimeoutMs ?? defaultChallengeTimeoutMs;
+    if (!Number.isSafeInteger(timeout) || timeout <= 0) throw new Error("challenge timeout must be a positive integer");
+    if (options.numberMatchSelector !== undefined &&
+        (!options.numberMatchSelector.trim() || options.numberMatchSelector.length > 4_096 || /[\0\r\n]/u.test(options.numberMatchSelector))) {
+      throw new Error("number-match selector is invalid");
+    }
+  }
 
   async authenticate(request: AuthenticateMessage): Promise<void> {
     let context: BrowserContext | undefined;
@@ -55,6 +71,7 @@ export class PersistentBrowserDriver {
       assertAllowedURL(page.url(), allowed);
       if (exactOrigin(page.url()) !== exactOrigin(flow.success.origin)) throw new DriverFailure("origin_rejected");
       await exactLocator(page, flow.success.locator);
+      visited.length = 0;
       const previous = this.sessions.get(request.session);
       if (previous) await previous.context.close();
       this.sessions.set(request.session, { context, page, visited, navigation });
@@ -75,23 +92,29 @@ export class PersistentBrowserDriver {
       if (!session) throw new DriverFailure("session_expired");
       const allowed = new Set(request.action.allowedOrigins.map(exactOrigin));
       const visitedStart = session.visited.length;
-      session.navigation.setAllowed(allowed);
-      assertAllowedURL(session.page.url(), allowed);
-      this.emit(status(request.requestId, "executing"));
-      for (const step of request.action.action.sequence) {
-        await rejectCaptcha(session.page);
-        try {
-          await browserStep(session.page, step as Record<string, unknown>, allowed);
-        } finally {
-          session.navigation.assertSafe();
+      let outputs: Record<string, unknown>;
+      let visitedUrls: string[];
+      try {
+        session.navigation.setAllowed(allowed);
+        assertAllowedURL(session.page.url(), allowed);
+        this.emit(status(request.requestId, "executing"));
+        for (const step of request.action.action.sequence) {
+          await rejectCaptcha(session.page);
+          try {
+            await browserStep(session.page, step as Record<string, unknown>, allowed);
+          } finally {
+            session.navigation.assertSafe();
+          }
         }
+        await rejectCaptcha(session.page);
+        assertAllowedURL(session.page.url(), allowed);
+        outputs = await extractOutputs(session.page, request.action.action.outputs ?? {});
+        visitedUrls = attestedVisitedURLs(session.page.url(), session.visited.slice(visitedStart));
+      } finally {
+        session.visited.splice(visitedStart);
       }
-      await rejectCaptcha(session.page);
-      assertAllowedURL(session.page.url(), allowed);
-      const outputs = await extractOutputs(session.page, request.action.action.outputs ?? {});
       this.emit(success(request.requestId, {
-        status: "success", outputs,
-        visitedUrls: attestedVisitedURLs(session.page.url(), session.visited.slice(visitedStart)), ambiguities: [],
+        status: "success", outputs, visitedUrls, ambiguities: [],
       }));
     } catch (error) {
       if (failureCode(error) === "origin_rejected") {
@@ -111,10 +134,10 @@ export class PersistentBrowserDriver {
   }
 
   private async createContext(binding?: string): Promise<BrowserContext> {
-    this.browser ??= await chromium.launch({ headless: !this.headed });
+    this.browser ??= await chromium.launch({ headless: !this.options.headed });
     if (!binding) return this.browser.newContext({ serviceWorkers: "block" });
-    if (!this.sessionStore) throw new DriverFailure("session_expired");
-    const storageState = await this.sessionStore.load(binding);
+    if (!this.options.sessionStore) throw new DriverFailure("session_expired");
+    const storageState = await this.options.sessionStore.load(binding);
     return this.browser.newContext({ serviceWorkers: "block", storageState: storageState as never });
   }
 
@@ -157,7 +180,7 @@ export class PersistentBrowserDriver {
       return;
     }
     let number: string | undefined;
-    if (step.kind === "push_number_match") number = await uniqueNumberMatch(page);
+    if (step.kind === "push_number_match") number = await uniqueNumberMatch(page, this.options.numberMatchSelector);
     const response = await this.requestChallenge(request.requestId, step.kind, number);
     if (response.decision === "deny") throw new DriverFailure("mfa_denied");
     if (step.kind === "sms_otp" || step.kind === "email_otp" || step.kind === "voice_otp") {
@@ -171,18 +194,34 @@ export class PersistentBrowserDriver {
   private async requestChallenge(requestId: string, kind: ChallengeKind, number?: string): Promise<ChallengeResponseMessage> {
     const pending = challenge(requestId, kind, number);
     this.emit(pending.message);
-    const line = await this.lines.next();
-    if (line.done) throw new DriverFailure("mfa_timeout");
-    let value: unknown;
-    try { value = JSON.parse(line.value); } catch { throw new DriverFailure("invalid_response"); }
-    const response = value as Partial<ChallengeResponseMessage>;
-    if (response.version !== "udon.browser-driver.v2" || response.type !== "challenge_response" ||
-        response.requestId !== requestId || response.challengeId !== pending.id ||
-        !["approve", "deny", "provide"].includes(response.decision ?? "")) {
-      throw new DriverFailure("invalid_response");
-    }
-    return response as ChallengeResponseMessage;
+    return readChallengeResponse(this.lines, requestId, pending.id, this.options.challengeTimeoutMs ?? defaultChallengeTimeoutMs);
   }
+}
+
+export async function readChallengeResponse(
+  lines: MessageSource,
+  requestId: string,
+  challengeId: string,
+  timeoutMs: number,
+): Promise<ChallengeResponseMessage> {
+  const signal = AbortSignal.timeout(timeoutMs);
+  let line: IteratorResult<string>;
+  try {
+    line = await lines.next(signal);
+  } catch {
+    if (signal.aborted) throw new DriverFailure("mfa_timeout");
+    throw new DriverFailure("invalid_response");
+  }
+  if (line.done) throw new DriverFailure("mfa_timeout");
+  let value: unknown;
+  try { value = JSON.parse(line.value); } catch { throw new DriverFailure("invalid_response"); }
+  const response = value as Partial<ChallengeResponseMessage>;
+  if (response.version !== "udon.browser-driver.v2" || response.type !== "challenge_response" ||
+      response.requestId !== requestId || response.challengeId !== challengeId ||
+      !["approve", "deny", "provide"].includes(response.decision ?? "")) {
+    throw new DriverFailure("invalid_response");
+  }
+  return response as ChallengeResponseMessage;
 }
 
 function validateAuthenticationMessage(request: AuthenticateMessage): void {
@@ -268,16 +307,20 @@ async function rejectCaptcha(page: Page): Promise<void> {
   if (await locator.count() > 0) throw new DriverFailure("captcha_required");
 }
 
-async function uniqueNumberMatch(page: Page): Promise<string> {
-  const text = await page.locator("body").innerText();
-  const matches = [...text.matchAll(/\b\d{2,8}\b/gu)].map((value) => value[0]);
-  const values = unique(matches);
+export async function uniqueNumberMatch(page: Page, selector?: string): Promise<string> {
+  const text = await page.locator(selector ?? "body").innerText();
+  const preferred = unique([...text.matchAll(/\b\d{2}\b/gu)].map((value) => value[0]));
+  const values = preferred.length > 0
+    ? preferred
+    : unique([...text.matchAll(/\b\d{2,8}\b/gu)].map((value) => value[0]));
   if (values.length !== 1) throw new DriverFailure("ambiguous_locator");
   return values[0]!;
 }
 
 export class NavigationGuard {
   private blocked = false;
+  private overflow = false;
+  private windowStart = 0;
 
   constructor(
     private readonly context: Pick<BrowserContext, "route">,
@@ -291,10 +334,13 @@ export class NavigationGuard {
 
   setAllowed(allowed: ReadonlySet<string>): void {
     this.allowed = allowed;
+    this.windowStart = this.visited.length;
+    this.overflow = false;
   }
 
   assertSafe(): void {
     if (this.blocked) throw new DriverFailure("origin_rejected");
+    if (this.overflow) throw new DriverFailure("driver_error");
   }
 
   private async handle(route: Route): Promise<void> {
@@ -304,7 +350,14 @@ export class NavigationGuard {
       return;
     }
     const url = request.url();
-    if (url !== "about:blank") this.visited.push(url);
+    if (url !== "about:blank") {
+      if (this.visited.length - this.windowStart >= maxVisitedURLsPerWindow) {
+        this.overflow = true;
+        await route.abort("blockedbyclient");
+        return;
+      }
+      this.visited.push(url);
+    }
     try {
       assertAllowedURL(url, this.allowed);
     } catch {

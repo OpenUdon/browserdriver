@@ -3,8 +3,15 @@
 | Milestone | Status file | Scope |
 | --- | --- | --- |
 | M01 | `status-M01.md` | Persistent Playwright authentication and named-session driver |
+| M02 | `status-M02.md` | Bound and diagnose persistent browser authentication runtime state |
 
 M01 establishes the isolated v2 NDJSON process, closed authentication and
 browser macro execution, all planned MFA variants, exact-origin and ambiguity
 enforcement, private environment credential resolution, ephemeral named
 sessions, closed failures, and offline protocol/security tests.
+
+M02 bounds human challenge waits and per-action navigation state, accepts
+canonical session roots reached through symlinked parents while retaining
+containment, enforces private state-file metadata, emits only fixed safe store
+diagnostics, scopes number matching through trusted driver configuration, and
+documents the navigation-only origin boundary.

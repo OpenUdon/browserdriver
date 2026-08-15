@@ -32,3 +32,21 @@ material, screenshots, and driver stderr never appear in protocol results.
 An opaque reuse binding is resolved only against the driver's private
 `--session-store`; inline or protocol-carried Playwright storage state is not
 accepted.
+
+Human challenge reads are self-bounded to 120 seconds by default. A trusted
+operator can set a different positive duration, up to 24 hours, with
+`--challenge-timeout` (for example, `--challenge-timeout 5m`). For
+`push_number_match`, a headless driver must extract the short numeric value and
+send it in the structured challenge: comparing that browser value with the
+phone prompt is the security property of number matching. The optional trusted
+driver argument `--number-match-selector <css>` scopes extraction on pages that
+also show dates, counts, or totals. It is driver configuration, not recipe
+syntax; authentication profiles still cannot carry CSS selectors for this
+challenge kind.
+
+The origin allowlist governs top-level navigations, including redirect
+intermediates. It intentionally does not block non-navigation subresources or
+child-frame navigations, which common sign-in pages require. `visitedUrls`
+attests the bounded top-level navigation window for one action; it is neither a
+complete network log nor an exfiltration boundary. Operators that require a
+network-wide boundary must enforce it outside the browser driver.
