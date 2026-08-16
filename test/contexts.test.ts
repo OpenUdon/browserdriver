@@ -57,6 +57,61 @@ test("popups must be declared, explicitly registered, and exactly inventoried", 
   assert.throws(() => runtime.assertNoExtraPages(), DriverFailure);
 });
 
+test("cached frames and popups are revalidated for identity, ambiguity, origin, and detachment", async () => {
+  let frameURL = "https://login.example/embedded/login";
+  let detached = false;
+  const frame = {
+    url: () => frameURL,
+    name: () => "Login",
+    childFrames: () => [],
+    isDetached: () => detached,
+  } as unknown as Frame;
+  const children: Frame[] = [frame];
+  const main = fakePage("https://members.example/dashboard", children);
+  const pages = [main];
+  const runtime = new RuntimeContexts(fakeContext(pages), main, {
+    login_frame: { kind: "frame", parent: "main", origin: "https://login.example", path: "/embedded/login", name: "Login" },
+  }, new Set(["https://members.example", "https://login.example"]));
+  assert.equal(await runtime.target("login_frame"), frame);
+
+  frameURL = "https://login.example/changed";
+  await assert.rejects(() => runtime.target("login_frame"), (error: unknown) =>
+    error instanceof DriverFailure && error.code === "invalid_response");
+  frameURL = "https://login.example/embedded/login";
+  children.push(fakeFrame(frameURL, "Login"));
+  await assert.rejects(() => runtime.target("login_frame"), (error: unknown) =>
+    error instanceof DriverFailure && error.code === "ambiguous_locator");
+  children.pop();
+  detached = true;
+  await assert.rejects(() => runtime.target("login_frame"), (error: unknown) =>
+    error instanceof DriverFailure && error.code === "invalid_response");
+
+  let popupURL = "https://login.example/";
+  let popupClosed = false;
+  const popup = {
+    url: () => popupURL,
+    mainFrame: () => ({ childFrames: () => [] }),
+    isClosed: () => popupClosed,
+  } as unknown as Page;
+  pages.push(popup);
+  const popupRuntime = new RuntimeContexts(fakeContext(pages), main, {
+    idp_popup: { kind: "popup", parent: "main", origin: "https://login.example" },
+  }, new Set(["https://members.example", "https://login.example"]));
+  popupRuntime.registerPopup("idp_popup", "main", popup);
+  await popupRuntime.target("idp_popup");
+  popupURL = "https://members.example/escaped";
+  await assert.rejects(() => popupRuntime.target("idp_popup"), (error: unknown) =>
+    error instanceof DriverFailure && error.code === "origin_rejected");
+  popupURL = "https://login.example/";
+  popupClosed = true;
+  await assert.rejects(() => popupRuntime.target("idp_popup"), (error: unknown) =>
+    error instanceof DriverFailure && error.code === "invalid_response");
+  popupClosed = false;
+  pages.shift();
+  await assert.rejects(() => popupRuntime.target("idp_popup"), (error: unknown) =>
+    error instanceof DriverFailure && error.code === "invalid_response");
+});
+
 function fakeFrame(url: string, name: string, children: Frame[] = []): Frame {
   return { url: () => url, name: () => name, childFrames: () => children } as unknown as Frame;
 }

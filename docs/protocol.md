@@ -30,8 +30,9 @@ Failure codes are `mfa_timeout`, `mfa_denied`, `credentials_invalid`,
 ## V3 portable contexts
 
 V3 accepts only `uws.browser-authentication.1.1` authentication profiles and
-internal `udon.browser-driver.v2` actions lowered from `uws.browser.1.6`. It
-supports the implicit `main` target plus the reviewed `contexts` graph. Every
+internal `udon.browser-driver.v2` actions lowered from `uws.browser.1.5` or
+`uws.browser.1.6`. Browser 1.5 uses only the implicit `main`; browser 1.6 may
+add the reviewed `contexts` graph. Every
 locator-bearing authentication step, wait, challenge, browser step, and output
 may name a context; navigate may use `{ "url": "...", "context": "..." }`.
 Authentication success may name a context and exact path.
@@ -43,6 +44,14 @@ must be the sole page opened by that click. Automatic, missing, duplicate,
 changed, closed, or extra contexts fail closed. Context graphs are acyclic,
 bounded to depth four, and every origin must be canonical and present in the
 request allowlist.
+
+Resolved handles are caches, never continuing authority. Before every use, a
+page must still be present, open, and on an allowed exact origin; a popup must
+still match its declaration. A frame must remain attached, a direct child of
+the current declared parent, and the sole exact origin/path/name match.
+Authentication and action completion resolve the full declared inventory so a
+late missing, duplicate, changed, detached, or extra context cannot be hidden
+by an earlier successful lookup.
 
 The v3 navigation guard covers main-page, popup, and child-frame navigation,
 including redirect intermediates. V2 intentionally retains its prior

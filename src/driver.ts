@@ -77,6 +77,7 @@ export class PersistentBrowserDriver {
           navigation.assertSafe();
         }
       }
+      if (runtime) await runtime.resolveAll();
       const successTarget = runtime ? await runtime.target(flow.success.context) : page;
       if (runtime) {
         runtime.assertNoExtraPages();
@@ -118,12 +119,16 @@ export class PersistentBrowserDriver {
         if (request.version === protocolVersionV3) {
           if (!session.runtime) throw new DriverFailure("invalid_response");
           session.runtime.mergeForAction(request.action.contexts, allowed);
+          await session.runtime.revalidateResolved();
           session.runtime.assertNoExtraPages();
         } else if (session.runtime) throw new DriverFailure("invalid_response");
         assertAllowedURL(session.page.url(), allowed);
         this.emit(status(request.requestId, "executing", request.version));
         for (const step of request.action.action.sequence) {
-          if (session.runtime) await rejectCaptchas(session.runtime.allResolvedTargets());
+          if (session.runtime) {
+            await session.runtime.revalidateResolved();
+            await rejectCaptchas(session.runtime.allResolvedTargets());
+          }
           else await rejectCaptcha(session.page);
           try {
             if (session.runtime) await browserStepV3(session.runtime, step as Record<string, unknown>, allowed);
@@ -133,7 +138,7 @@ export class PersistentBrowserDriver {
           }
         }
         if (session.runtime) {
-          session.runtime.assertNoExtraPages();
+          await session.runtime.resolveAll();
           await rejectCaptchas(session.runtime.allResolvedTargets());
         } else await rejectCaptcha(session.page);
         assertAllowedURL(session.page.url(), allowed);

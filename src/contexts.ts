@@ -64,7 +64,10 @@ export class RuntimeContexts {
     const selectedDefinition = this.definitions.get(selected);
     if (selectedDefinition && !this.allowed.has(exactOrigin(selectedDefinition.origin))) throw new DriverFailure("origin_rejected");
     const cached = this.targets.get(selected);
-    if (cached) return cached;
+    if (cached) {
+      await this.revalidate(selected, cached, selectedDefinition);
+      return cached;
+    }
     const definition = this.definitions.get(selected);
     if (!definition || definition.kind !== "frame") throw new DriverFailure("invalid_response");
     const parent = await this.target(definition.parent);
@@ -107,8 +110,13 @@ export class RuntimeContexts {
 
   allResolvedTargets(): BrowserTarget[] { return [...this.targets.values()]; }
 
+  async revalidateResolved(): Promise<void> {
+    for (const id of [...this.targets.keys()]) await this.target(id);
+  }
+
   async resolveAll(): Promise<void> {
     for (const id of this.definitions.keys()) await this.target(id);
+    await this.revalidateResolved();
     this.assertNoExtraPages();
   }
 
@@ -117,6 +125,33 @@ export class RuntimeContexts {
     const registered = new Set(this.pages());
     const actual = this.browserContext.pages();
     if (actual.length !== registered.size || actual.some((page) => !registered.has(page))) throw new DriverFailure("invalid_response");
+  }
+
+  private async revalidate(id: string, target: BrowserTarget, definition: ContextSpec | undefined): Promise<void> {
+    if (isPage(target)) {
+      if ((typeof target.isClosed === "function" && target.isClosed()) || !this.browserContext.pages().includes(target)) {
+        throw new DriverFailure("invalid_response");
+      }
+      let origin: string;
+      try { origin = exactOrigin(target.url()); } catch { throw new DriverFailure("origin_rejected"); }
+      if (!this.allowed.has(origin)) throw new DriverFailure("origin_rejected");
+      if (id === "main") return;
+      if (!definition || definition.kind !== "popup") throw new DriverFailure("invalid_response");
+      await this.target(definition.parent);
+      if (origin !== exactOrigin(definition.origin)) throw new DriverFailure("origin_rejected");
+      return;
+    }
+    if (!definition || definition.kind !== "frame" || (typeof target.isDetached === "function" && target.isDetached())) {
+      throw new DriverFailure("invalid_response");
+    }
+    const parent = await this.target(definition.parent);
+    const frames = directFrames(parent).filter((frame) => frameMatches(frame, definition));
+    if (frames.length !== 1 || frames[0] !== target) {
+      throw new DriverFailure(frames.length > 1 ? "ambiguous_locator" : "invalid_response");
+    }
+    let origin: string;
+    try { origin = exactOrigin(target.url()); } catch { throw new DriverFailure("origin_rejected"); }
+    if (!this.allowed.has(origin) || origin !== exactOrigin(definition.origin)) throw new DriverFailure("origin_rejected");
   }
 }
 

@@ -23,10 +23,13 @@ later protocol envelope, and top-level navigation attestations are capped and
 discarded after each action. The origin guard intentionally does not cover
 subresources or child frames and is not a network exfiltration boundary.
 
-V3 is an additive, non-mixing session mode for authentication 1.1 and browser
-1.6. A runtime context registry resolves declared frames among direct children
+V3 is an additive session mode for authentication 1.1 followed by browser 1.5
+or 1.6. A runtime context registry resolves declared frames among direct children
 by exact origin/path/name and registers a popup only around its explicit
 `opensContext` click. Missing, ambiguous, duplicate, changed, closed, automatic,
 or extra contexts reject the request. The v3 navigation guard covers main,
 popup, and child-frame redirects. Context graphs remain acyclic and depth-four;
 all handles and session material remain inside the one driver process.
+Cached targets are revalidated before each use and the full declared inventory
+is resolved at authentication/action completion; a stale handle never remains
+authority after origin, identity, parentage, attachment, or uniqueness changes.

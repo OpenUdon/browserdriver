@@ -4,8 +4,9 @@ This repository provides the trusted Playwright process for
 `udon.browser-driver.v2` and additive `udon.browser-driver.v3`. One process lives for one Udon workflow execution, so
 an explicit `uws.browser-authentication-call.1.0` operation can establish a
 named in-memory session and later `uws.browser.1.5` actions can consume it. V3
-adds UWS 1.8 authentication 1.1/browser 1.6 popup and frame contexts while v2
-continues to execute the unchanged main-page contracts.
+adds UWS 1.8 authentication 1.1 followed by browser 1.5 main-page or browser
+1.6 popup/frame replay, while v2 continues to execute the unchanged UWS 1.7
+contracts.
 
 The driver accepts only reviewed, closed browser macros. Credentials are read
 from environment-variable names mapped by Udon; values never appear in UWS,
@@ -39,8 +40,8 @@ udon \
 ```
 
 Use `--browser-driver-protocol v3` only with Udon's UWS 1.8 lowering. V3
-requires authentication 1.1 and the internal action v2 envelope; it rejects
-mixing those requests with a v2 session.
+requires authentication 1.1 and the internal action v2 envelope, which may
+carry browser 1.5 or 1.6; it rejects mixing those requests with a v2 session.
 
 Use `--headed` as a trusted driver argument when WebAuthn or operator-visible
 browser interaction requires a window.
@@ -58,6 +59,9 @@ and the driver performs the lookup locally.
 - V3 also enforces declared origins for child-frame and popup navigations,
   requires one uniquely resolved frame, and accepts one popup only when an
   explicit `opensContext` click declares it.
+- Every cached page/frame is revalidated before reuse and at authentication or
+  action completion; closure, detachment, origin/identity drift, renewed
+  ambiguity, or an incomplete/extra inventory fails closed.
 - Authentication locators are accessibility-only. Browser-action CSS remains
   limited to a reviewed output fallback already allowed by `uws.browser.1.5`.
 - Driver-controlled exception text is collapsed to a closed failure code.
