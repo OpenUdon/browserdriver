@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 
 export const protocolVersion = "udon.browser-driver.v2";
+export const protocolVersionV3 = "udon.browser-driver.v3";
+export type ProtocolVersion = typeof protocolVersion | typeof protocolVersionV3;
 export const maxMessageBytes = 1 << 20;
 
 export const statuses = ["resolving", "logging_in", "awaiting_mfa", "refreshing", "executing"] as const;
@@ -32,7 +34,7 @@ export interface LocatorSpec {
 }
 
 export interface AuthenticationProfile {
-  profile: "uws.browser-authentication.1.0";
+  profile: "uws.browser-authentication.1.0" | "uws.browser-authentication.1.1";
   info: {
     title: string;
     applicationOrigins: string[];
@@ -40,29 +42,43 @@ export interface AuthenticationProfile {
   };
   credentialSlots: Record<string, { kind: "identifier" | "password" | "totp_seed" }>;
   flows: Record<string, AuthenticationFlow>;
+  contexts?: Record<string, ContextSpec>;
+}
+
+export interface ContextSpec {
+  kind: "popup" | "frame";
+  parent: string;
+  origin: string;
+  path?: string;
+  name?: string;
 }
 
 export interface AuthenticationFlow {
   sequence: AuthenticationStep[];
   effects: string[];
-  success: { origin: string; locator: LocatorSpec };
+  success: { origin: string; locator: LocatorSpec; context?: string; path?: string };
 }
 
+export interface ContextualLocator { locator: LocatorSpec; context?: string }
+export interface ContextualClick extends ContextualLocator { opensContext?: string }
+export interface ContextualNavigate { url: string; context?: string }
+
 export type AuthenticationStep =
-  | { navigate: string }
-  | { type_credential: { locator: LocatorSpec; slot: string } }
-  | { click: { locator: LocatorSpec } }
-  | { challenge: { kind: ChallengeKind; locator?: LocatorSpec; slot?: string } }
-  | { wait_for: { locator: LocatorSpec } };
+  | { navigate: string | ContextualNavigate }
+  | { type_credential: ContextualLocator & { slot: string } }
+  | { click: ContextualClick }
+  | { challenge: { kind: ChallengeKind; locator?: LocatorSpec; slot?: string; context?: string } }
+  | { wait_for: ContextualLocator };
 
 export interface ActionRequest {
-  version: string;
+  version: "udon.browser-driver.v1" | "udon.browser-driver.v2";
   operationId: string;
   sourceDigest: string;
   actionName: string;
   allowedOrigins: string[];
   parameters: Record<string, unknown>;
   action: BrowserAction;
+  contexts?: Record<string, ContextSpec>;
 }
 
 export interface BrowserAction {
@@ -71,15 +87,15 @@ export interface BrowserAction {
 }
 
 export type BrowserStep =
-  | { navigate: string }
-  | { click: { locator: LocatorSpec; wait_for?: BrowserWait } }
-  | { type_text: { locator: LocatorSpec; value: string; wait_for?: BrowserWait } }
-  | { check_radio: { locator: LocatorSpec; wait_for?: BrowserWait } }
-  | { uncheck: { locator: LocatorSpec; wait_for?: BrowserWait } }
-  | { select_option: { locator: LocatorSpec; value: string; wait_for?: BrowserWait } }
+  | { navigate: string | ContextualNavigate }
+  | { click: ContextualClick & { wait_for?: BrowserWait } }
+  | { type_text: ContextualLocator & { value: string; wait_for?: BrowserWait } }
+  | { check_radio: ContextualLocator & { wait_for?: BrowserWait } }
+  | { uncheck: ContextualLocator & { wait_for?: BrowserWait } }
+  | { select_option: ContextualLocator & { value: string; wait_for?: BrowserWait } }
   | { wait_for: BrowserWait };
 
-export type BrowserWait = { locator: LocatorSpec } | { navigation: "load" | "domcontentloaded" | "network_idle" };
+export type BrowserWait = LocatorSpec | ContextualLocator | { navigation: "load" | "domcontentloaded" | "network_idle" };
 
 export interface BrowserOutput {
   type: string;
@@ -89,10 +105,11 @@ export interface BrowserOutput {
   presence?: boolean;
   property?: string;
   attribute?: string;
+  context?: string;
 }
 
 export interface AuthenticateMessage {
-  version: typeof protocolVersion;
+  version: ProtocolVersion;
   type: "authenticate";
   requestId: string;
   operationId: string;
@@ -107,7 +124,7 @@ export interface AuthenticateMessage {
 }
 
 export interface ActionMessage {
-  version: typeof protocolVersion;
+  version: ProtocolVersion;
   type: "action";
   requestId: string;
   operationId: string;
@@ -116,7 +133,7 @@ export interface ActionMessage {
 }
 
 export interface ChallengeResponseMessage {
-  version: typeof protocolVersion;
+  version: ProtocolVersion;
   type: "challenge_response";
   requestId: string;
   challengeId: string;
@@ -125,7 +142,7 @@ export interface ChallengeResponseMessage {
 }
 
 export type InputMessage = AuthenticateMessage | ActionMessage | ChallengeResponseMessage | {
-  version: typeof protocolVersion;
+  version: ProtocolVersion;
   type: "close";
   requestId: string;
 };
@@ -134,32 +151,45 @@ export function parseInput(line: string): InputMessage {
   if (Buffer.byteLength(line) > maxMessageBytes) throw new DriverFailure("invalid_response");
   let value: unknown;
   try { value = JSON.parse(line); } catch { throw new DriverFailure("invalid_response"); }
-  if (!isRecord(value) || value.version !== protocolVersion || typeof value.type !== "string" || typeof value.requestId !== "string") {
+  if (!isRecord(value) || (value.version !== protocolVersion && value.version !== protocolVersionV3) || typeof value.type !== "string" || typeof value.requestId !== "string") {
     throw new DriverFailure("invalid_response");
   }
+  if (value.version === protocolVersionV3) validateV3Envelope(value);
   return value as unknown as InputMessage;
 }
 
-export function status(requestId: string, value: Status): object {
-  return { version: protocolVersion, type: "status", requestId, status: value };
+export function status(requestId: string, value: Status, version: ProtocolVersion = protocolVersion): object {
+  return { version, type: "status", requestId, status: value };
 }
 
-export function challenge(requestId: string, kind: ChallengeKind, number?: string): { id: string; message: object } {
+export function challenge(requestId: string, kind: ChallengeKind, number?: string, version: ProtocolVersion = protocolVersion): { id: string; message: object } {
   const id = randomUUID();
   return {
     id,
-    message: { version: protocolVersion, type: "challenge", requestId, challengeId: id, kind, ...(number ? { number } : {}) },
+    message: { version, type: "challenge", requestId, challengeId: id, kind, ...(number ? { number } : {}) },
   };
 }
 
-export function success(requestId: string, response?: object): object {
-  return { version: protocolVersion, type: "result", requestId, result: "success", ...(response ? { response } : {}) };
+export function success(requestId: string, response?: object, version: ProtocolVersion = protocolVersion): object {
+  return { version, type: "result", requestId, result: "success", ...(response ? { response } : {}) };
 }
 
-export function failure(requestId: string, code: FailureCode): object {
-  return { version: protocolVersion, type: "result", requestId, result: "failure", failureCode: code };
+export function failure(requestId: string, code: FailureCode, version: ProtocolVersion = protocolVersion): object {
+  return { version, type: "result", requestId, result: "failure", failureCode: code };
 }
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function validateV3Envelope(value: Record<string, unknown>): void {
+  const common = ["version", "type", "requestId"];
+  const fields: Record<string, string[]> = {
+    authenticate: [...common, "operationId", "sourceDigest", "profile", "flow", "session", "allowedOrigins", "credentialBindings", "credentialEnvironment", "sessionBinding"],
+    action: [...common, "operationId", "session", "action"],
+    challenge_response: [...common, "challengeId", "decision", "value"],
+    close: common,
+  };
+  const allowed = fields[value.type as string];
+  if (!allowed || Object.keys(value).some((field) => !allowed.includes(field))) throw new DriverFailure("invalid_response");
 }

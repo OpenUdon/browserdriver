@@ -2,7 +2,7 @@
 import { createInterface } from "node:readline";
 import { PersistentBrowserDriver, defaultChallengeTimeoutMs } from "./driver.js";
 import { ReadlineMessageSource } from "./line-source.js";
-import { DriverFailure, failure, maxMessageBytes, parseInput } from "./protocol.js";
+import { DriverFailure, failure, maxMessageBytes, parseInput, protocolVersion, type ProtocolVersion } from "./protocol.js";
 import { FileSessionStateStore } from "./session-store.js";
 
 const input = createInterface({ input: process.stdin, crlfDelay: Number.POSITIVE_INFINITY, terminal: false });
@@ -25,15 +25,17 @@ try {
     if (next.done) break;
     if (Buffer.byteLength(next.value) > maxMessageBytes) throw new DriverFailure("invalid_response");
     let requestId = "invalid";
+    let requestVersion: ProtocolVersion = protocolVersion;
     try {
       const message = parseInput(next.value);
       requestId = message.requestId;
+      requestVersion = message.version;
       if (message.type === "close") break;
       if (message.type === "authenticate") await driver.authenticate(message);
       else if (message.type === "action") await driver.action(message);
       else throw new DriverFailure("invalid_response");
     } catch (error) {
-      emit(failure(requestId, error instanceof DriverFailure ? error.code : "invalid_response"));
+      emit(failure(requestId, error instanceof DriverFailure ? error.code : "invalid_response", requestVersion));
     }
   }
 } catch {

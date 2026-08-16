@@ -13,3 +13,7 @@ npm test
 npm audit --omit=dev
 git diff --check
 ```
+
+The single TypeScript implementation serves both protocol versions. V2 keeps
+the UWS 1.7 main-page contract; v3 adds only UWS 1.8 context qualification and
+does not add another browser implementation.

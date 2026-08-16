@@ -4,6 +4,7 @@
 | --- | --- | --- |
 | M01 | `status-M01.md` | Persistent Playwright authentication and named-session driver |
 | M02 | `status-M02.md` | Bound and diagnose persistent browser authentication runtime state |
+| M03 | `status-M03.md` | Replay UWS popup/frame contexts through additive driver protocol v3 |
 
 M01 establishes the isolated v2 NDJSON process, closed authentication and
 browser macro execution, all planned MFA variants, exact-origin and ambiguity
@@ -15,3 +16,7 @@ canonical session roots reached through symlinked parents while retaining
 containment, enforces private state-file metadata, emits only fixed safe store
 diagnostics, scopes number matching through trusted driver configuration, and
 documents the navigation-only origin boundary.
+
+M03 retains v2 and adds non-mixing v3 authentication 1.1/browser 1.6 replay,
+portable context resolution, explicit popup binding, context-qualified steps
+and outputs, child-context navigation enforcement, and exact inventory failure.

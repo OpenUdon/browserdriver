@@ -1,8 +1,10 @@
-# Udon browser-driver v2 protocol
+# Udon browser-driver v2 and v3 protocols
 
 The process reads and writes one JSON object per line. Every envelope carries
 `version: "udon.browser-driver.v2"` and a `requestId`. The maximum line size is
 1 MiB. Udon starts one process per workflow execution and serializes requests.
+The additive v3 envelope uses `version: "udon.browser-driver.v3"`; v2 message
+and execution behavior remains accepted and unchanged.
 
 Input message types are:
 
@@ -25,6 +27,28 @@ Failure codes are `mfa_timeout`, `mfa_denied`, `credentials_invalid`,
 `captcha_required`, `origin_rejected`, `ambiguous_locator`, and
 `invalid_response`. There is no free-form error field.
 
+## V3 portable contexts
+
+V3 accepts only `uws.browser-authentication.1.1` authentication profiles and
+internal `udon.browser-driver.v2` actions lowered from `uws.browser.1.6`. It
+supports the implicit `main` target plus the reviewed `contexts` graph. Every
+locator-bearing authentication step, wait, challenge, browser step, and output
+may name a context; navigate may use `{ "url": "...", "context": "..." }`.
+Authentication success may name a context and exact path.
+
+Frames resolve among direct children of their declared parent by exact origin
+and reviewed path and/or name. Zero matches fail; multiple matches are
+ambiguous. A popup exists only after an explicit click with `opensContext` and
+must be the sole page opened by that click. Automatic, missing, duplicate,
+changed, closed, or extra contexts fail closed. Context graphs are acyclic,
+bounded to depth four, and every origin must be canonical and present in the
+request allowlist.
+
+The v3 navigation guard covers main-page, popup, and child-frame navigation,
+including redirect intermediates. V2 intentionally retains its prior
+top-level-only navigation guard. V3 context handles, cookies, storage, page
+content, and challenge values remain execution-private exactly as in v2.
+
 Credential and OTP values are runtime-private. Credential values are resolved
 by the driver from the named process environment. OTP responses travel only on
 stdin and are discarded after use. Session bindings, browser storage, raw page
@@ -44,7 +68,7 @@ also show dates, counts, or totals. It is driver configuration, not recipe
 syntax; authentication profiles still cannot carry CSS selectors for this
 challenge kind.
 
-The origin allowlist governs top-level navigations, including redirect
+For v2, the origin allowlist governs top-level navigations, including redirect
 intermediates. It intentionally does not block non-navigation subresources or
 child-frame navigations, which common sign-in pages require. `visitedUrls`
 attests the bounded top-level navigation window for one action; it is neither a

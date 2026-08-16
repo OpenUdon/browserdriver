@@ -2,7 +2,7 @@
   "name": "@openudon/browserdriver",
   "version": "0.1.0",
   "private": true,
-  "description": "Trusted Playwright implementation of udon.browser-driver.v2",
+  "description": "Trusted Playwright implementation of udon.browser-driver.v2 and v3",
   "type": "module",
   "bin": {
     "openudon-browser-driver": "bin/openudon-browser-driver"

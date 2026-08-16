@@ -1,6 +1,6 @@
 # Architecture
 
-Udon starts one `udon.browser-driver.v2` NDJSON subprocess per workflow
+Udon starts one `udon.browser-driver.v2` or `udon.browser-driver.v3` NDJSON subprocess per workflow
 execution. The driver owns one Playwright browser and a map of named,
 execution-local contexts. Authentication creates or refreshes a context;
 protected browser actions use that exact name. Udon owns approval and human
@@ -12,7 +12,7 @@ configured root itself and final state file cannot be symlinks; state files
 must remain canonically contained, owner-only, and owned by the driver user.
 Cookie and storage-state documents never cross the protocol.
 
-The driver accepts only closed macros, intercepts every top-level navigation
+The driver accepts only closed macros. V2 intercepts every top-level navigation
 request before transmission to enforce exact origins (including redirect
 intermediates), rejects ambiguous accessibility locators and CAPTCHA, extracts only
 declared outputs, and returns closed progress/failure values. Secrets enter
@@ -22,3 +22,11 @@ Human challenge reads self-expire, their cancelled line waiter cannot consume a
 later protocol envelope, and top-level navigation attestations are capped and
 discarded after each action. The origin guard intentionally does not cover
 subresources or child frames and is not a network exfiltration boundary.
+
+V3 is an additive, non-mixing session mode for authentication 1.1 and browser
+1.6. A runtime context registry resolves declared frames among direct children
+by exact origin/path/name and registers a popup only around its explicit
+`opensContext` click. Missing, ambiguous, duplicate, changed, closed, automatic,
+or extra contexts reject the request. The v3 navigation guard covers main,
+popup, and child-frame redirects. Context graphs remain acyclic and depth-four;
+all handles and session material remain inside the one driver process.

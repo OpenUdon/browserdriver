@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { PassThrough } from "node:stream";
 import { createInterface } from "node:readline";
 import test from "node:test";
-import type { BrowserContext, Page, Route } from "playwright";
+import type { BrowserContext, Frame, Page, Route } from "playwright";
 import {
   NavigationGuard, PersistentBrowserDriver, attestedVisitedURLs, exactLocator, extractOutputs, maxVisitedURLsPerWindow,
   readChallengeResponse, uniqueNumberMatch,
@@ -10,6 +10,7 @@ import {
 import { ReadlineMessageSource } from "../src/line-source.js";
 import { DriverFailure } from "../src/protocol.js";
 import type { ActionMessage } from "../src/protocol.js";
+import { RuntimeContexts } from "../src/contexts.js";
 
 test("navigation guard blocks a redirect origin before continuing its request", async () => {
   let handler: ((route: Route) => Promise<void>) | undefined;
@@ -33,6 +34,25 @@ test("navigation guard blocks a redirect origin before continuing its request", 
   assert.throws(() => guard.assertSafe(), (error: unknown) =>
     error instanceof DriverFailure && error.code === "origin_rejected");
   assert.deepEqual(visited, ["https://allowed.example/start", "https://identity.evil.invalid/redirect"]);
+});
+
+test("v3 navigation guard also enforces child-frame origins while v2 remains top-level only", async () => {
+  let v2Handler: ((route: Route) => Promise<void>) | undefined;
+  let v3Handler: ((route: Route) => Promise<void>) | undefined;
+  const contextFor = (save: (handler: (route: Route) => Promise<void>) => void) => ({
+    route: async (_pattern: string, callback: (route: Route) => Promise<void>) => save(callback),
+  }) as unknown as Pick<BrowserContext, "route">;
+  const v2 = new NavigationGuard(contextFor((handler) => { v2Handler = handler; }), [], new Set(["https://allowed.example"]));
+  const v3 = new NavigationGuard(contextFor((handler) => { v3Handler = handler; }), [], new Set(["https://allowed.example"]), true);
+  await v2.install();
+  await v3.install();
+  const v2Route = fakeNavigationRoute("https://evil.invalid/frame", true);
+  const v3Route = fakeNavigationRoute("https://evil.invalid/frame", true);
+  await v2Handler!(v2Route.route);
+  await v3Handler!(v3Route.route);
+  assert.equal(v2Route.continued(), true);
+  assert.equal(v3Route.aborted(), true);
+  assert.throws(() => v3.assertSafe(), (error: unknown) => error instanceof DriverFailure && error.code === "origin_rejected");
 });
 
 test("action attestation includes the current page without a new navigation", () => {
@@ -144,6 +164,53 @@ test("repeated actions discard their reported navigation window", async () => {
   }
 });
 
+test("v3 action resolves context-qualified waits and outputs while v2 stays accepted", async () => {
+  const locator = { first: () => locator, waitFor: async () => undefined, count: async () => 1 };
+  const frame = {
+    url: () => "https://members.example/frame",
+    name: () => "Member",
+    childFrames: () => [],
+    getByRole: () => locator,
+    locator: () => ({ count: async () => 0 }),
+  } as unknown as Frame;
+  const page = {
+    url: () => "https://members.example/dashboard",
+    mainFrame: () => ({ childFrames: () => [frame] }),
+    getByRole: () => locator,
+    locator: () => ({ count: async () => 0 }),
+  } as unknown as Page;
+  const context = { pages: () => [page], close: async () => undefined } as unknown as BrowserContext;
+  const runtime = new RuntimeContexts(context, page, {
+    member_frame: { kind: "frame", parent: "main", origin: "https://members.example", path: "/frame", name: "Member" },
+  }, new Set(["https://members.example"]));
+  const messages: Array<Record<string, unknown>> = [];
+  const driver = new PersistentBrowserDriver(
+    { next: async () => ({ done: true, value: undefined }) },
+    (message) => messages.push(message as Record<string, unknown>),
+  );
+  const sessions = (driver as unknown as { sessions: Map<string, unknown> }).sessions;
+  sessions.set("member", {
+    context, page, visited: [], runtime,
+    navigation: { setAllowed: () => undefined, assertSafe: () => undefined },
+  });
+  const request: ActionMessage = {
+    version: "udon.browser-driver.v3", type: "action", requestId: "v3", operationId: "read", session: "member",
+    action: {
+      version: "udon.browser-driver.v2", operationId: "read", sourceDigest: "sha256:test", actionName: "read",
+      allowedOrigins: ["https://members.example"], parameters: {},
+      contexts: { member_frame: { kind: "frame", parent: "main", origin: "https://members.example", path: "/frame", name: "Member" } },
+      action: {
+        sequence: [{ wait_for: { locator: { role: "heading", name: "Status" }, context: "member_frame" } }],
+        outputs: { present: { type: "boolean", source: "a11y", locator: { role: "heading", name: "Status" }, context: "member_frame", presence: true } },
+      },
+    },
+  };
+  await driver.action(request);
+  const result = messages.at(-1)!;
+  assert.equal(result.version, "udon.browser-driver.v3");
+  assert.deepEqual((result.response as Record<string, unknown>).outputs, { present: true });
+});
+
 test("exact accessibility locators honor explicit empty constraints", async () => {
   let roleOptions: unknown;
   let filterOptions: unknown;
@@ -203,7 +270,7 @@ test("structured-data outputs default an omitted property to the output name", a
   assert.deepEqual(microdataInput, { property: "item_name", attribute: undefined });
 });
 
-function fakeNavigationRoute(url: string): {
+function fakeNavigationRoute(url: string, child = false): {
   route: Route;
   aborted(): boolean;
   continued(): boolean;
@@ -213,7 +280,7 @@ function fakeNavigationRoute(url: string): {
   const route = {
     request: () => ({
       isNavigationRequest: () => true,
-      frame: () => ({ parentFrame: () => null }),
+      frame: () => ({ parentFrame: () => child ? ({}) : null }),
       url: () => url,
     }),
     abort: async () => { aborted = true; },
