@@ -72,6 +72,7 @@ export type AuthenticationStep =
 
 export interface ActionRequest {
   version: "udon.browser-driver.v1" | "udon.browser-driver.v2";
+  profile?: "uws.browser.1.5" | "uws.browser.1.6" | "uws.browser.1.7";
   operationId: string;
   sourceDigest: string;
   actionName: string;

@@ -16,5 +16,6 @@ git diff --check
 
 The single TypeScript implementation serves both protocol versions. V2 keeps
 the UWS 1.7 main-page contract; v3 accepts UWS 1.8 authentication 1.1 followed
-by browser 1.5 or 1.6, adds portable context qualification and cached-target
-revalidation, and does not add another browser implementation.
+by browser 1.5/1.6 or UWS 1.9 browser 1.7, adds portable context qualification,
+cached-target revalidation, and normative scalar conversion, and does not add
+another browser implementation.

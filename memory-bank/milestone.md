@@ -6,6 +6,7 @@
 | M02 | `status-M02.md` | Bound and diagnose persistent browser authentication runtime state |
 | M03 | `status-M03.md` | Replay UWS popup/frame contexts through additive driver protocol v3 |
 | M04 | `status-M04.md` | Revalidate cached contexts and qualify authored replay pairs |
+| M05 | `status-M05.md` | Replay UWS browser 1.7 typed accessibility outputs through driver v3 |
 
 M01 establishes the isolated v2 NDJSON process, closed authentication and
 browser macro execution, all planned MFA variants, exact-origin and ambiguity
@@ -25,3 +26,8 @@ and outputs, child-context navigation enforcement, and exact inventory failure.
 M04 revalidates every cached context immediately before reuse and qualifies
 Browsertools' exact oldest-sufficient authentication/capability version pair
 through Udon into driver v3. It is complete.
+
+M05 retains every browser 1.5/1.6 extraction path and adds browser 1.7 only to
+driver v3. Accessibility text is converted according to UWS 1.9 after Unicode
+edge trimming; invalid lexical forms fail with the closed `invalid_response`
+code and never disclose page text. It is complete.

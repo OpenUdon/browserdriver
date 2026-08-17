@@ -4,9 +4,9 @@ This repository provides the trusted Playwright process for
 `udon.browser-driver.v2` and additive `udon.browser-driver.v3`. One process lives for one Udon workflow execution, so
 an explicit `uws.browser-authentication-call.1.0` operation can establish a
 named in-memory session and later `uws.browser.1.5` actions can consume it. V3
-adds UWS 1.8 authentication 1.1 followed by browser 1.5 main-page or browser
-1.6 popup/frame replay, while v2 continues to execute the unchanged UWS 1.7
-contracts.
+adds UWS 1.8 authentication 1.1 followed by browser 1.5 main-page, browser 1.6
+popup/frame replay, or UWS 1.9 browser 1.7 typed accessibility outputs, while
+v2 continues to execute the unchanged UWS 1.7 contracts.
 
 The driver accepts only reviewed, closed browser macros. Credentials are read
 from environment-variable names mapped by Udon; values never appear in UWS,
@@ -39,9 +39,10 @@ udon \
   --approve-browser-authentication authenticate_member
 ```
 
-Use `--browser-driver-protocol v3` only with Udon's UWS 1.8 lowering. V3
+Use `--browser-driver-protocol v3` with Udon's UWS 1.8/1.9 lowering. V3
 requires authentication 1.1 and the internal action v2 envelope, which may
-carry browser 1.5 or 1.6; it rejects mixing those requests with a v2 session.
+carry browser 1.5, 1.6, or 1.7; browser 1.7 adds locale-free scalar conversion
+and is rejected by the v2 session path.
 
 Use `--headed` as a trusted driver argument when WebAuthn or operator-visible
 browser interaction requires a window.

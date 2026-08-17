@@ -4,8 +4,8 @@ import { createInterface } from "node:readline";
 import test from "node:test";
 import type { BrowserContext, Frame, Page, Route } from "playwright";
 import {
-  NavigationGuard, PersistentBrowserDriver, attestedVisitedURLs, exactLocator, extractOutputs, maxVisitedURLsPerWindow,
-  readChallengeResponse, uniqueNumberMatch,
+  NavigationGuard, PersistentBrowserDriver, attestedVisitedURLs, convertBrowser17AccessibilityText, exactLocator,
+  extractOutputs, maxVisitedURLsPerWindow, readChallengeResponse, uniqueNumberMatch,
 } from "../src/driver.js";
 import { ReadlineMessageSource } from "../src/line-source.js";
 import { DriverFailure } from "../src/protocol.js";
@@ -241,6 +241,127 @@ test("a11y presence returns false for no match and rejects ambiguity", async () 
   assert.deepEqual(await extractOutputs(pageWithCount(0), output), { available: false });
   await assert.rejects(() => extractOutputs(pageWithCount(2), output), (error: unknown) =>
     error instanceof DriverFailure && error.code === "ambiguous_locator");
+});
+
+test("browser 1.7 converts canonical trimmed accessibility scalars", () => {
+  const cases: Array<{ name: string; raw: string; type: string; want: string | number | boolean }> = [
+    { name: "string unicode trim", raw: "\u00a0 Dashboard \u2003", type: "string", want: "Dashboard" },
+    { name: "integer zero", raw: "0", type: "integer", want: 0 },
+    { name: "integer negative zero", raw: "-0", type: "integer", want: -0 },
+    { name: "integer positive", raw: "42", type: "integer", want: 42 },
+    { name: "integer negative", raw: "-42", type: "integer", want: -42 },
+    { name: "integer safe maximum", raw: "9007199254740991", type: "integer", want: 9007199254740991 },
+    { name: "integer safe minimum", raw: "-9007199254740991", type: "integer", want: -9007199254740991 },
+    { name: "number integer form", raw: "42", type: "number", want: 42 },
+    { name: "number decimal", raw: "-1.25", type: "number", want: -1.25 },
+    { name: "number exponent", raw: "1.5e+2", type: "number", want: 150 },
+    { name: "boolean true", raw: " true ", type: "boolean", want: true },
+    { name: "boolean false", raw: "false", type: "boolean", want: false },
+  ];
+  for (const entry of cases) {
+    assert.deepEqual(convertBrowser17AccessibilityText(entry.raw, entry.type), entry.want, entry.name);
+  }
+});
+
+test("browser 1.7 rejects empty, noncanonical, non-finite, and out-of-range scalars", () => {
+  const cases: Array<{ raw: string | null; type: string }> = [
+    { raw: "", type: "string" }, { raw: " \u2003 ", type: "string" }, { raw: null, type: "string" },
+    { raw: "+1", type: "integer" }, { raw: "01", type: "integer" }, { raw: "-01", type: "integer" },
+    { raw: "1.0", type: "integer" }, { raw: "1e2", type: "integer" }, { raw: "1,000", type: "integer" },
+    { raw: "$1", type: "integer" }, { raw: "9007199254740992", type: "integer" },
+    { raw: "-9007199254740992", type: "integer" }, { raw: "+1", type: "number" },
+    { raw: ".5", type: "number" }, { raw: "1.", type: "number" }, { raw: "01", type: "number" },
+    { raw: "1,000", type: "number" }, { raw: "$1", type: "number" }, { raw: "NaN", type: "number" },
+    { raw: "Infinity", type: "number" }, { raw: "-Infinity", type: "number" }, { raw: "1e309", type: "number" },
+    { raw: "True", type: "boolean" }, { raw: "FALSE", type: "boolean" }, { raw: "0", type: "boolean" },
+    { raw: "[]", type: "array" }, { raw: "{}", type: "object" }, { raw: "null", type: "null" },
+  ];
+  for (const entry of cases) {
+    assert.throws(
+      () => convertBrowser17AccessibilityText(entry.raw, entry.type),
+      (error: unknown) => error instanceof DriverFailure && error.code === "invalid_response",
+      `${entry.type}:${entry.raw ?? "null source"}`,
+    );
+  }
+});
+
+test("browser 1.7 converts a11y text while browser 1.5 and 1.6 extraction remain unchanged", async () => {
+  let textReads = 0;
+  const locator = {
+    first: () => locator,
+    waitFor: async () => undefined,
+    count: async () => 1,
+    evaluate: async () => "span",
+    textContent: async () => { textReads += 1; return " 42 "; },
+  };
+  const page = { getByRole: () => locator } as unknown as Page;
+  const output = { count: { type: "integer", source: "a11y" as const, locator: { role: "status", name: "Count" } } };
+
+  assert.deepEqual(await extractOutputs(page, output, "uws.browser.1.5"), { count: "42" });
+  assert.deepEqual(await extractOutputs(page, output, "uws.browser.1.6"), { count: "42" });
+  assert.deepEqual(await extractOutputs(page, output, "uws.browser.1.7"), { count: 42 });
+  assert.equal(textReads, 3);
+});
+
+test("browser 1.7 presence preserves Boolean matching without reading text", async () => {
+  let textRead = false;
+  const locator = { count: async () => 1, textContent: async () => { textRead = true; return "secret page text"; } };
+  const page = { getByRole: () => locator } as unknown as Page;
+  const output = { goal_present: { type: "boolean", source: "a11y" as const, locator: { role: "heading" }, presence: true } };
+
+  assert.deepEqual(await extractOutputs(page, output, "uws.browser.1.7"), { goal_present: true });
+  assert.equal(textRead, false);
+  await assert.rejects(
+    () => extractOutputs(page, { invalid: { ...output.goal_present, type: "string" } }, "uws.browser.1.7"),
+    (error: unknown) => error instanceof DriverFailure && error.code === "invalid_response",
+  );
+});
+
+test("browser 1.7 is v3-only and conversion failures disclose no page text", async () => {
+  const secretText = "$9,999 private";
+  const locator = {
+    first: () => locator,
+    waitFor: async () => undefined,
+    count: async () => 1,
+    textContent: async () => secretText,
+  };
+  const page = {
+    url: () => "https://allowed.example/dashboard",
+    mainFrame: () => ({ childFrames: () => [] }),
+    getByRole: () => locator,
+    locator: () => ({ count: async () => 0 }),
+  } as unknown as Page;
+  const context = { pages: () => [page], close: async () => undefined } as unknown as BrowserContext;
+  const messages: Array<Record<string, unknown>> = [];
+  const driver = new PersistentBrowserDriver(
+    { next: async () => ({ done: true, value: undefined }) },
+    (message) => messages.push(message as Record<string, unknown>),
+  );
+  const sessions = (driver as unknown as { sessions: Map<string, unknown> }).sessions;
+  sessions.set("member", {
+    context, page, visited: [], runtime: new RuntimeContexts(context, page, undefined, new Set(["https://allowed.example"])),
+    navigation: { setAllowed: () => undefined, assertSafe: () => undefined },
+  });
+  const action = {
+    version: "udon.browser-driver.v2" as const, profile: "uws.browser.1.7" as const,
+    operationId: "read", sourceDigest: "sha256:test", actionName: "read",
+    allowedOrigins: ["https://allowed.example"], parameters: {},
+    action: { sequence: [], outputs: { total: { type: "integer", source: "a11y" as const, locator: { role: "status", name: "Total" } } } },
+  };
+  await driver.action({ version: "udon.browser-driver.v3", type: "action", requestId: "v3", operationId: "read", session: "member", action });
+  assert.deepEqual(messages.at(-1), {
+    version: "udon.browser-driver.v3", type: "result", requestId: "v3", result: "failure", failureCode: "invalid_response",
+  });
+  assert.equal(JSON.stringify(messages).includes(secretText), false);
+
+  messages.length = 0;
+  await driver.action({
+    version: "udon.browser-driver.v2", type: "action", requestId: "v2", operationId: "read", session: "member",
+    action: { ...action, version: "udon.browser-driver.v1" },
+  });
+  assert.deepEqual(messages.at(-1), {
+    version: "udon.browser-driver.v2", type: "result", requestId: "v2", result: "failure", failureCode: "invalid_response",
+  });
 });
 
 test("structured-data outputs default an omitted property to the output name", async () => {

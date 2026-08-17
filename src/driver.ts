@@ -105,6 +105,7 @@ export class PersistentBrowserDriver {
       if (!request.session || !request.action || request.action.version !== expectedActionVersion) {
         throw new DriverFailure("invalid_response");
       }
+      validateActionProfile(request);
       if (request.version === protocolVersionV3 && request.action.allowedOrigins.some((origin) => exactOrigin(origin) !== origin)) {
         throw new DriverFailure("origin_rejected");
       }
@@ -143,8 +144,8 @@ export class PersistentBrowserDriver {
         } else await rejectCaptcha(session.page);
         assertAllowedURL(session.page.url(), allowed);
         outputs = session.runtime
-          ? await extractOutputsV3(session.runtime, request.action.action.outputs ?? {})
-          : await extractOutputs(session.page, request.action.action.outputs ?? {});
+          ? await extractOutputsV3(session.runtime, request.action.action.outputs ?? {}, request.action.profile)
+          : await extractOutputs(session.page, request.action.action.outputs ?? {}, request.action.profile);
         visitedUrls = attestedVisitedURLs(session.page.url(), session.visited.slice(visitedStart));
       } finally {
         session.visited.splice(visitedStart);
@@ -314,6 +315,17 @@ function validateAuthenticationMessage(request: AuthenticateMessage): void {
     const allowed = new Set(request.allowedOrigins);
     if (profileOrigins.some((origin) => !allowed.has(origin))) throw new DriverFailure("origin_rejected");
   }
+}
+
+function validateActionProfile(request: ActionMessage): void {
+  const profile = request.action.profile;
+  if (request.version === protocolVersionV3) {
+    if (profile !== undefined && profile !== "uws.browser.1.5" && profile !== "uws.browser.1.6" && profile !== "uws.browser.1.7") {
+      throw new DriverFailure("invalid_response");
+    }
+    return;
+  }
+  if (profile !== undefined && profile !== "uws.browser.1.5") throw new DriverFailure("invalid_response");
 }
 
 async function browserStep(page: Page, step: Record<string, unknown>, allowed: Set<string>): Promise<void> {
@@ -547,19 +559,26 @@ export function attestedVisitedURLs(currentURL: string, visited: string[]): stri
   return unique([...visited, currentURL].filter((value) => value !== "about:blank"));
 }
 
-export async function extractOutputs(page: BrowserTarget, outputs: Record<string, BrowserOutput>): Promise<Record<string, unknown>> {
+export async function extractOutputs(
+  page: BrowserTarget,
+  outputs: Record<string, BrowserOutput>,
+  profile?: "uws.browser.1.5" | "uws.browser.1.6" | "uws.browser.1.7",
+): Promise<Record<string, unknown>> {
   const result: Record<string, unknown> = {};
   for (const [name, output] of Object.entries(outputs)) {
     if (output.source === "a11y") {
       if (!output.locator) throw new DriverFailure("invalid_response");
       if (output.presence !== undefined) {
+        if (profile === "uws.browser.1.7" && output.type !== "boolean") throw new DriverFailure("invalid_response");
         const locator = locatorFor(page, output.locator);
         const count = await locator.count();
         if (count > 1) throw new DriverFailure("ambiguous_locator");
         result[name] = count === 1;
       } else {
         const locator = await exactLocator(page, output.locator);
-        result[name] = await locatorOutput(locator, output);
+        result[name] = profile === "uws.browser.1.7"
+          ? convertBrowser17AccessibilityText(await locator.textContent(), output.type)
+          : await locatorOutput(locator, output);
       }
     } else if (output.source === "css") {
       if (!output.selector) throw new DriverFailure("invalid_response");
@@ -581,14 +600,44 @@ export async function extractOutputs(page: BrowserTarget, outputs: Record<string
   return result;
 }
 
-export async function extractOutputsV3(runtime: RuntimeContexts, outputs: Record<string, BrowserOutput>): Promise<Record<string, unknown>> {
+export async function extractOutputsV3(
+  runtime: RuntimeContexts,
+  outputs: Record<string, BrowserOutput>,
+  profile?: "uws.browser.1.5" | "uws.browser.1.6" | "uws.browser.1.7",
+): Promise<Record<string, unknown>> {
   const result: Record<string, unknown> = {};
   for (const [name, output] of Object.entries(outputs)) {
     const target = await runtime.target(output.context);
     const { context: _context, ...portable } = output;
-    Object.assign(result, await extractOutputs(target, { [name]: portable }));
+    Object.assign(result, await extractOutputs(target, { [name]: portable }, profile));
   }
   return result;
+}
+
+const browser17IntegerPattern = /^-?(?:0|[1-9][0-9]*)$/u;
+const browser17NumberPattern = /^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?$/u;
+
+export function convertBrowser17AccessibilityText(raw: string | null, outputType: string): string | number | boolean {
+  const text = raw?.trim() ?? "";
+  if (text === "") throw new DriverFailure("invalid_response");
+  if (outputType === "string") return text;
+  if (outputType === "integer") {
+    if (!browser17IntegerPattern.test(text)) throw new DriverFailure("invalid_response");
+    const value = Number(text);
+    if (!Number.isSafeInteger(value)) throw new DriverFailure("invalid_response");
+    return value;
+  }
+  if (outputType === "number") {
+    if (!browser17NumberPattern.test(text)) throw new DriverFailure("invalid_response");
+    const value = Number(text);
+    if (!Number.isFinite(value)) throw new DriverFailure("invalid_response");
+    return value;
+  }
+  if (outputType === "boolean") {
+    if (text === "true") return true;
+    if (text === "false") return false;
+  }
+  throw new DriverFailure("invalid_response");
 }
 
 async function locatorOutput(locator: Locator, output: BrowserOutput): Promise<unknown> {
