@@ -22,6 +22,26 @@ test("portable context graphs reject cycles, excessive depth, and origin mismatc
   }, allowed), (error: unknown) => error instanceof DriverFailure && error.code === "origin_rejected");
 });
 
+test("only a reviewed main navigation may start from about:blank", async () => {
+  let url = "about:blank";
+  const main = {
+    url: () => url,
+    mainFrame: () => ({ childFrames: () => [] }),
+    isClosed: () => false,
+  } as unknown as Page;
+  const runtime = new RuntimeContexts(fakeContext([main]), main, undefined, new Set(["https://members.example"]));
+
+  assert.equal(await runtime.navigationTarget("main"), main);
+  await assert.rejects(() => runtime.target("main"), (error: unknown) =>
+    error instanceof DriverFailure && error.code === "origin_rejected");
+
+  url = "https://members.example/login";
+  assert.equal(await runtime.navigationTarget("main"), main);
+  url = "https://evil.invalid/login";
+  await assert.rejects(() => runtime.navigationTarget("main"), (error: unknown) =>
+    error instanceof DriverFailure && error.code === "origin_rejected");
+});
+
 test("frames resolve uniquely by direct parent, exact origin, path, and name", async () => {
   const login = fakeFrame("https://login.example/embedded/login", "Login");
   const main = fakePage("https://members.example/dashboard", [login]);

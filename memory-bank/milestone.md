@@ -7,6 +7,7 @@
 | M03 | `status-M03.md` | Replay UWS popup/frame contexts through additive driver protocol v3 |
 | M04 | `status-M04.md` | Revalidate cached contexts and qualify authored replay pairs |
 | M05 | `status-M05.md` | Replay UWS browser 1.7 typed accessibility outputs through driver v3 |
+| M06 | `status-M06.md` | Close real-scenario navigation and browser 1.5 wait compatibility gaps |
 
 M01 establishes the isolated v2 NDJSON process, closed authentication and
 browser macro execution, all planned MFA variants, exact-origin and ambiguity
@@ -31,3 +32,10 @@ M05 retains every browser 1.5/1.6 extraction path and adds browser 1.7 only to
 driver v3. Accessibility text is converted according to UWS 1.9 after Unicode
 edge trimming; invalid lexical forms fail with the closed `invalid_response`
 code and never disclose page text. It is complete.
+
+M06 closes three lifecycle gaps exposed by the deterministic real-browser
+scenario matrix: a reviewed first v3 navigation may start from the isolated
+main `about:blank` page, ordinary v3 authentication clicks settle the load
+before the success proof, and persistent v2 accepts browser 1.5's direct
+accessibility `wait_for` wire shape. All later origin, context, ambiguity, and
+closed-failure checks remain unchanged.

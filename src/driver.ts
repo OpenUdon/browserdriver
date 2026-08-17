@@ -212,7 +212,7 @@ export class PersistentBrowserDriver {
     if ("navigate" in step) {
       const navigation = typeof step.navigate === "string" ? { url: step.navigate, context: "main" } : step.navigate;
       assertAllowedURL(navigation.url, allowed);
-      const target = await runtime.target(navigation.context);
+      const target = await runtime.navigationTarget(navigation.context);
       await target.goto(navigation.url, { waitUntil: "domcontentloaded" });
       assertAllowedURL(target.url(), allowed);
       runtime.assertNoExtraPages();
@@ -229,7 +229,10 @@ export class PersistentBrowserDriver {
       const target = await runtime.target(step.click.context);
       const locator = await exactLocator(target, step.click.locator);
       if (step.click.opensContext) await openPopup(runtime, step.click.context ?? "main", step.click.opensContext, target, locator);
-      else await locator.click();
+      else {
+        await locator.click();
+        await target.waitForLoadState("load");
+      }
       runtime.assertNoExtraPages();
       return;
     }
@@ -426,9 +429,12 @@ async function optionalWait(page: Page, wait?: BrowserWait): Promise<void> {
     await exactLocator(page, wait.locator);
     return;
   }
-  if (!("navigation" in wait)) throw new DriverFailure("invalid_response");
-  const state = wait.navigation === "network_idle" ? "networkidle" : wait.navigation;
-  await page.waitForLoadState(state);
+  if ("navigation" in wait) {
+    const state = wait.navigation === "network_idle" ? "networkidle" : wait.navigation;
+    await page.waitForLoadState(state);
+    return;
+  }
+  await exactLocator(page, wait);
 }
 
 async function optionalWaitV3(runtime: RuntimeContexts, wait: BrowserWait | undefined, fallbackContext: string): Promise<void> {

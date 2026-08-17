@@ -77,6 +77,21 @@ export class RuntimeContexts {
     return frames[0]!;
   }
 
+  // The main page begins at about:blank before the reviewed first navigation.
+  // Only that navigation lookup may use the initial page without an origin;
+  // every other lookup continues to require an allowed current origin.
+  async navigationTarget(id = "main"): Promise<BrowserTarget> {
+    const selected = id || "main";
+    const target = this.targets.get(selected);
+    if (selected === "main" && target && isPage(target) && target.url() === "about:blank") {
+      if ((typeof target.isClosed === "function" && target.isClosed()) || !this.browserContext.pages().includes(target)) {
+        throw new DriverFailure("invalid_response");
+      }
+      return target;
+    }
+    return this.target(selected);
+  }
+
   definition(id: string): ContextSpec | undefined { return this.definitions.get(id); }
 
   registerPopup(id: string, parent: string, page: Page): void {

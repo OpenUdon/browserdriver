@@ -9,7 +9,7 @@ import {
 } from "../src/driver.js";
 import { ReadlineMessageSource } from "../src/line-source.js";
 import { DriverFailure } from "../src/protocol.js";
-import type { ActionMessage } from "../src/protocol.js";
+import type { ActionMessage, AuthenticateMessage } from "../src/protocol.js";
 import { RuntimeContexts } from "../src/contexts.js";
 
 test("navigation guard blocks a redirect origin before continuing its request", async () => {
@@ -162,6 +162,96 @@ test("repeated actions discard their reported navigation window", async () => {
   for (const result of results) {
     assert.deepEqual((result.response as Record<string, unknown>).visitedUrls, ["https://allowed.example/current"]);
   }
+});
+
+test("v2 action accepts the browser 1.5 direct accessibility wait shape", async () => {
+  const locator = { first: () => locator, waitFor: async () => undefined, count: async () => 1 };
+  const page = {
+    url: () => "https://allowed.example/current",
+    getByRole: () => locator,
+    locator: () => ({ count: async () => 0 }),
+  } as unknown as Page;
+  const messages: Array<Record<string, unknown>> = [];
+  const driver = new PersistentBrowserDriver(
+    { next: async () => ({ done: true, value: undefined }) },
+    (message) => messages.push(message as Record<string, unknown>),
+  );
+  const sessions = (driver as unknown as { sessions: Map<string, unknown> }).sessions;
+  sessions.set("member", {
+    context: { close: async () => undefined }, page, visited: [],
+    navigation: { setAllowed: () => undefined, assertSafe: () => undefined },
+  });
+  await driver.action({
+    version: "udon.browser-driver.v2", type: "action", requestId: "direct-wait", operationId: "read", session: "member",
+    action: {
+      version: "udon.browser-driver.v1", profile: "uws.browser.1.5", operationId: "read", sourceDigest: "sha256:test",
+      actionName: "read", allowedOrigins: ["https://allowed.example"], parameters: {},
+      action: {
+        sequence: [{ wait_for: { role: "heading", name: "Status" } }],
+        outputs: { present: { type: "boolean", source: "a11y", locator: { role: "heading", name: "Status" }, presence: true } },
+      },
+    },
+  });
+  const result = messages.at(-1)!;
+  assert.equal(result.type, "result");
+  assert.deepEqual((result.response as Record<string, unknown>).outputs, { present: true });
+});
+
+test("v3 authentication waits for an ordinary click navigation before success proof", async () => {
+  let currentURL = "about:blank";
+  let loadWaits = 0;
+  const locator = {
+    first: () => locator,
+    waitFor: async () => undefined,
+    count: async () => 1,
+    click: async () => { currentURL = "https://members.example/dashboard"; },
+  };
+  const page = {
+    url: () => currentURL,
+    isClosed: () => false,
+    mainFrame: () => ({ childFrames: () => [] }),
+    goto: async (url: string) => { currentURL = url; },
+    getByRole: () => locator,
+    locator: () => ({ count: async () => 0 }),
+    waitForLoadState: async () => { loadWaits += 1; },
+  } as unknown as Page;
+  const context = {
+    route: async () => undefined,
+    on: () => undefined,
+    newPage: async () => page,
+    pages: () => [page],
+    close: async () => undefined,
+  } as unknown as BrowserContext;
+  const messages: Array<Record<string, unknown>> = [];
+  const driver = new PersistentBrowserDriver(
+    { next: async () => ({ done: true, value: undefined }) },
+    (message) => messages.push(message as Record<string, unknown>),
+  );
+  (driver as unknown as { createContext: () => Promise<BrowserContext> }).createContext = async () => context;
+  const request: AuthenticateMessage = {
+    version: "udon.browser-driver.v3", type: "authenticate", requestId: "auth", operationId: "authenticate",
+    sourceDigest: "sha256:test", flow: "login", session: "member", allowedOrigins: ["https://members.example"],
+    credentialBindings: {}, credentialEnvironment: {},
+    profile: {
+      profile: "uws.browser-authentication.1.1",
+      info: { title: "Member", applicationOrigins: ["https://members.example"], authenticationOrigins: ["https://members.example"] },
+      credentialSlots: {},
+      flows: {
+        login: {
+          sequence: [
+            { navigate: { url: "https://members.example/login", context: "main" } },
+            { click: { locator: { role: "button", name: "Sign in" }, context: "main" } },
+          ],
+          effects: ["establishes_session"],
+          success: { origin: "https://members.example", path: "/dashboard", context: "main", locator: { role: "heading", name: "Dashboard" } },
+        },
+      },
+    },
+  };
+
+  await driver.authenticate(request);
+  assert.equal(loadWaits, 1, JSON.stringify(messages));
+  assert.equal(messages.at(-1)!.result, "success");
 });
 
 test("v3 action resolves context-qualified waits and outputs while v2 stays accepted", async () => {
