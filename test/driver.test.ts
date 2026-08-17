@@ -407,6 +407,31 @@ test("browser 1.7 presence preserves Boolean matching without reading text", asy
   );
 });
 
+test("presence false preserves declared a11y text semantics", async () => {
+  let textReads = 0;
+  const locator = {
+    first: () => locator,
+    waitFor: async () => undefined,
+    count: async () => 1,
+    evaluate: async () => "span",
+    textContent: async () => { textReads += 1; return " Dashboard "; },
+  };
+  const page = { getByRole: () => locator } as unknown as Page;
+  const output = {
+    title: {
+      type: "string",
+      source: "a11y" as const,
+      locator: { role: "heading", name: "Title" },
+      presence: false,
+    },
+  };
+
+  assert.deepEqual(await extractOutputs(page, output, "uws.browser.1.5"), { title: "Dashboard" });
+  assert.deepEqual(await extractOutputs(page, output, "uws.browser.1.6"), { title: "Dashboard" });
+  assert.deepEqual(await extractOutputs(page, output, "uws.browser.1.7"), { title: "Dashboard" });
+  assert.equal(textReads, 3);
+});
+
 test("browser 1.7 is v3-only and conversion failures disclose no page text", async () => {
   const secretText = "$9,999 private";
   const locator = {

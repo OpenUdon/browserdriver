@@ -574,7 +574,7 @@ export async function extractOutputs(
   for (const [name, output] of Object.entries(outputs)) {
     if (output.source === "a11y") {
       if (!output.locator) throw new DriverFailure("invalid_response");
-      if (output.presence !== undefined) {
+      if (output.presence === true) {
         if (profile === "uws.browser.1.7" && output.type !== "boolean") throw new DriverFailure("invalid_response");
         const locator = locatorFor(page, output.locator);
         const count = await locator.count();
@@ -589,7 +589,7 @@ export async function extractOutputs(
     } else if (output.source === "css") {
       if (!output.selector) throw new DriverFailure("invalid_response");
       const locator = page.locator(output.selector);
-      if (output.presence !== undefined) {
+      if (output.presence === true) {
         result[name] = await locator.count() > 0;
       } else {
         if (await locator.count() !== 1) throw new DriverFailure("ambiguous_locator");
@@ -647,7 +647,7 @@ export function convertBrowser17AccessibilityText(raw: string | null, outputType
 }
 
 async function locatorOutput(locator: Locator, output: BrowserOutput): Promise<unknown> {
-  if (output.presence !== undefined) return await locator.count() > 0;
+  if (output.presence === true) return await locator.count() > 0;
   if (output.attribute) return locator.getAttribute(output.attribute);
   if (output.property) return locator.evaluate((element, property) => (element as unknown as Record<string, unknown>)[property], output.property);
   const tag = await locator.evaluate((element) => element.tagName.toLowerCase());

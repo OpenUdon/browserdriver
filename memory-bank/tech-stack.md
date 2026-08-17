@@ -19,3 +19,7 @@ the UWS 1.7 main-page contract; v3 accepts UWS 1.8 authentication 1.1 followed
 by browser 1.5/1.6 or UWS 1.9 browser 1.7, adds portable context qualification,
 cached-target revalidation, and normative scalar conversion, and does not add
 another browser implementation.
+
+Output extraction treats only `presence === true` as Boolean match mode. A
+present-but-false flag is semantically identical to omission and therefore
+preserves the output's declared type across browser 1.5, 1.6, and 1.7.

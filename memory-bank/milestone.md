@@ -8,6 +8,7 @@
 | M04 | `status-M04.md` | Revalidate cached contexts and qualify authored replay pairs |
 | M05 | `status-M05.md` | Replay UWS browser 1.7 typed accessibility outputs through driver v3 |
 | M06 | `status-M06.md` | Close real-scenario navigation and browser 1.5 wait compatibility gaps |
+| M07 | `status-M07.md` | Align false presence flags with declared output extraction semantics |
 
 M01 establishes the isolated v2 NDJSON process, closed authentication and
 browser macro execution, all planned MFA variants, exact-origin and ambiguity
@@ -39,3 +40,7 @@ main `about:blank` page, ordinary v3 authentication clicks settle the load
 before the success proof, and persistent v2 accepts browser 1.5's direct
 accessibility `wait_for` wire shape. All later origin, context, ambiguity, and
 closed-failure checks remain unchanged.
+
+M07 coordinates Browserdriver with the immutable browser 1.7 schema wording:
+only literal `presence: true` activates Boolean match mode. A false flag uses
+the declared text/scalar extraction path in browser 1.5, 1.6, and 1.7.

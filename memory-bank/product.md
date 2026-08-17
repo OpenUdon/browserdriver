@@ -10,6 +10,8 @@ adds trusted UWS 1.8 authentication 1.1 with browser 1.5 main-page or browser
 1.6 popup/frame replay and UWS 1.9 browser 1.7 typed accessibility outputs,
 exact continuously revalidated context inventory, and child-context origin
 enforcement. It does not accept authoring sessions or Playwright-Go handles.
+For every accepted browser profile, only literal `presence: true` selects
+Boolean match mode; `presence: false` retains the declared extraction type.
 
 Enrollment, recovery, password changes, consent grants, logout, account
 creation, CAPTCHA bypass, arbitrary browser scripts, and public session storage

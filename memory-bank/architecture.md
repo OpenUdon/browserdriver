@@ -37,6 +37,7 @@ authority after origin, identity, parentage, attachment, or uniqueness changes.
 Browser 1.7 action requests carry their exact portable profile discriminator.
 After unique accessibility matching, the driver trims Unicode edge whitespace
 and performs the UWS locale-free string/safe-integer/finite-number/lowercase-
-Boolean conversion. Presence keeps the prior Boolean match path and never
-reads text. Conversion failures collapse to `invalid_response` without page
-text; browser 1.5/1.6 keep their existing extraction path.
+Boolean conversion. Literal `presence: true` keeps the prior Boolean match path
+and never reads text; `presence: false` follows the declared typed-text path.
+Conversion failures collapse to `invalid_response` without page text; browser
+1.5/1.6 keep their existing extraction path.
