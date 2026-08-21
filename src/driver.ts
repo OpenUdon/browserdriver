@@ -77,7 +77,9 @@ export class PersistentBrowserDriver {
           navigation.assertSafe();
         }
       }
+      navigation.assertSafe();
       if (runtime) await runtime.resolveAll();
+      navigation.assertSafe();
       const successTarget = runtime ? await runtime.target(flow.success.context) : page;
       if (runtime) {
         runtime.assertNoExtraPages();
@@ -581,7 +583,7 @@ export async function extractOutputs(
         if (count > 1) throw new DriverFailure("ambiguous_locator");
         result[name] = count === 1;
       } else {
-        const locator = await exactLocator(page, output.locator);
+        const locator = await exactOutputLocator(page, output.locator);
         result[name] = profile === "uws.browser.1.7"
           ? convertBrowser17AccessibilityText(await locator.textContent(), output.type)
           : await locatorOutput(locator, output);
@@ -604,6 +606,15 @@ export async function extractOutputs(
     }
   }
   return result;
+}
+
+async function exactOutputLocator(page: BrowserTarget, locator: import("./protocol.js").LocatorSpec): Promise<Locator> {
+  try {
+    return await exactLocator(page, locator);
+  } catch (error) {
+    if (error instanceof DriverFailure) throw error;
+    throw new DriverFailure("invalid_response");
+  }
 }
 
 export async function extractOutputsV3(

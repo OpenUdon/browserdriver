@@ -333,6 +333,20 @@ test("a11y presence returns false for no match and rejects ambiguity", async () 
     error instanceof DriverFailure && error.code === "ambiguous_locator");
 });
 
+test("a11y output visibility failures use invalid_response", async () => {
+  const locator = {
+    first: () => locator,
+    waitFor: async () => { throw new Error("hidden output"); },
+  };
+  const page = { getByRole: () => locator } as unknown as Page;
+  await assert.rejects(
+    () => extractOutputs(page, {
+      count: { type: "integer", source: "a11y", locator: { role: "status", name: "Count" } },
+    }, "uws.browser.1.7"),
+    (error: unknown) => error instanceof DriverFailure && error.code === "invalid_response",
+  );
+});
+
 test("browser 1.7 converts canonical trimmed accessibility scalars", () => {
   const cases: Array<{ name: string; raw: string; type: string; want: string | number | boolean }> = [
     { name: "string unicode trim", raw: "\u00a0 Dashboard \u2003", type: "string", want: "Dashboard" },
