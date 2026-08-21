@@ -20,6 +20,10 @@ by browser 1.5/1.6 or UWS 1.9 browser 1.7, adds portable context qualification,
 cached-target revalidation, and normative scalar conversion, and does not add
 another browser implementation.
 
+The v2/v3 closed failure vocabulary includes `invalid_context` for absent,
+undeclared, closed, detached, or substituted runtime contexts. Malformed
+protocol/profile shapes remain `invalid_response`.
+
 Output extraction treats only `presence === true` as Boolean match mode. A
 present-but-false flag is semantically identical to omission and therefore
 preserves the output's declared type across browser 1.5, 1.6, and 1.7.

@@ -38,4 +38,7 @@ test("failure messages carry only a closed code", () => {
     version: protocolVersion, type: "result", requestId: "request", result: "failure", failureCode: "credentials_invalid",
   });
   assert.equal(JSON.stringify(value).includes("secret"), false);
+  assert.deepEqual(failure("context", "invalid_context", protocolVersionV3), {
+    version: protocolVersionV3, type: "result", requestId: "context", result: "failure", failureCode: "invalid_context",
+  });
 });

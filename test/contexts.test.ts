@@ -20,6 +20,9 @@ test("portable context graphs reject cycles, excessive depth, and origin mismatc
   assert.throws(() => validateDefinitions({
     external: { kind: "popup", parent: "main", origin: "https://evil.invalid" },
   }, allowed), (error: unknown) => error instanceof DriverFailure && error.code === "origin_rejected");
+  assert.throws(() => validateDefinitions({
+    malformed: { kind: "frame", parent: "missing", origin: "https://login.example" },
+  }, allowed), (error: unknown) => error instanceof DriverFailure && error.code === "invalid_response");
 });
 
 test("only a reviewed main navigation may start from about:blank", async () => {
@@ -68,13 +71,15 @@ test("popups must be declared, explicitly registered, and exactly inventoried", 
   const runtime = new RuntimeContexts(context, main, {
     idp_popup: { kind: "popup", parent: "main", origin: "https://login.example" },
   }, new Set(["https://members.example", "https://login.example"]));
-  await assert.rejects(() => runtime.resolveAll(), DriverFailure);
+  await assert.rejects(() => runtime.resolveAll(), (error: unknown) =>
+    error instanceof DriverFailure && error.code === "invalid_context");
   const popup = fakePage("https://login.example/", []);
   pages.push(popup);
   runtime.registerPopup("idp_popup", "main", popup);
   await runtime.resolveAll();
   pages.push(fakePage("https://login.example/extra", []));
-  assert.throws(() => runtime.assertNoExtraPages(), DriverFailure);
+  assert.throws(() => runtime.assertNoExtraPages(), (error: unknown) =>
+    error instanceof DriverFailure && error.code === "invalid_context");
 });
 
 test("cached frames and popups are revalidated for identity, ambiguity, origin, and detachment", async () => {
@@ -96,7 +101,7 @@ test("cached frames and popups are revalidated for identity, ambiguity, origin, 
 
   frameURL = "https://login.example/changed";
   await assert.rejects(() => runtime.target("login_frame"), (error: unknown) =>
-    error instanceof DriverFailure && error.code === "invalid_response");
+    error instanceof DriverFailure && error.code === "invalid_context");
   frameURL = "https://login.example/embedded/login";
   children.push(fakeFrame(frameURL, "Login"));
   await assert.rejects(() => runtime.target("login_frame"), (error: unknown) =>
@@ -104,7 +109,7 @@ test("cached frames and popups are revalidated for identity, ambiguity, origin, 
   children.pop();
   detached = true;
   await assert.rejects(() => runtime.target("login_frame"), (error: unknown) =>
-    error instanceof DriverFailure && error.code === "invalid_response");
+    error instanceof DriverFailure && error.code === "invalid_context");
 
   let popupURL = "https://login.example/";
   let popupClosed = false;
@@ -121,15 +126,31 @@ test("cached frames and popups are revalidated for identity, ambiguity, origin, 
   await popupRuntime.target("idp_popup");
   popupURL = "https://members.example/escaped";
   await assert.rejects(() => popupRuntime.target("idp_popup"), (error: unknown) =>
-    error instanceof DriverFailure && error.code === "origin_rejected");
+    error instanceof DriverFailure && error.code === "invalid_context");
   popupURL = "https://login.example/";
   popupClosed = true;
   await assert.rejects(() => popupRuntime.target("idp_popup"), (error: unknown) =>
-    error instanceof DriverFailure && error.code === "invalid_response");
+    error instanceof DriverFailure && error.code === "invalid_context");
   popupClosed = false;
   pages.shift();
   await assert.rejects(() => popupRuntime.target("idp_popup"), (error: unknown) =>
-    error instanceof DriverFailure && error.code === "invalid_response");
+    error instanceof DriverFailure && error.code === "invalid_context");
+});
+
+test("missing, undeclared, and substituted contexts use invalid_context", async () => {
+  const main = fakePage("https://members.example/dashboard", []);
+  const runtime = new RuntimeContexts(fakeContext([main]), main, {
+    child: { kind: "frame", parent: "main", origin: "https://members.example", path: "/child" },
+  }, new Set(["https://members.example"]));
+
+  await assert.rejects(() => runtime.target("undeclared"), (error: unknown) =>
+    error instanceof DriverFailure && error.code === "invalid_context");
+  await assert.rejects(() => runtime.target("child"), (error: unknown) =>
+    error instanceof DriverFailure && error.code === "invalid_context");
+  assert.throws(() => runtime.mergeForAction({
+    child: { kind: "frame", parent: "main", origin: "https://members.example", path: "/replacement" },
+  }, new Set(["https://members.example"])), (error: unknown) =>
+    error instanceof DriverFailure && error.code === "invalid_context");
 });
 
 function fakeFrame(url: string, name: string, children: Frame[] = []): Frame {

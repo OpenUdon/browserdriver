@@ -24,7 +24,7 @@ Output message types are:
 
 Failure codes are `mfa_timeout`, `mfa_denied`, `credentials_invalid`,
 `session_expired`, `driver_error`, `unsupported_challenge`,
-`captcha_required`, `origin_rejected`, `ambiguous_locator`, and
+`captcha_required`, `origin_rejected`, `ambiguous_locator`, `invalid_context`, and
 `invalid_response`. There is no free-form error field.
 
 ## V3 portable contexts
@@ -47,6 +47,11 @@ must be the sole page opened by that click. Automatic, missing, duplicate,
 changed, closed, or extra contexts fail closed. Context graphs are acyclic,
 bounded to depth four, and every origin must be canonical and present in the
 request allowlist.
+
+Missing, undeclared, closed, detached, or substituted runtime contexts return
+`invalid_context`. Malformed protocol envelopes and malformed profile/context
+definitions return `invalid_response`; origin escapes remain
+`origin_rejected`, and multiple matching targets remain `ambiguous_locator`.
 
 Resolved handles are caches, never continuing authority. Before every use, a
 page must still be present, open, and on an allowed exact origin; a popup must

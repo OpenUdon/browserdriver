@@ -26,8 +26,9 @@ subresources or child frames and is not a network exfiltration boundary.
 V3 is an additive session mode for authentication 1.1 followed by browser 1.5,
 1.6, or 1.7. A runtime context registry resolves declared frames among direct children
 by exact origin/path/name and registers a popup only around its explicit
-`opensContext` click. Missing, ambiguous, duplicate, changed, closed, automatic,
-or extra contexts reject the request. The v3 navigation guard covers main,
+`opensContext` click. Missing, undeclared, changed, closed, automatic, or extra
+contexts return `invalid_context`; malformed definitions retain
+`invalid_response`, and ambiguity remains separately typed. The v3 navigation guard covers main,
 popup, and child-frame redirects. Context graphs remain acyclic and depth-four;
 all handles and session material remain inside the one driver process.
 Cached targets are revalidated before each use and the full declared inventory

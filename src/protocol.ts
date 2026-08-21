@@ -15,7 +15,7 @@ export type ChallengeKind = (typeof challengeKinds)[number];
 
 export const failureCodes = [
   "mfa_timeout", "mfa_denied", "credentials_invalid", "session_expired", "driver_error",
-  "unsupported_challenge", "captcha_required", "origin_rejected", "ambiguous_locator", "invalid_response",
+  "unsupported_challenge", "captcha_required", "origin_rejected", "ambiguous_locator", "invalid_context", "invalid_response",
 ] as const;
 export type FailureCode = (typeof failureCodes)[number];
 

@@ -9,6 +9,7 @@
 | M05 | `status-M05.md` | Replay UWS browser 1.7 typed accessibility outputs through driver v3 |
 | M06 | `status-M06.md` | Close real-scenario navigation and browser 1.5 wait compatibility gaps |
 | M07 | `status-M07.md` | Align false presence flags with declared output extraction semantics |
+| M08 | `status-M08.md` | Distinguish runtime context failures from malformed response/profile input |
 
 M01 establishes the isolated v2 NDJSON process, closed authentication and
 browser macro execution, all planned MFA variants, exact-origin and ambiguity
@@ -44,3 +45,8 @@ closed-failure checks remain unchanged.
 M07 coordinates Browserdriver with the immutable browser 1.7 schema wording:
 only literal `presence: true` activates Boolean match mode. A false flag uses
 the declared text/scalar extraction path in browser 1.5, 1.6, and 1.7.
+
+M08 adds the closed `invalid_context` failure code to v2/v3 and uses it for
+missing, undeclared, closed, detached, extra, or substituted runtime contexts.
+Malformed protocol and profile shapes retain `invalid_response`, while origin
+and ambiguity failures keep their existing codes.

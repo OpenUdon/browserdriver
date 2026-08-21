@@ -118,7 +118,7 @@ export class PersistentBrowserDriver {
       try {
         session.navigation.setAllowed(allowed);
         if (request.version === protocolVersionV3) {
-          if (!session.runtime) throw new DriverFailure("invalid_response");
+          if (!session.runtime) throw new DriverFailure("invalid_context");
           session.runtime.mergeForAction(request.action.contexts, allowed);
           await session.runtime.revalidateResolved();
           session.runtime.assertNoExtraPages();
