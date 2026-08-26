@@ -168,6 +168,143 @@ test("submit denial is final before mutation and a post-submit failure is indete
     () => readRegistrationCheckpointResponse(deniedLine, "request", "checkpoint", 100),
     (error: unknown) => error instanceof DriverFailure && error.code === "registration_checkpoint_denied",
   );
+  const invalidLine = {
+    next: async () => ({ done: false as const, value: JSON.stringify({
+      version: "udon.browser-driver.v4", type: "registration_checkpoint_response", requestId: "request",
+      checkpointId: "checkpoint", decision: "provide",
+    }) }),
+  };
+  await assert.rejects(
+    () => readRegistrationCheckpointResponse(invalidLine, "request", "checkpoint", 100),
+    (error: unknown) => error instanceof DriverFailure && error.code === "invalid_response",
+  );
+});
+
+test("submit approval immediately precedes one POST and uncertainty forbids another attempt", async () => {
+  const previousIdentifier = process.env.BROWSERDRIVER_TEST_IDENTIFIER;
+  const previousPassword = process.env.BROWSERDRIVER_TEST_PASSWORD;
+  process.env.BROWSERDRIVER_TEST_IDENTIFIER = "indeterminate@example.invalid";
+  process.env.BROWSERDRIVER_TEST_PASSWORD = "never-on-wire";
+  try {
+    const messages: Array<Record<string, unknown>> = [];
+    const events: string[] = [];
+    let handler: ((route: Route) => Promise<void>) | undefined;
+    let currentURL = "about:blank";
+    let contextCount = 0;
+    let closeCount = 0;
+    let postCount = 0;
+    const ordinaryLocator = {
+      first: () => ordinaryLocator, waitFor: async () => undefined, count: async () => 1,
+      fill: async () => undefined,
+      click: async () => {
+        events.push("submit_click");
+        const post = fakeRoute(`${origin}/register`, "POST");
+        await handler!(post.route);
+        if (post.continued()) postCount += 1;
+        currentURL = `${origin}/complete`;
+      },
+    };
+    const missingSuccess = {
+      first: () => missingSuccess,
+      waitFor: async () => { throw new Error("synthetic missing success proof"); },
+      count: async () => 0,
+    };
+    const page = {
+      url: () => currentURL,
+      goto: async (url: string) => {
+        const get = fakeRoute(url, "GET");
+        await handler!(get.route);
+        currentURL = url;
+      },
+      getByRole: (role: string) => role === "status" ? missingSuccess : ordinaryLocator,
+    } as unknown as Page;
+    const context = {
+      route: async (_: string, callback: (route: Route) => Promise<void>) => { handler = callback; },
+      newPage: async () => page, pages: () => [page], close: async () => { closeCount += 1; },
+    } as unknown as BrowserContext;
+    const source = {
+      next: async () => {
+        const checkpoint = messages.findLast((message) => message.type === "registration_checkpoint")!;
+        events.push(`decision:${String(checkpoint.kind)}`);
+        return { done: false as const, value: JSON.stringify({
+          version: "udon.browser-driver.v4", type: "registration_checkpoint_response", requestId: "registration",
+          checkpointId: checkpoint.checkpointId, decision: "continue",
+        }) };
+      },
+    };
+    const driver = new PersistentBrowserDriver(source, (message) => {
+      messages.push(message as Record<string, unknown>);
+      const value = message as Record<string, unknown>;
+      if (value.type === "registration_checkpoint") events.push(`checkpoint:${String(value.kind)}`);
+    }, { headed: true });
+    (driver as unknown as { createContext: () => Promise<BrowserContext> }).createContext = async () => {
+      contextCount += 1;
+      return context;
+    };
+
+    await driver.register(request());
+    assert.equal(messages.at(-1)!.failureCode, "registration_indeterminate");
+    assert.equal(postCount, 1);
+    assert.deepEqual(events.slice(-3), ["checkpoint:submit_approval", "decision:submit_approval", "submit_click"]);
+    assert.equal(closeCount, 1);
+
+    await driver.register({ ...request(), requestId: "registration_retry" });
+    assert.equal(messages.at(-1)!.failureCode, "registration_indeterminate");
+    assert.equal(contextCount, 1);
+    assert.equal(postCount, 1);
+    assert.equal(JSON.stringify(messages).includes("never-on-wire"), false);
+  } finally {
+    restoreEnvironment("BROWSERDRIVER_TEST_IDENTIFIER", previousIdentifier);
+    restoreEnvironment("BROWSERDRIVER_TEST_PASSWORD", previousPassword);
+  }
+});
+
+test("a denied submit checkpoint prevents the POST and still closes the fresh context", async () => {
+  const previousIdentifier = process.env.BROWSERDRIVER_TEST_IDENTIFIER;
+  const previousPassword = process.env.BROWSERDRIVER_TEST_PASSWORD;
+  process.env.BROWSERDRIVER_TEST_IDENTIFIER = "denied@example.invalid";
+  process.env.BROWSERDRIVER_TEST_PASSWORD = "denied-secret";
+  try {
+    let handler: ((route: Route) => Promise<void>) | undefined;
+    let currentURL = "about:blank";
+    let posts = 0;
+    let closed = false;
+    const locator = {
+      first: () => locator, waitFor: async () => undefined, count: async () => 1, fill: async () => undefined,
+      click: async () => {
+        posts += 1;
+        await handler!(fakeRoute(`${origin}/register`, "POST").route);
+      },
+    };
+    const page = {
+      url: () => currentURL,
+      goto: async (url: string) => { currentURL = url; },
+      getByRole: () => locator,
+    } as unknown as Page;
+    const context = {
+      route: async (_: string, callback: (route: Route) => Promise<void>) => { handler = callback; },
+      newPage: async () => page, pages: () => [page], close: async () => { closed = true; },
+    } as unknown as BrowserContext;
+    const messages: Array<Record<string, unknown>> = [];
+    const source = {
+      next: async () => {
+        const checkpoint = messages.findLast((message) => message.type === "registration_checkpoint")!;
+        return { done: false as const, value: JSON.stringify({
+          version: "udon.browser-driver.v4", type: "registration_checkpoint_response", requestId: "registration",
+          checkpointId: checkpoint.checkpointId, decision: "deny",
+        }) };
+      },
+    };
+    const driver = new PersistentBrowserDriver(source, (message) => messages.push(message as Record<string, unknown>), { headed: true });
+    (driver as unknown as { createContext: () => Promise<BrowserContext> }).createContext = async () => context;
+    await driver.register(request());
+    assert.equal(messages.at(-1)!.failureCode, "registration_checkpoint_denied");
+    assert.equal(posts, 0);
+    assert.equal(closed, true);
+  } finally {
+    restoreEnvironment("BROWSERDRIVER_TEST_IDENTIFIER", previousIdentifier);
+    restoreEnvironment("BROWSERDRIVER_TEST_PASSWORD", previousPassword);
+  }
 });
 
 function fakeRoute(url: string, method: string): {

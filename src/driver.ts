@@ -422,7 +422,8 @@ export async function readRegistrationCheckpointResponse(
   try { value = parseInput(line.value); }
   catch { throw new DriverFailure("invalid_response"); }
   if (value.version !== protocolVersionV4 || value.type !== "registration_checkpoint_response" ||
-      value.requestId !== requestId || value.checkpointId !== checkpointId) throw new DriverFailure("invalid_response");
+      value.requestId !== requestId || value.checkpointId !== checkpointId ||
+      (value.decision !== "continue" && value.decision !== "deny")) throw new DriverFailure("invalid_response");
   if (value.decision === "deny") throw new DriverFailure("registration_checkpoint_denied");
   return value;
 }
