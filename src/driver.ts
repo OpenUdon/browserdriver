@@ -2,11 +2,13 @@ import { chromium, type Browser, type BrowserContext, type Locator, type Page, t
 import {
   type ActionMessage, type AuthenticateMessage, type AuthenticationStep, type BrowserOutput, type BrowserWait,
   type ChallengeKind, type ChallengeResponseMessage, DriverFailure, challenge, failure,
-  protocolVersionV3, status, success,
+  type RegisterMessage, type RegistrationCheckpointKind, type RegistrationCheckpointResponseMessage,
+  parseInput, protocolVersionV3, protocolVersionV4, registrationCheckpoint, status, success,
 } from "./protocol.js";
 import { assertAllowedURL, credentialValue, exactOrigin, totp } from "./security.js";
 import type { SessionStateStore } from "./session-store.js";
 import { RuntimeContexts, type BrowserTarget } from "./contexts.js";
+import { RegistrationGuard, assertRegistrationURL, validateRegistrationMessage } from "./registration.js";
 
 export interface MessageSource {
   next(signal?: AbortSignal): Promise<IteratorResult<string>>;
@@ -26,15 +28,18 @@ export interface PersistentBrowserDriverOptions {
   headed?: boolean;
   sessionStore?: SessionStateStore;
   challengeTimeoutMs?: number;
+  registrationCheckpointTimeoutMs?: number;
   numberMatchSelector?: string;
 }
 
 export const defaultChallengeTimeoutMs = 120_000;
+export const defaultRegistrationCheckpointTimeoutMs = 120_000;
 export const maxVisitedURLsPerWindow = 1_024;
 
 export class PersistentBrowserDriver {
   private browser: Browser | undefined;
   private readonly sessions = new Map<string, NamedSession>();
+  private readonly approvedRegistrations = new Set<string>();
 
   constructor(
     private readonly lines: MessageSource,
@@ -43,6 +48,10 @@ export class PersistentBrowserDriver {
   ) {
     const timeout = options.challengeTimeoutMs ?? defaultChallengeTimeoutMs;
     if (!Number.isSafeInteger(timeout) || timeout <= 0) throw new Error("challenge timeout must be a positive integer");
+    const registrationTimeout = options.registrationCheckpointTimeoutMs ?? defaultRegistrationCheckpointTimeoutMs;
+    if (!Number.isSafeInteger(registrationTimeout) || registrationTimeout <= 0) {
+      throw new Error("registration checkpoint timeout must be a positive integer");
+    }
     if (options.numberMatchSelector !== undefined &&
         (!options.numberMatchSelector.trim() || options.numberMatchSelector.length > 4_096 || /[\0\r\n]/u.test(options.numberMatchSelector))) {
       throw new Error("number-match selector is invalid");
@@ -165,6 +174,82 @@ export class PersistentBrowserDriver {
     }
   }
 
+  async register(request: RegisterMessage): Promise<void> {
+    let context: BrowserContext | undefined;
+    let approved = false;
+    let completed = false;
+    let resultCode: import("./protocol.js").FailureCode | undefined;
+    try {
+      if (!this.options.headed) throw new DriverFailure("invalid_response");
+      const flow = validateRegistrationMessage(request);
+      const attemptKey = `${request.operationId}\0${request.sourceDigest}`;
+      if (this.approvedRegistrations.has(attemptKey)) throw new DriverFailure("registration_indeterminate");
+      const credentials = new Map<string, string>();
+      for (const [slot, binding] of Object.entries(request.credentialBindings)) {
+        credentials.set(slot, credentialValue(request.credentialEnvironment[binding]));
+      }
+      const allowed = new Set(request.allowedOrigins);
+      this.emit(status(request.requestId, "registering", protocolVersionV4));
+      context = await this.createContext();
+      const guard = new RegistrationGuard(context, allowed);
+      await guard.install();
+      const page = await context.newPage();
+      for (const step of flow.sequence) {
+        if (context.pages().length !== 1) throw new DriverFailure("invalid_response");
+        guard.assertSafe();
+        if ("navigate" in step) {
+          assertRegistrationURL(step.navigate, allowed);
+          await page.goto(step.navigate, { waitUntil: "domcontentloaded" });
+          assertRegistrationURL(page.url(), allowed);
+        } else if ("type_credential" in step) {
+          const value = credentials.get(step.type_credential.slot);
+          if (!value) throw new DriverFailure("credentials_invalid");
+          await (await exactLocator(page, step.type_credential.locator)).fill(value);
+        } else if ("click" in step) {
+          await (await exactLocator(page, step.click.locator)).click();
+        } else if ("human_checkpoint" in step) {
+          if (step.human_checkpoint.locator) await exactLocator(page, step.human_checkpoint.locator);
+          this.emit(status(request.requestId, "awaiting_registration_checkpoint", protocolVersionV4));
+          await this.requestRegistrationCheckpoint(request.requestId, step.human_checkpoint.kind);
+          this.emit(status(request.requestId, "registering", protocolVersionV4));
+        } else if ("wait_for" in step) {
+          await exactLocator(page, step.wait_for.locator);
+        } else if ("submit" in step) {
+          this.emit(status(request.requestId, "awaiting_submit_approval", protocolVersionV4));
+          await this.requestRegistrationCheckpoint(request.requestId, "submit_approval");
+          approved = true;
+          this.approvedRegistrations.add(attemptKey);
+          guard.beginSubmit();
+          await (await exactLocator(page, step.submit.locator)).click();
+          guard.finishSubmit();
+          this.emit(status(request.requestId, "registering", protocolVersionV4));
+        } else throw new DriverFailure("invalid_response");
+        guard.assertSafe();
+      }
+      if (context.pages().length !== 1) throw new DriverFailure("invalid_response");
+      guard.assertSafe();
+      assertRegistrationURL(page.url(), allowed);
+      if (exactOrigin(page.url()) !== flow.success.origin) throw new DriverFailure("origin_rejected");
+      if (flow.success.path !== undefined && new URL(page.url()).pathname !== flow.success.path) {
+        throw new DriverFailure("invalid_response");
+      }
+      await exactLocator(page, flow.success.locator);
+      completed = true;
+    } catch (error) {
+      resultCode = approved ? "registration_indeterminate" : failureCode(error);
+    } finally {
+      if (context) {
+        try { await context.close(); }
+        catch { resultCode = approved ? "registration_indeterminate" : "driver_error"; completed = false; }
+      }
+    }
+    if (completed && !resultCode) {
+      this.emit(success(request.requestId, { status: "success" }, protocolVersionV4));
+      return;
+    }
+    this.emit(failure(request.requestId, resultCode ?? "driver_error", protocolVersionV4));
+  }
+
   async close(): Promise<void> {
     for (const session of this.sessions.values()) await session.context.close().catch(() => undefined);
     this.sessions.clear();
@@ -277,6 +362,18 @@ export class PersistentBrowserDriver {
     this.emit(pending.message);
     return readChallengeResponse(this.lines, requestId, pending.id, this.options.challengeTimeoutMs ?? defaultChallengeTimeoutMs, version);
   }
+
+  private async requestRegistrationCheckpoint(
+    requestId: string,
+    kind: RegistrationCheckpointKind | "submit_approval",
+  ): Promise<RegistrationCheckpointResponseMessage> {
+    const pending = registrationCheckpoint(requestId, kind);
+    this.emit(pending.message);
+    return readRegistrationCheckpointResponse(
+      this.lines, requestId, pending.id,
+      this.options.registrationCheckpointTimeoutMs ?? defaultRegistrationCheckpointTimeoutMs,
+    );
+  }
 }
 
 export async function readChallengeResponse(
@@ -304,6 +401,30 @@ export async function readChallengeResponse(
     throw new DriverFailure("invalid_response");
   }
   return response as ChallengeResponseMessage;
+}
+
+export async function readRegistrationCheckpointResponse(
+  lines: MessageSource,
+  requestId: string,
+  checkpointId: string,
+  timeoutMs: number,
+): Promise<RegistrationCheckpointResponseMessage> {
+  const signal = AbortSignal.timeout(timeoutMs);
+  let line: IteratorResult<string>;
+  try {
+    line = await lines.next(signal);
+  } catch {
+    if (signal.aborted) throw new DriverFailure("registration_checkpoint_timeout");
+    throw new DriverFailure("invalid_response");
+  }
+  if (line.done) throw new DriverFailure("registration_checkpoint_timeout");
+  let value: import("./protocol.js").InputMessage;
+  try { value = parseInput(line.value); }
+  catch { throw new DriverFailure("invalid_response"); }
+  if (value.version !== protocolVersionV4 || value.type !== "registration_checkpoint_response" ||
+      value.requestId !== requestId || value.checkpointId !== checkpointId) throw new DriverFailure("invalid_response");
+  if (value.decision === "deny") throw new DriverFailure("registration_checkpoint_denied");
+  return value;
 }
 
 function validateAuthenticationMessage(request: AuthenticateMessage): void {

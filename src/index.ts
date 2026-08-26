@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import { createInterface } from "node:readline";
-import { PersistentBrowserDriver, defaultChallengeTimeoutMs } from "./driver.js";
+import {
+  PersistentBrowserDriver, defaultChallengeTimeoutMs, defaultRegistrationCheckpointTimeoutMs,
+} from "./driver.js";
 import { ReadlineMessageSource } from "./line-source.js";
 import { DriverFailure, failure, maxMessageBytes, parseInput, protocolVersion, type ProtocolVersion } from "./protocol.js";
 import { FileSessionStateStore } from "./session-store.js";
@@ -18,6 +20,9 @@ try {
     headed: args.includes("--headed"),
     ...(sessionStorePath ? { sessionStore: new FileSessionStateStore(sessionStorePath) } : {}),
     challengeTimeoutMs: durationOption(args, "--challenge-timeout", defaultChallengeTimeoutMs),
+    registrationCheckpointTimeoutMs: durationOption(
+      args, "--registration-checkpoint-timeout", defaultRegistrationCheckpointTimeoutMs,
+    ),
     ...(numberMatchSelector !== undefined ? { numberMatchSelector } : {}),
   });
   for (;;) {
@@ -33,6 +38,7 @@ try {
       if (message.type === "close") break;
       if (message.type === "authenticate") await driver.authenticate(message);
       else if (message.type === "action") await driver.action(message);
+      else if (message.type === "register") await driver.register(message);
       else throw new DriverFailure("invalid_response");
     } catch (error) {
       emit(failure(requestId, error instanceof DriverFailure ? error.code : "invalid_response", requestVersion));
