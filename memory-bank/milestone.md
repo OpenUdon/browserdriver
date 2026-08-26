@@ -10,6 +10,7 @@
 | M06 | `status-M06.md` | Close real-scenario navigation and browser 1.5 wait compatibility gaps |
 | M07 | `status-M07.md` | Align false presence flags with declared output extraction semantics |
 | M08 | `status-M08.md` | Distinguish runtime context failures from malformed response/profile input |
+| M09 | `status-M09.md` | Add closed protocol v4 trusted browser registration execution |
 
 M01 establishes the isolated v2 NDJSON process, closed authentication and
 browser macro execution, all planned MFA variants, exact-origin and ambiguity
@@ -50,3 +51,9 @@ M08 adds the closed `invalid_context` failure code to v2/v3 and uses it for
 missing, undeclared, closed, detached, extra, or substituted runtime contexts.
 Malformed protocol and profile shapes retain `invalid_response`, while origin
 and ambiguity failures keep their existing codes.
+
+M09 is active. It preserves v2/v3 and adds closed protocol v4 registration in
+one fresh context with inherited-environment credential resolution, exact
+origins/redirects, unique accessibility locators, human Continue/Deny
+checkpoints, one immediately approved submit, post-submit indeterminate
+classification, unconditional teardown, and no named session or state export.

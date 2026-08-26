@@ -2,10 +2,15 @@ import { randomUUID } from "node:crypto";
 
 export const protocolVersion = "udon.browser-driver.v2";
 export const protocolVersionV3 = "udon.browser-driver.v3";
-export type ProtocolVersion = typeof protocolVersion | typeof protocolVersionV3;
+export const protocolVersionV4 = "udon.browser-driver.v4";
+export type LegacyProtocolVersion = typeof protocolVersion | typeof protocolVersionV3;
+export type ProtocolVersion = LegacyProtocolVersion | typeof protocolVersionV4;
 export const maxMessageBytes = 1 << 20;
 
-export const statuses = ["resolving", "logging_in", "awaiting_mfa", "refreshing", "executing"] as const;
+export const statuses = [
+  "resolving", "logging_in", "awaiting_mfa", "refreshing", "executing", "registering",
+  "awaiting_registration_checkpoint", "awaiting_submit_approval",
+] as const;
 export type Status = (typeof statuses)[number];
 
 export const challengeKinds = [
@@ -16,6 +21,7 @@ export type ChallengeKind = (typeof challengeKinds)[number];
 export const failureCodes = [
   "mfa_timeout", "mfa_denied", "credentials_invalid", "session_expired", "driver_error",
   "unsupported_challenge", "captcha_required", "origin_rejected", "ambiguous_locator", "invalid_context", "invalid_response",
+  "registration_indeterminate", "registration_checkpoint_timeout", "registration_checkpoint_denied",
 ] as const;
 export type FailureCode = (typeof failureCodes)[number];
 
@@ -43,6 +49,52 @@ export interface AuthenticationProfile {
   credentialSlots: Record<string, { kind: "identifier" | "password" | "totp_seed" }>;
   flows: Record<string, AuthenticationFlow>;
   contexts?: Record<string, ContextSpec>;
+}
+
+export const registrationCheckpointKinds = [
+  "captcha", "email_verification", "mfa", "consent", "other_control",
+] as const;
+export type RegistrationCheckpointKind = (typeof registrationCheckpointKinds)[number];
+
+export interface RegistrationProfile {
+  profile: "uws.browser-registration.1.0";
+  info: {
+    title: string;
+    provider?: string;
+    applicationOrigins: string[];
+    registrationOrigins: string[];
+  };
+  observationKind: "accessibility_snapshot" | "dom_text" | "screenshot_ocr" | "other";
+  evidence: { learnedAt: string; source?: string };
+  confidence: "low" | "medium" | "high";
+  expiresAfter: string;
+  verification: { lastVerifiedAt: string; uiStabilityScore?: number };
+  credentialSlots: Record<string, { kind: "identifier" | "password" }>;
+  flows: Record<string, RegistrationFlow>;
+}
+
+export interface RegistrationFlow {
+  description?: string;
+  sequence: RegistrationStep[];
+  effects: Array<"creates_account" | "sends_verification" | "requires_human_verification">;
+  confirmationPolicy: { required: true; prompt?: string };
+  success: { origin: string; locator: LocatorSpec; path?: string };
+}
+
+export type RegistrationStep =
+  | { navigate: string }
+  | { type_credential: { locator: LocatorSpec; slot: string } }
+  | { click: { locator: LocatorSpec } }
+  | { submit: { locator: LocatorSpec } }
+  | { human_checkpoint: { kind: RegistrationCheckpointKind; locator?: LocatorSpec } }
+  | { wait_for: { locator: LocatorSpec } };
+
+export interface RegistrationCallControls {
+  approval: string;
+  duplicatePrevention: "operator_attestation";
+  onDuplicate: "fail";
+  ambiguousOutcome: "stop_without_retry";
+  cleanupDisposition: "delete_separately" | "retain_dedicated_test_identity";
 }
 
 export interface ContextSpec {
@@ -110,7 +162,7 @@ export interface BrowserOutput {
 }
 
 export interface AuthenticateMessage {
-  version: ProtocolVersion;
+  version: LegacyProtocolVersion;
   type: "authenticate";
   requestId: string;
   operationId: string;
@@ -125,7 +177,7 @@ export interface AuthenticateMessage {
 }
 
 export interface ActionMessage {
-  version: ProtocolVersion;
+  version: LegacyProtocolVersion;
   type: "action";
   requestId: string;
   operationId: string;
@@ -134,7 +186,7 @@ export interface ActionMessage {
 }
 
 export interface ChallengeResponseMessage {
-  version: ProtocolVersion;
+  version: LegacyProtocolVersion;
   type: "challenge_response";
   requestId: string;
   challengeId: string;
@@ -142,7 +194,29 @@ export interface ChallengeResponseMessage {
   value?: string;
 }
 
-export type InputMessage = AuthenticateMessage | ActionMessage | ChallengeResponseMessage | {
+export interface RegisterMessage {
+  version: typeof protocolVersionV4;
+  type: "register";
+  requestId: string;
+  operationId: string;
+  sourceDigest: string;
+  profile: RegistrationProfile;
+  flow: string;
+  allowedOrigins: string[];
+  credentialBindings: Record<string, string>;
+  credentialEnvironment: Record<string, string>;
+  controls: RegistrationCallControls;
+}
+
+export interface RegistrationCheckpointResponseMessage {
+  version: typeof protocolVersionV4;
+  type: "registration_checkpoint_response";
+  requestId: string;
+  checkpointId: string;
+  decision: "continue" | "deny";
+}
+
+export type InputMessage = AuthenticateMessage | ActionMessage | ChallengeResponseMessage | RegisterMessage | RegistrationCheckpointResponseMessage | {
   version: ProtocolVersion;
   type: "close";
   requestId: string;
@@ -152,11 +226,23 @@ export function parseInput(line: string): InputMessage {
   if (Buffer.byteLength(line) > maxMessageBytes) throw new DriverFailure("invalid_response");
   let value: unknown;
   try { value = JSON.parse(line); } catch { throw new DriverFailure("invalid_response"); }
-  if (!isRecord(value) || (value.version !== protocolVersion && value.version !== protocolVersionV3) || typeof value.type !== "string" || typeof value.requestId !== "string") {
+  if (!isRecord(value) || (value.version !== protocolVersion && value.version !== protocolVersionV3 && value.version !== protocolVersionV4) || typeof value.type !== "string" || typeof value.requestId !== "string") {
     throw new DriverFailure("invalid_response");
   }
   if (value.version === protocolVersionV3) validateV3Envelope(value);
+  if (value.version === protocolVersionV4) validateV4Envelope(value);
   return value as unknown as InputMessage;
+}
+
+export function registrationCheckpoint(
+  requestId: string,
+  kind: RegistrationCheckpointKind | "submit_approval",
+): { id: string; message: object } {
+  const id = randomUUID();
+  return {
+    id,
+    message: { version: protocolVersionV4, type: "registration_checkpoint", requestId, checkpointId: id, kind },
+  };
 }
 
 export function status(requestId: string, value: Status, version: ProtocolVersion = protocolVersion): object {
@@ -189,6 +275,20 @@ function validateV3Envelope(value: Record<string, unknown>): void {
     authenticate: [...common, "operationId", "sourceDigest", "profile", "flow", "session", "allowedOrigins", "credentialBindings", "credentialEnvironment", "sessionBinding"],
     action: [...common, "operationId", "session", "action"],
     challenge_response: [...common, "challengeId", "decision", "value"],
+    close: common,
+  };
+  const allowed = fields[value.type as string];
+  if (!allowed || Object.keys(value).some((field) => !allowed.includes(field))) throw new DriverFailure("invalid_response");
+}
+
+function validateV4Envelope(value: Record<string, unknown>): void {
+  const common = ["version", "type", "requestId"];
+  const fields: Record<string, string[]> = {
+    register: [
+      ...common, "operationId", "sourceDigest", "profile", "flow", "allowedOrigins",
+      "credentialBindings", "credentialEnvironment", "controls",
+    ],
+    registration_checkpoint_response: [...common, "checkpointId", "decision"],
     close: common,
   };
   const allowed = fields[value.type as string];
