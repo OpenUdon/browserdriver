@@ -15,6 +15,12 @@ not accept authoring sessions or Playwright-Go handles.
 For every accepted browser profile, only literal `presence: true` selects
 Boolean match mode; `presence: false` retains the declared extraction type.
 
-Enrollment, recovery, password changes, consent grants, logout, account
-creation, CAPTCHA bypass, arbitrary browser scripts, and public session storage
-are non-goals.
+Protocol v4 adds trusted execution for the published UWS browser-registration
+1.0 contract. It uses a new headed, unnamed context per attempt, reads
+credentials only from inherited environment variables, brokers human and
+submit checkpoints as Continue/Deny, permits one approved POST, returns only a
+fixed registration status, and tears the context down before reporting.
+
+Recovery, password changes, logout, arbitrary browser scripts, CAPTCHA bypass,
+public session storage, registration retry after an approved submit, and
+driver-managed account cleanup are non-goals.

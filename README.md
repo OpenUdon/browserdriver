@@ -1,12 +1,15 @@
 # OpenUdon Browser Driver
 
 This repository provides the trusted Playwright process for
-`udon.browser-driver.v2` and additive `udon.browser-driver.v3`. One process lives for one Udon workflow execution, so
+`udon.browser-driver.v2`, additive `udon.browser-driver.v3`, and the closed
+registration-only `udon.browser-driver.v4`. One process lives for one Udon workflow execution, so
 an explicit `uws.browser-authentication-call.1.0` operation can establish a
 named in-memory session and later `uws.browser.1.5` actions can consume it. V3
 adds UWS 1.8 authentication 1.1 followed by browser 1.5 main-page, browser 1.6
 popup/frame replay, or UWS 1.9 browser 1.7 typed accessibility outputs, while
-v2 continues to execute the unchanged UWS 1.7 contracts.
+v2 continues to execute the unchanged UWS 1.7 contracts. V4 consumes the
+published UWS browser-registration 1.0 profile and call controls in one fresh
+headed context; it never creates a named session.
 
 The driver accepts only reviewed, closed browser macros. Credentials are read
 from environment-variable names mapped by Udon; values never appear in UWS,
@@ -47,6 +50,14 @@ and is rejected by the v2 session path.
 Use `--headed` as a trusted driver argument when WebAuthn or operator-visible
 browser interaction requires a window.
 
+Registration requires `--headed` and Udon protocol v4. Credential values are
+resolved only from the inherited environment names in the request. Human
+registration checkpoints and the distinct pre-submit approval accept only
+Continue or Deny; no verification value crosses NDJSON. The optional trusted
+`--registration-checkpoint-timeout 5m` argument changes the default 120-second
+bound. Every registration context closes before its fixed Boolean/status
+result is emitted and is never entered in the named-session map.
+
 Reusable sessions require the trusted `--session-store /absolute/private/dir`
 driver argument. The store contains Playwright storage-state JSON under the
 SHA-256 digest of the opaque reference (`<digest>.json`); files are regular,
@@ -70,5 +81,13 @@ and the driver performs the lookup locally.
 - Named contexts, cookies, and storage remain process memory only.
 - Push, number matching, TOTP, SMS/email/voice OTP, passkeys, and security keys
   are explicit flow choices. The driver never guesses an MFA alternative.
+- V4 registration accepts only the closed registration macro, exact reviewed
+  origins, accessibility locators, symbolic environment bindings, and fixed
+  call controls. It permits GET/HEAD plus exactly one POST in the sole submit
+  window. Submit approval is the irreversible boundary: a later failure is
+  `registration_indeterminate`, and the operation/source pair is not retried.
+- Registration emits no URL, page value, identifier, cookies, storage,
+  session, request body, or browser state. Cleanup remains a separately
+  selected disposition and is not performed by the driver.
 
 See [docs/protocol.md](docs/protocol.md) for the private process contract.

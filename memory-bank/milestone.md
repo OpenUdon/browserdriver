@@ -52,7 +52,7 @@ missing, undeclared, closed, detached, extra, or substituted runtime contexts.
 Malformed protocol and profile shapes retain `invalid_response`, while origin
 and ambiguity failures keep their existing codes.
 
-M09 is active. It preserves v2/v3 and adds closed protocol v4 registration in
+M09 is complete locally and unpushed. It preserves v2/v3 and adds closed protocol v4 registration in
 one fresh context with inherited-environment credential resolution, exact
 origins/redirects, unique accessibility locators, human Continue/Deny
 checkpoints, one immediately approved submit, post-submit indeterminate

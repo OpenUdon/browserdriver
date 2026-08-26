@@ -1,10 +1,14 @@
-# Udon browser-driver v2 and v3 protocols
+# Udon browser-driver v2, v3, and v4 protocols
 
 The process reads and writes one JSON object per line. Every envelope carries
 `version: "udon.browser-driver.v2"` and a `requestId`. The maximum line size is
 1 MiB. Udon starts one process per workflow execution and serializes requests.
 The additive v3 envelope uses `version: "udon.browser-driver.v3"`; v2 message
 and execution behavior remains accepted and unchanged.
+
+The registration-only v4 envelope uses
+`version: "udon.browser-driver.v4"`. It is additive: v2/v3 authentication,
+action, challenge, session, and result paths remain unchanged.
 
 Input message types are:
 
@@ -99,3 +103,38 @@ child-frame navigations, which common sign-in pages require. `visitedUrls`
 attests the bounded top-level navigation window for one action; it is neither a
 complete network log nor an exfiltration boundary. Operators that require a
 network-wide boundary must enforce it outside the browser driver.
+
+## V4 registration
+
+V4 accepts only `register`, `registration_checkpoint_response`, and `close`
+inputs. A register request carries one complete, already validated
+`uws.browser-registration.1.0` profile, selected flow, exact origin allowlist,
+symbolic slot-to-binding and binding-to-environment-name maps, and the fixed
+registration call controls. It cannot carry a session, credential value,
+verification value, selector, script, cookie, storage state, page material, or
+arbitrary control.
+
+The driver independently closes and validates that input, resolves credential
+values from inherited environment variables, and opens a fresh context in a
+headed Chromium process. Registration never loads storage state and the fresh
+context is never assigned a session name. Every context request must use an
+exact declared origin. GET and HEAD are allowed; all other methods are blocked
+except for exactly one POST while executing the profile's sole `submit` step.
+Every authored target is a unique accessibility locator.
+
+A profile `human_checkpoint` emits `registration_checkpoint` with its closed
+kind. The human acts directly in the visible browser; Udon replies with only
+`continue` or `deny`. A second `registration_checkpoint` with kind
+`submit_approval` is emitted immediately before opening the one-POST submit
+window. The default checkpoint timeout is 120 seconds and may be changed with
+the trusted `--registration-checkpoint-timeout` duration argument.
+
+Before submit approval, denial and timeout return
+`registration_checkpoint_denied` and `registration_checkpoint_timeout`.
+After Continue is returned for submit, any failure or uncertain completion is
+`registration_indeterminate`; the driver does not automatically retry and
+rejects another register request for the same operation/source pair in that
+process. Success is emitted only after the exact origin/path/accessibility
+proof passes and the context closes. Its complete response is
+`{"status":"success"}`. No identifier, URL, session, output, page value,
+browser state, or driver prose is returned.

@@ -215,12 +215,13 @@ export class PersistentBrowserDriver {
         } else if ("wait_for" in step) {
           await exactLocator(page, step.wait_for.locator);
         } else if ("submit" in step) {
+          const submit = await exactLocator(page, step.submit.locator);
           this.emit(status(request.requestId, "awaiting_submit_approval", protocolVersionV4));
           await this.requestRegistrationCheckpoint(request.requestId, "submit_approval");
           approved = true;
           this.approvedRegistrations.add(attemptKey);
           guard.beginSubmit();
-          await (await exactLocator(page, step.submit.locator)).click();
+          await submit.click();
           guard.finishSubmit();
           this.emit(status(request.requestId, "registering", protocolVersionV4));
         } else throw new DriverFailure("invalid_response");

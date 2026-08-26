@@ -6,6 +6,7 @@ import {
 import { exactOrigin } from "./security.js";
 
 const identifierPattern = /^[A-Za-z][A-Za-z0-9_-]{0,127}$/u;
+const requestIDPattern = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$/u;
 const digestPattern = /^sha256:[0-9a-f]{64}$/u;
 const environmentPattern = /^[A-Za-z_][A-Za-z0-9_]*$/u;
 const cleanPathPattern = /^\/[A-Za-z0-9._~!$&'()*+,;=:@%/-]*$/u;
@@ -23,10 +24,11 @@ export function validateRegistrationMessage(request: RegisterMessage): Registrat
     "version", "type", "requestId", "operationId", "sourceDigest", "profile", "flow", "allowedOrigins",
     "credentialBindings", "credentialEnvironment", "controls",
   ]);
-  if (!identifierPattern.test(request.requestId) || !identifierPattern.test(request.operationId) ||
+  if (!requestIDPattern.test(request.requestId) || !identifierPattern.test(request.operationId) ||
       !digestPattern.test(request.sourceDigest) || !identifierPattern.test(request.flow)) invalid();
   const allowed = validateOrigins(request.allowedOrigins);
   validateProfile(request.profile as unknown as Record<string, unknown>, allowed);
+  if (!Object.hasOwn(request.profile.flows, request.flow)) invalid();
   const flow = request.profile.flows[request.flow];
   if (!flow) invalid();
   validateBindings(request, flow);
@@ -79,16 +81,19 @@ function validateFlow(value: Record<string, unknown>, slots: Record<string, unkn
   if (value.description !== undefined) boundedString(value.description, 0, 1_024);
   if (!Array.isArray(value.sequence) || value.sequence.length < 1 || value.sequence.length > 256) invalid();
   let submits = 0;
+  let checkpoints = 0;
   for (const raw of value.sequence) {
     const step = record(raw);
     if (Object.keys(step).length !== 1) invalid();
     validateStep(step as unknown as RegistrationStep, slots, allowed);
     if ("submit" in step) submits += 1;
+    if ("human_checkpoint" in step) checkpoints += 1;
   }
   if (submits !== 1) invalid();
   if (!Array.isArray(value.effects) || value.effects.length < 1 || value.effects.length > 3 ||
       new Set(value.effects).size !== value.effects.length || !value.effects.includes("creates_account") ||
       value.effects.some((item) => !["creates_account", "sends_verification", "requires_human_verification"].includes(String(item)))) invalid();
+  if (value.effects.includes("requires_human_verification") !== (checkpoints > 0)) invalid();
   const confirmation = record(value.confirmationPolicy);
   assertClosed(confirmation, ["required", "prompt"], ["required"]);
   if (confirmation.required !== true) invalid();
@@ -109,7 +114,7 @@ function validateStep(step: RegistrationStep, slots: Record<string, unknown>, al
     const value = record(step.type_credential);
     assertClosed(value, ["locator", "slot"], ["locator", "slot"]);
     validateLocator(record(value.locator));
-    if (typeof value.slot !== "string" || !identifierPattern.test(value.slot) || !(value.slot in slots)) invalid();
+    if (typeof value.slot !== "string" || !identifierPattern.test(value.slot) || !Object.hasOwn(slots, value.slot)) invalid();
     return;
   }
   const locatorStep = "click" in step ? step.click : "submit" in step ? step.submit : "wait_for" in step ? step.wait_for : undefined;
@@ -133,13 +138,13 @@ function validateBindings(request: RegisterMessage, flow: RegistrationFlow): voi
   const bindings = boundedRecord(request.credentialBindings, 1, 64);
   const environments = boundedRecord(request.credentialEnvironment, 1, 64);
   const used = new Set(flow.sequence.flatMap((step) => "type_credential" in step ? [step.type_credential.slot] : []));
-  if (Object.keys(bindings).length !== used.size || [...used].some((slot) => !(slot in bindings))) invalid();
+  if (Object.keys(bindings).length !== used.size || [...used].some((slot) => !Object.hasOwn(bindings, slot))) invalid();
   for (const [slot, binding] of Object.entries(bindings)) {
     identifier(slot);
-    if (!(slot in request.profile.credentialSlots) || typeof binding !== "string" || !identifierPattern.test(binding)) invalid();
+    if (!Object.hasOwn(request.profile.credentialSlots, slot) || typeof binding !== "string" || !identifierPattern.test(binding)) invalid();
   }
   const requiredBindings = new Set(Object.values(bindings) as string[]);
-  if (Object.keys(environments).length !== requiredBindings.size || [...requiredBindings].some((binding) => !(binding in environments))) invalid();
+  if (Object.keys(environments).length !== requiredBindings.size || [...requiredBindings].some((binding) => !Object.hasOwn(environments, binding))) invalid();
   for (const [binding, environment] of Object.entries(environments)) {
     identifier(binding);
     if (!requiredBindings.has(binding) || typeof environment !== "string" || !environmentPattern.test(environment)) invalid();
@@ -215,7 +220,8 @@ export class RegistrationGuard {
     const request = route.request();
     const method = request.method().toUpperCase();
     try {
-      assertRegistrationURL(request.url(), this.allowed);
+      if (!this.allowed.has(exactOrigin(request.url()))) originRejected();
+      if (request.isNavigationRequest()) assertRegistrationURL(request.url(), this.allowed);
     } catch (error) {
       this.blocked = error instanceof DriverFailure && error.code === "origin_rejected" ? "origin" : "mutation";
       await route.abort("blockedbyclient");

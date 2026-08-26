@@ -42,3 +42,18 @@ Boolean conversion. Literal `presence: true` keeps the prior Boolean match path
 and never reads text; `presence: false` follows the declared typed-text path.
 Conversion failures collapse to `invalid_response` without page text; browser
 1.5/1.6 keep their existing extraction path.
+
+V4 is a separate registration branch rather than a session mode. It closes and
+revalidates one registration 1.0 profile, exact origin set, symbolic binding
+map, environment-name map, and fixed call controls before launching a fresh
+headed context without storage state. Its context-wide route guard permits
+GET/HEAD and opens a one-POST window only after the submit checkpoint returns
+Continue. Accessibility targets remain exact and unique; no selectors,
+scripts, state exports, or page-derived values exist in the v4 wire.
+
+Human checkpoints read only Continue/Deny with a fixed timeout. After submit
+approval, the operation/source pair is retained in a process-local refusal set
+and every failure becomes `registration_indeterminate`. All completion paths
+close the fresh context before emitting either the fixed success status or a
+closed failure. The registration context is never stored in the named-session
+map.

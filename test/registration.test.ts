@@ -313,7 +313,7 @@ function fakeRoute(url: string, method: string): {
   let continued = false;
   let aborted = false;
   const route = {
-    request: () => ({ url: () => url, method: () => method }),
+    request: () => ({ url: () => url, method: () => method, isNavigationRequest: () => true }),
     continue: async () => { continued = true; },
     abort: async () => { aborted = true; },
   } as unknown as Route;
