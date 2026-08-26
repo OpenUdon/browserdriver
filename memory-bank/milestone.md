@@ -52,8 +52,12 @@ missing, undeclared, closed, detached, extra, or substituted runtime contexts.
 Malformed protocol and profile shapes retain `invalid_response`, while origin
 and ambiguity failures keep their existing codes.
 
-M09 is complete locally and unpushed. It preserves v2/v3 and adds closed protocol v4 registration in
+M09 implementation is complete locally and unpushed at
+`a97b1aed6ea69a30591815da8ca07ac9e7c87623`. It preserves v2/v3 and adds closed protocol v4 registration in
 one fresh context with inherited-environment credential resolution, exact
 origins/redirects, unique accessibility locators, human Continue/Deny
 checkpoints, one immediately approved submit, post-submit indeterminate
 classification, unconditional teardown, and no named session or state export.
+OpenUdon E11 passed, and evolution result v6 is committed locally at
+`a269e94d3394ca9d6bd58a0102d7a70d90a00fda`; publication remains separately
+authorized.
