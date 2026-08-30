@@ -15,6 +15,11 @@ Read `memory-bank/product.md`, `memory-bank/architecture.md`,
 `memory-bank/tech-stack.md`, `memory-bank/milestone.md`, and the active status
 file before substantial changes.
 
+This repository tracks [GOAL.md](GOAL.md) as an optional multi-milestone
+execution protocol. Follow it only when a request explicitly names that
+protocol; its presence does not replace the memory-bank source of truth or
+grant commit, publication, browser, target, or runtime authority.
+
 ## Essential Commands
 
 ```bash
