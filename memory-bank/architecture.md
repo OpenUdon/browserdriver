@@ -57,3 +57,9 @@ and every failure becomes `registration_indeterminate`. All completion paths
 close the fresh context before emitting either the fixed success status or a
 closed failure. The registration context is never stored in the named-session
 map.
+
+Registration drops unapproved HTTP(S) read-only subresources before contact.
+Only the fresh main frame may navigate. Its CDP response interceptor validates
+redirect Location before follow;
+307/308 after POST cannot repeat the single authorized mutation. No response
+headers or URLs leave the driver. Navigation and mutation escapes remain fatal.

@@ -1,4 +1,4 @@
-import type { BrowserContext, Route } from "playwright";
+import type { BrowserContext, Frame, Page, Route } from "playwright";
 import {
   DriverFailure, registrationCheckpointKinds, type LocatorSpec, type RegisterMessage,
   type RegistrationFlow, type RegistrationStep,
@@ -191,11 +191,44 @@ export class RegistrationGuard {
   private blocked: "origin" | "mutation" | undefined;
   private submitting = false;
   private posts = 0;
+  private mainFrame: Frame | undefined;
 
   constructor(private readonly context: Pick<BrowserContext, "route">, private readonly allowed: ReadonlySet<string>) {}
 
   async install(): Promise<void> {
     await this.context.route("**/*", async (route) => this.handle(route));
+  }
+
+  // Playwright routes only the first request in an HTTP redirect chain. Pause
+  // redirect responses before Chromium follows Location, keeping URLs private.
+  async watchRedirects(page: Page): Promise<void> {
+    if (this.mainFrame) invalid();
+    this.mainFrame = page.mainFrame();
+    const session = await page.context().newCDPSession(page);
+    session.on("Fetch.requestPaused", async (event) => {
+      let blockedResource = false;
+      try {
+        const redirect = [301, 302, 303, 307, 308].includes(event.responseStatusCode ?? 0);
+        if (redirect) {
+          const locations = (event.responseHeaders ?? []).filter((header) => header.name.toLowerCase() === "location");
+          if (locations.length !== 1) invalid();
+          const target = new URL(locations[0]!.value, event.request.url).href;
+          if (!this.allowed.has(exactOrigin(target))) {
+            const parsed = new URL(target);
+            blockedResource = event.resourceType !== "Document" && ["GET", "HEAD"].includes(event.request.method) &&
+              ["http:", "https:"].includes(parsed.protocol) && !parsed.username && !parsed.password;
+            originRejected();
+          }
+          if (event.resourceType === "Document") assertRegistrationURL(target, this.allowed);
+          if (event.request.method === "POST" && (event.responseStatusCode === 307 || event.responseStatusCode === 308)) invalid();
+        }
+        await session.send("Fetch.continueResponse", { requestId: event.requestId });
+      } catch (error) {
+        if (!blockedResource) this.blocked = error instanceof DriverFailure && error.code === "origin_rejected" ? "origin" : "mutation";
+        await session.send("Fetch.failRequest", { requestId: event.requestId, errorReason: "BlockedByClient" }).catch(() => undefined);
+      }
+    });
+    await session.send("Fetch.enable", { patterns: [{ urlPattern: "*", requestStage: "Response" }] });
   }
 
   beginSubmit(): void {
@@ -220,7 +253,18 @@ export class RegistrationGuard {
     const request = route.request();
     const method = request.method().toUpperCase();
     try {
-      if (!this.allowed.has(exactOrigin(request.url()))) originRejected();
+      if (request.isNavigationRequest() && this.mainFrame && request.frame() !== this.mainFrame) invalid();
+      if (!this.allowed.has(exactOrigin(request.url()))) {
+        const resourceURL = new URL(request.url());
+        if (!["http:", "https:"].includes(resourceURL.protocol) || resourceURL.username || resourceURL.password) originRejected();
+        // A blocked read-only subresource cannot navigate or mutate the account.
+        // Match authoring's resource policy without transmitting that request.
+        if (!request.isNavigationRequest() && (method === "GET" || method === "HEAD")) {
+          await route.abort("blockedbyclient");
+          return;
+        }
+        originRejected();
+      }
       if (request.isNavigationRequest()) assertRegistrationURL(request.url(), this.allowed);
     } catch (error) {
       this.blocked = error instanceof DriverFailure && error.code === "origin_rejected" ? "origin" : "mutation";

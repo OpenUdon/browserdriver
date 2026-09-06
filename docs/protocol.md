@@ -117,10 +117,13 @@ arbitrary control.
 The driver independently closes and validates that input, resolves credential
 values from inherited environment variables, and opens a fresh context in a
 headed Chromium process. Registration never loads storage state and the fresh
-context is never assigned a session name. Every context request must use an
-exact declared origin. GET and HEAD are allowed; all other methods are blocked
+context is never assigned a session name. Every transmitted context request must
+use an exact declared origin. Unapproved HTTP(S) GET/HEAD subresources are
+aborted without poisoning the registration; navigation and mutation escapes
+remain fatal. Redirect responses are paused before Chromium follows Location,
+and a 307/308 cannot repeat the approved POST. GET and HEAD are allowed; all other methods are blocked
 except for exactly one POST while executing the profile's sole `submit` step.
-Every authored target is a unique accessibility locator.
+Only the fresh main frame may navigate. Every authored target is a unique accessibility locator.
 
 A profile `human_checkpoint` emits `registration_checkpoint` with its closed
 kind. The human acts directly in the visible browser; Udon replies with only

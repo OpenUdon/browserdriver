@@ -61,3 +61,6 @@ classification, unconditional teardown, and no named session or state export.
 OpenUdon E11 passed, and evolution result v6 is committed locally at
 `a269e94d3394ca9d6bd58a0102d7a70d90a00fda`; publication remains separately
 authorized.
+
+M10 is complete locally: preserve registration request boundaries across blocked read-only
+subresources and HTTP redirects; see [status-M10.md](status-M10.md).

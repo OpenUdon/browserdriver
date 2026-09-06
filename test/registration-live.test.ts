@@ -15,17 +15,22 @@ test("headed Chromium registration enforces approval, one POST, uncertainty, ret
   });
   const escapedOrigin = await listen(escaped);
   let indeterminate = false;
+  let repeatPost = false;
+  let unexpectedFrame = false;
   const application = createServer((request, response) => {
     if (request.method === "GET" && request.url?.startsWith("/redirect")) {
       counts.gets += 1;
-      response.writeHead(302, { location: `${escapedOrigin}/escaped` });
+      response.writeHead(302, { location: request.url === "/redirect" ? "/redirect-stage" : `${escapedOrigin}/escaped` });
       response.end();
       return;
     }
     if (request.method === "GET" && request.url?.startsWith("/register")) {
       counts.gets += 1;
       response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
-      response.end(`<!doctype html><title>Register</title><form method="post" action="/complete">
+      response.end(`<!doctype html><title>Register</title>
+        <link rel="stylesheet" href="${escapedOrigin}/unapproved.css">
+        ${unexpectedFrame ? '<iframe src="/redirect"></iframe>' : ''}
+        <form method="post" action="/complete">
         <label>Identifier <input aria-label="Identifier" name="identifier"></label>
         <label>Password <input aria-label="Password" name="password" type="password"></label>
         <button type="submit">Register</button></form>`);
@@ -35,6 +40,10 @@ test("headed Chromium registration enforces approval, one POST, uncertainty, ret
       counts.posts += 1;
       request.resume();
       request.on("end", () => {
+        if (repeatPost) {
+          response.writeHead(307, { location: "/complete" }).end();
+          return;
+        }
         if (indeterminate) {
           response.writeHead(500, { "content-type": "text/html; charset=utf-8" });
           response.end("<!doctype html><title>Unavailable</title>");
@@ -74,6 +83,7 @@ test("headed Chromium registration enforces approval, one POST, uncertainty, ret
     await driver.register(registrationRequest(applicationOrigin, "success", `sha256:${"1".repeat(64)}`));
     assert.equal(result(messages, "success").result, "success", JSON.stringify(messages));
     assert.equal(counts.posts, 1);
+    assert.equal(counts.escaped, 0);
     assert.deepEqual(messages.filter((message) => message.type === "registration_checkpoint" && message.requestId === "success")
       .map((message) => message.kind), ["consent", "submit_approval"]);
 
@@ -105,7 +115,20 @@ test("headed Chromium registration enforces approval, one POST, uncertainty, ret
     redirectRequest.profile.flows.create!.sequence[0] = { navigate: `${applicationOrigin}/redirect` };
     await driver.register(redirectRequest);
     assert.equal(result(messages, "redirect").failureCode, "origin_rejected");
+    assert.equal(counts.escaped, 0);
     assert.equal((driver as unknown as { sessions: Map<string, unknown> }).sessions.size, 0);
+
+    repeatPost = true;
+    await driver.register(registrationRequest(applicationOrigin, "repeat_post", `sha256:${"6".repeat(64)}`));
+    assert.equal(result(messages, "repeat_post").failureCode, "registration_indeterminate");
+    assert.equal(counts.posts, 3, "307 must not transmit a second POST");
+
+    repeatPost = false;
+    unexpectedFrame = true;
+    await driver.register(registrationRequest(applicationOrigin, "unexpected_frame", `sha256:${"7".repeat(64)}`));
+    assert.equal(result(messages, "unexpected_frame").failureCode, "invalid_response");
+    assert.equal(counts.posts, 3);
+    assert.equal(counts.escaped, 0);
 
     const wire = JSON.stringify(messages);
     assert.equal(wire.includes("loopback-test@example.invalid"), false);

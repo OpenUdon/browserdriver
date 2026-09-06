@@ -11,6 +11,7 @@ import { DriverFailure, type RegisterMessage } from "../src/protocol.js";
 import { RegistrationGuard, assertRegistrationURL, validateRegistrationMessage } from "../src/registration.js";
 
 const origin = "https://registration.example";
+const registrationMainFrame = {};
 
 function request(): RegisterMessage {
   return {
@@ -86,6 +87,34 @@ test("registration guard permits one approved POST and blocks mutations and redi
   assert.throws(() => approvedGuard.assertSafe(), (error: unknown) => error instanceof DriverFailure && error.code === "origin_rejected");
 });
 
+test("registration drops unapproved read-only resources but rejects navigation and mutation", async () => {
+  for (const [method, navigation, fatal] of [["GET", false, false], ["HEAD", false, false], ["POST", false, true], ["GET", true, true]] as const) {
+    let handler: ((route: Route) => Promise<void>) | undefined;
+    const guard = new RegistrationGuard({
+      route: async (_: string, callback: (route: Route) => Promise<void>) => { handler = callback; },
+    } as unknown as Pick<BrowserContext, "route">, new Set([origin]));
+    await guard.install();
+    const resource = fakeRoute("https://unapproved.example/resource", method, navigation);
+    await handler!(resource.route);
+    assert.equal(resource.aborted(), true);
+    assert.equal(resource.continued(), false);
+    assert.equal(guard.postCount(), 0);
+    if (fatal) assert.throws(() => guard.assertSafe(), DriverFailure);
+    else assert.doesNotThrow(() => guard.assertSafe());
+  }
+  for (const url of ["malformed", "data:text/plain,opaque", "ftp://unapproved.example/file", "https://user@unapproved.example/file"]) {
+    let handler: ((route: Route) => Promise<void>) | undefined;
+    const guard = new RegistrationGuard({
+      route: async (_: string, callback: (route: Route) => Promise<void>) => { handler = callback; },
+    } as unknown as Pick<BrowserContext, "route">, new Set([origin]));
+    await guard.install();
+    const resource = fakeRoute(url, "GET", false);
+    await handler!(resource.route);
+    assert.equal(resource.continued(), false);
+    assert.throws(() => guard.assertSafe(), DriverFailure);
+  }
+});
+
 test("registration executes in a closed unnamed context and emits only a fixed result", async () => {
   const previousIdentifier = process.env.BROWSERDRIVER_TEST_IDENTIFIER;
   const previousPassword = process.env.BROWSERDRIVER_TEST_PASSWORD;
@@ -106,6 +135,8 @@ test("registration executes in a closed unnamed context and emits only a fixed r
       },
     };
     const page = {
+      mainFrame: () => registrationMainFrame,
+      context: () => ({ newCDPSession: async () => ({ on: () => undefined, send: async () => undefined }) }),
       url: () => currentURL,
       goto: async (url: string) => {
         const get = fakeRoute(url, "GET");
@@ -210,6 +241,8 @@ test("submit approval immediately precedes one POST and uncertainty forbids anot
       count: async () => 0,
     };
     const page = {
+      mainFrame: () => registrationMainFrame,
+      context: () => ({ newCDPSession: async () => ({ on: () => undefined, send: async () => undefined }) }),
       url: () => currentURL,
       goto: async (url: string) => {
         const get = fakeRoute(url, "GET");
@@ -277,6 +310,8 @@ test("a denied submit checkpoint prevents the POST and still closes the fresh co
       },
     };
     const page = {
+      mainFrame: () => registrationMainFrame,
+      context: () => ({ newCDPSession: async () => ({ on: () => undefined, send: async () => undefined }) }),
       url: () => currentURL,
       goto: async (url: string) => { currentURL = url; },
       getByRole: () => locator,
@@ -307,13 +342,13 @@ test("a denied submit checkpoint prevents the POST and still closes the fresh co
   }
 });
 
-function fakeRoute(url: string, method: string): {
+function fakeRoute(url: string, method: string, navigation = true): {
   route: Route; continued: () => boolean; aborted: () => boolean;
 } {
   let continued = false;
   let aborted = false;
   const route = {
-    request: () => ({ url: () => url, method: () => method, isNavigationRequest: () => true }),
+    request: () => ({ url: () => url, method: () => method, isNavigationRequest: () => navigation, frame: () => registrationMainFrame }),
     continue: async () => { continued = true; },
     abort: async () => { aborted = true; },
   } as unknown as Route;

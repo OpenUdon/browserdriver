@@ -176,6 +176,7 @@ export class PersistentBrowserDriver {
 
   async register(request: RegisterMessage): Promise<void> {
     let context: BrowserContext | undefined;
+    let guard: RegistrationGuard | undefined;
     let approved = false;
     let completed = false;
     let resultCode: import("./protocol.js").FailureCode | undefined;
@@ -191,9 +192,10 @@ export class PersistentBrowserDriver {
       const allowed = new Set(request.allowedOrigins);
       this.emit(status(request.requestId, "registering", protocolVersionV4));
       context = await this.createContext();
-      const guard = new RegistrationGuard(context, allowed);
+      guard = new RegistrationGuard(context, allowed);
       await guard.install();
       const page = await context.newPage();
+      await guard.watchRedirects(page);
       for (const step of flow.sequence) {
         if (context.pages().length !== 1) throw new DriverFailure("invalid_response");
         guard.assertSafe();
@@ -237,6 +239,7 @@ export class PersistentBrowserDriver {
       await exactLocator(page, flow.success.locator);
       completed = true;
     } catch (error) {
+      try { guard?.assertSafe(); } catch (boundaryError) { error = boundaryError; }
       resultCode = approved ? "registration_indeterminate" : failureCode(error);
     } finally {
       if (context) {
