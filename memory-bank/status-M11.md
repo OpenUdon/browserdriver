@@ -4,7 +4,7 @@
 | --- | --- | --- |
 | M11.1 Add non-mixing v5 validation and private input exchange | `[+]` | Closed v5 definitions and snapshot validation implemented; initial acceptance precedes browser creation. Combined-tree offline and native tests pass. |
 | M11.2 Execute typed inputs and bind submit approval | `[+]` | Native fill/check/select, conditional skipping and clearing, exact snapshot approval, one POST and joined teardown implemented and qualified. V2-v4 regressions pass. |
-| M11.3 Qualify and review | `[ ]` | Synthetic scalar/conditional/wizard execution, stale input, denied input, legacy and privacy regressions, owner checks and Udon consumer qualification. |
+| M11.3 Qualify and review | `[+]` | Offline/audit, v4/v5 native Chromium and Udon consumer qualification pass. Scalar/conditional/wizard, stale and denied input, exact identity, clearing, legacy and privacy regressions pass; review closes at iteration 3 without P1/P2. |
 
 Approved successor to M10. No real target execution is authorized by these
 implementation rows. Review iteration 0; maximum ten iterations, no P1/P2
