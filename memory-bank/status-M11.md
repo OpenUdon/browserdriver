@@ -3,7 +3,7 @@
 | Item | State | Notes |
 | --- | --- | --- |
 | M11.1 Add non-mixing v5 validation and private input exchange | `[+]` | Closed v5 definitions and snapshot validation implemented; initial acceptance precedes browser creation. Combined-tree offline and native tests pass. |
-| M11.2 Execute typed inputs and bind submit approval | `[ ]` | Native fill/check/select, conditional skipping and clearing, exact snapshot approval, one POST and joined teardown; v2-v4 remain unchanged. |
+| M11.2 Execute typed inputs and bind submit approval | `[+]` | Native fill/check/select, conditional skipping and clearing, exact snapshot approval, one POST and joined teardown implemented and qualified. V2-v4 regressions pass. |
 | M11.3 Qualify and review | `[ ]` | Synthetic scalar/conditional/wizard execution, stale input, denied input, legacy and privacy regressions, owner checks and Udon consumer qualification. |
 
 Approved successor to M10. No real target execution is authorized by these

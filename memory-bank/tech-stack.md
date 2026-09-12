@@ -1,5 +1,11 @@
 # Tech Stack
 
+V5 uses the same pinned browser and TypeScript implementation. Its opt-in
+loopback test is `BROWSERDRIVER_REGISTRATION_LIVE_TEST=1 node --test
+dist/test/registration-inputs-live.test.js`; a usable headed display and the
+already installed Chromium runtime are prerequisites. Qualification performs
+no installation or source mutation.
+
 - Node.js 24
 - TypeScript 5.9.2 in strict mode
 - Playwright 1.62.1, Chromium
@@ -14,7 +20,7 @@ npm audit --omit=dev
 git diff --check
 ```
 
-The single TypeScript implementation serves all three protocol versions. V2 keeps
+The single TypeScript implementation serves protocols v2 through v5. V2 keeps
 the UWS 1.7 main-page contract; v3 accepts UWS 1.8 authentication 1.1 followed
 by browser 1.5/1.6 or UWS 1.9 browser 1.7, adds portable context qualification,
 cached-target revalidation, and normative scalar conversion, and does not add

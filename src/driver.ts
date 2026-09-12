@@ -3,12 +3,14 @@ import {
   type ActionMessage, type AuthenticateMessage, type AuthenticationStep, type BrowserOutput, type BrowserWait,
   type ChallengeKind, type ChallengeResponseMessage, DriverFailure, challenge, failure,
   type RegisterMessage, type RegistrationCheckpointKind, type RegistrationCheckpointResponseMessage,
-  parseInput, protocolVersionV3, protocolVersionV4, registrationCheckpoint, status, success,
+  type RegistrationInput, type RegistrationProtocolVersion,
+  parseInput, protocolVersionV3, protocolVersionV4, protocolVersionV5, registrationCheckpoint, status, success,
 } from "./protocol.js";
 import { assertAllowedURL, credentialValue, exactOrigin, totp } from "./security.js";
 import type { SessionStateStore } from "./session-store.js";
 import { RuntimeContexts, type BrowserTarget } from "./contexts.js";
 import { RegistrationGuard, assertRegistrationURL, validateRegistrationMessage } from "./registration.js";
+import { inputIdentity, inputValue, validateRegistrationInput } from "./registration-inputs.js";
 
 export interface MessageSource {
   next(signal?: AbortSignal): Promise<IteratorResult<string>>;
@@ -185,47 +187,66 @@ export class PersistentBrowserDriver {
       const flow = validateRegistrationMessage(request);
       const attemptKey = `${request.operationId}\0${request.sourceDigest}`;
       if (this.approvedRegistrations.has(attemptKey)) throw new DriverFailure("registration_indeterminate");
+      const first = flow.sequence[0];
+      let input = request.version === protocolVersionV5
+        ? validateRegistrationInput(request, request.input, first && "input_checkpoint" in first ? first.input_checkpoint.id : "") : undefined;
+      let initialCheckpoint = true;
+      const applied = new Map<string, Map<string, AppliedRegistrationControl>>();
       const credentials = new Map<string, string>();
-      for (const [slot, binding] of Object.entries(request.credentialBindings)) {
-        credentials.set(slot, credentialValue(request.credentialEnvironment[binding]));
+      if (!input) for (const [slot, binding] of Object.entries(request.credentialBindings)) {
+        credentials.set(slot, credentialValue(request.credentialEnvironment?.[binding]));
       }
       const allowed = new Set(request.allowedOrigins);
-      this.emit(status(request.requestId, "registering", protocolVersionV4));
+      this.emit(status(request.requestId, "registering", request.version));
       context = await this.createContext();
       guard = new RegistrationGuard(context, allowed);
       await guard.install();
+      if (input) {
+        const registrationGuard = guard;
+        await context.routeWebSocket("**/*", async socket => { registrationGuard.rejectMutation(); await socket.close().catch(() => undefined); });
+      }
       const page = await context.newPage();
       await guard.watchRedirects(page);
       for (const step of flow.sequence) {
         if (context.pages().length !== 1) throw new DriverFailure("invalid_response");
         guard.assertSafe();
-        if ("navigate" in step) {
+        if ("input_checkpoint" in step && input) {
+          if (initialCheckpoint) initialCheckpoint = false;
+          else {
+            this.emit({ version: protocolVersionV5, type: "registration_input_checkpoint", requestId: request.requestId, checkpointId: step.input_checkpoint.id });
+            input = await readRegistrationInputResponse(this.lines, request, step.input_checkpoint.id,
+              this.options.registrationCheckpointTimeoutMs ?? defaultRegistrationCheckpointTimeoutMs, input);
+          }
+        } else if ("navigate" in step) {
           assertRegistrationURL(step.navigate, allowed);
           await page.goto(step.navigate, { waitUntil: "domcontentloaded" });
           assertRegistrationURL(page.url(), allowed);
         } else if ("type_credential" in step) {
-          const value = credentials.get(step.type_credential.slot);
-          if (!value) throw new DriverFailure("credentials_invalid");
+          const value = input ? input.values[step.type_credential.slot] : credentials.get(step.type_credential.slot);
+          if (typeof value !== "string" || !value) throw new DriverFailure("credentials_invalid");
           await (await exactLocator(page, step.type_credential.locator)).fill(value);
+        } else if ("fill_input" in step && input) {
+          await applyRegistrationInput(page, request, input, step.fill_input, applied);
         } else if ("click" in step) {
           await (await exactLocator(page, step.click.locator)).click();
+          if (input) await page.waitForLoadState("domcontentloaded");
         } else if ("human_checkpoint" in step) {
           if (step.human_checkpoint.locator) await exactLocator(page, step.human_checkpoint.locator);
-          this.emit(status(request.requestId, "awaiting_registration_checkpoint", protocolVersionV4));
-          await this.requestRegistrationCheckpoint(request.requestId, step.human_checkpoint.kind);
-          this.emit(status(request.requestId, "registering", protocolVersionV4));
+          this.emit(status(request.requestId, "awaiting_registration_checkpoint", request.version));
+          await this.requestRegistrationCheckpoint(request.requestId, step.human_checkpoint.kind, request.version);
+          this.emit(status(request.requestId, "registering", request.version));
         } else if ("wait_for" in step) {
           await exactLocator(page, step.wait_for.locator);
         } else if ("submit" in step) {
           const submit = await exactLocator(page, step.submit.locator);
-          this.emit(status(request.requestId, "awaiting_submit_approval", protocolVersionV4));
-          await this.requestRegistrationCheckpoint(request.requestId, "submit_approval");
+          this.emit(status(request.requestId, "awaiting_submit_approval", request.version));
+          await this.requestRegistrationCheckpoint(request.requestId, "submit_approval", request.version, input ? inputIdentity(input) : undefined);
           approved = true;
           this.approvedRegistrations.add(attemptKey);
           guard.beginSubmit();
           await submit.click();
           guard.finishSubmit();
-          this.emit(status(request.requestId, "registering", protocolVersionV4));
+          this.emit(status(request.requestId, "registering", request.version));
         } else throw new DriverFailure("invalid_response");
         guard.assertSafe();
       }
@@ -248,10 +269,10 @@ export class PersistentBrowserDriver {
       }
     }
     if (completed && !resultCode) {
-      this.emit(success(request.requestId, { status: "success" }, protocolVersionV4));
+      this.emit(success(request.requestId, { status: "success" }, request.version));
       return;
     }
-    this.emit(failure(request.requestId, resultCode ?? "driver_error", protocolVersionV4));
+    this.emit(failure(request.requestId, resultCode ?? "driver_error", request.version));
   }
 
   async close(): Promise<void> {
@@ -370,12 +391,15 @@ export class PersistentBrowserDriver {
   private async requestRegistrationCheckpoint(
     requestId: string,
     kind: RegistrationCheckpointKind | "submit_approval",
+    version: RegistrationProtocolVersion = protocolVersionV4,
+    binding?: { inputRevision: number; inputSha256: string },
   ): Promise<RegistrationCheckpointResponseMessage> {
-    const pending = registrationCheckpoint(requestId, kind);
+    const pending = registrationCheckpoint(requestId, kind, version, binding);
     this.emit(pending.message);
     return readRegistrationCheckpointResponse(
       this.lines, requestId, pending.id,
       this.options.registrationCheckpointTimeoutMs ?? defaultRegistrationCheckpointTimeoutMs,
+      version, binding,
     );
   }
 }
@@ -412,6 +436,8 @@ export async function readRegistrationCheckpointResponse(
   requestId: string,
   checkpointId: string,
   timeoutMs: number,
+  version: RegistrationProtocolVersion = protocolVersionV4,
+  binding?: { inputRevision: number; inputSha256: string },
 ): Promise<RegistrationCheckpointResponseMessage> {
   const signal = AbortSignal.timeout(timeoutMs);
   let line: IteratorResult<string>;
@@ -425,11 +451,60 @@ export async function readRegistrationCheckpointResponse(
   let value: import("./protocol.js").InputMessage;
   try { value = parseInput(line.value); }
   catch { throw new DriverFailure("invalid_response"); }
-  if (value.version !== protocolVersionV4 || value.type !== "registration_checkpoint_response" ||
+  if (value.version !== version || value.type !== "registration_checkpoint_response" ||
       value.requestId !== requestId || value.checkpointId !== checkpointId ||
       (value.decision !== "continue" && value.decision !== "deny")) throw new DriverFailure("invalid_response");
   if (value.decision === "deny") throw new DriverFailure("registration_checkpoint_denied");
+  if (binding ? value.inputRevision !== binding.inputRevision || value.inputSha256 !== binding.inputSha256 : value.inputRevision !== undefined || value.inputSha256 !== undefined) throw new DriverFailure("invalid_response");
   return value;
+}
+
+export async function readRegistrationInputResponse(lines: MessageSource, request: RegisterMessage, checkpointId: string, timeoutMs: number, previous: RegistrationInput): Promise<RegistrationInput> {
+  const signal = AbortSignal.timeout(timeoutMs);
+  let line: IteratorResult<string>;
+  try { line = await lines.next(signal); }
+  catch { throw new DriverFailure(signal.aborted ? "registration_checkpoint_timeout" : "invalid_response"); }
+  if (line.done) throw new DriverFailure("registration_checkpoint_timeout");
+  const value = parseInput(line.value);
+  if (value.version !== protocolVersionV5 || value.type !== "registration_input_response" || value.requestId !== request.requestId || value.checkpointId !== checkpointId) throw new DriverFailure("invalid_response");
+  if (value.decision === "stop" && value.input === undefined) throw new DriverFailure("registration_checkpoint_denied");
+  if (value.decision !== "apply") throw new DriverFailure("invalid_response");
+  return validateRegistrationInput(request, value.input, checkpointId, previous);
+}
+
+interface AppliedRegistrationControl { locator: Locator; control: "fill" | "check" | "select" }
+
+async function applyRegistrationInput(page: Page, request: RegisterMessage, input: RegistrationInput,
+  step: { slot: string; locator: import("./protocol.js").LocatorSpec; control: "fill" | "check" | "select" },
+  applied: Map<string, Map<string, AppliedRegistrationControl>>): Promise<void> {
+  const value = inputValue(request, input, step.slot);
+  if (value === null) {
+    const previous = applied.get(step.slot);
+    if (previous) for (const {locator, control} of previous.values()) {
+      if (control === "check") { await locator.setChecked(false); if (await locator.isChecked()) throw new DriverFailure("invalid_response"); }
+      else if (control === "select") { await locator.selectOption([]); if (await locator.inputValue() !== "") throw new DriverFailure("invalid_response"); }
+      else { await locator.fill(""); if (await locator.inputValue() !== "") throw new DriverFailure("invalid_response"); }
+    }
+    applied.delete(step.slot);
+    return;
+  }
+  const locator = await exactLocator(page, step.locator);
+  // Fixed native-control inspection; portable recipes cannot supply scripts.
+  const kind = await locator.evaluate(element => {
+    const tag = element.tagName.toLowerCase(), type = (element.getAttribute("type") || "text").toLowerCase();
+    if (tag === "textarea") return "fill";
+    if (tag === "select" && !(element as HTMLSelectElement).multiple) return "select";
+    if (tag === "input" && type === "checkbox") return "check";
+    if (tag === "input" && ["text", "email", "number", "tel", "url", "search"].includes(type)) return "fill";
+    return "unsupported";
+  });
+  if (kind !== step.control) throw new DriverFailure("invalid_response");
+  if (step.control === "check") await locator.setChecked(value as boolean);
+  else if (step.control === "select") await locator.selectOption(value as string);
+  else await locator.fill(typeof value === "number" ? JSON.stringify(value) : value as string);
+  const targets = applied.get(step.slot) ?? new Map<string, AppliedRegistrationControl>();
+  targets.set(JSON.stringify(step.locator), {locator, control: step.control});
+  applied.set(step.slot, targets);
 }
 
 function validateAuthenticationMessage(request: AuthenticateMessage): void {

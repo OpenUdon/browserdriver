@@ -11,6 +11,14 @@ v2 continues to execute the unchanged UWS 1.7 contracts. V4 consumes the
 published UWS browser-registration 1.0 profile and call controls in one fresh
 headed context; it never creates a named session.
 
+Registration 1.1 uses protocol v5 and Udon's separate private input form. Explicit
+Start accepts the initial snapshot before browser creation; later Apply/Stop
+checkpoints retain the running deadline. The accepted snapshot supplies both
+credentials and ordinary string, Boolean, integer and number fields. Conditional
+and omitted values are handled through native fill/check/select actions, and
+the final submit approval binds the exact current snapshot. V4 remains the
+registration 1.0 environment-credential path.
+
 The driver accepts only reviewed, closed browser macros. Credentials are read
 from environment-variable names mapped by Udon; values never appear in UWS,
 arguments, reports, or failure messages. MFA is mediated by Udon's local
