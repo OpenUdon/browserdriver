@@ -1,5 +1,14 @@
 # Architecture
 
+V5 extends the isolated registration branch with independently validated UWS
+1.1 definitions and private input envelopes. `registration-inputs.ts` validates
+checkpoint scope, immutable credentials and canonical scalar identity. The
+driver retains each applied locator's control kind so inactive or removed
+optional values can be cleared correctly. Submit approval carries the exact
+revision/digest; neither values nor this digest appear in reduced results.
+V5 denies WebSocket connections and preserves the exact-origin, single-POST,
+indeterminate-outcome and joined-teardown rules. V2–v4 retain their contracts.
+
 Udon starts one `udon.browser-driver.v2` or `udon.browser-driver.v3` NDJSON subprocess per workflow
 execution. The driver owns one Playwright browser and a map of named,
 execution-local contexts. Authentication creates or refreshes a context;

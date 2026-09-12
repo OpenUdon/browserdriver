@@ -4,6 +4,7 @@ import {
   type RegistrationFlow, type RegistrationStep,
 } from "./protocol.js";
 import { exactOrigin } from "./security.js";
+import { validateInputDefinitions, validateInputSequence, validateRegistrationInput } from "./registration-inputs.js";
 
 const identifierPattern = /^[A-Za-z][A-Za-z0-9_-]{0,127}$/u;
 const requestIDPattern = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$/u;
@@ -20,27 +21,30 @@ const sensitiveQueryKeyPattern = /(?:^|[_-])(?:auth|authorization|bearer|code|cr
 const secretValuePattern = /(?:bearer\s+|eyJ[A-Za-z0-9_-]{8,}\.|-----BEGIN |sk-[A-Za-z0-9_-]{8,}|[A-Za-z0-9+/]{24,}={0,2}$)/u;
 
 export function validateRegistrationMessage(request: RegisterMessage): RegistrationFlow {
+  const v5 = request.version === "udon.browser-driver.v5";
+  if (!v5 && request.version !== "udon.browser-driver.v4") invalid();
   assertClosed(request as unknown as Record<string, unknown>, [
     "version", "type", "requestId", "operationId", "sourceDigest", "profile", "flow", "allowedOrigins",
-    "credentialBindings", "credentialEnvironment", "controls",
+    "credentialBindings", v5 ? "input" : "credentialEnvironment", "controls",
   ]);
   if (!requestIDPattern.test(request.requestId) || !identifierPattern.test(request.operationId) ||
       !digestPattern.test(request.sourceDigest) || !identifierPattern.test(request.flow)) invalid();
   const allowed = validateOrigins(request.allowedOrigins);
-  validateProfile(request.profile as unknown as Record<string, unknown>, allowed);
+  validateProfile(record(request.profile), allowed, v5);
   if (!Object.hasOwn(request.profile.flows, request.flow)) invalid();
   const flow = request.profile.flows[request.flow];
   if (!flow) invalid();
   validateBindings(request, flow);
   validateControls(request.controls as unknown as Record<string, unknown>);
+  if (v5) validateRegistrationInput(request, request.input, flow.sequence[0] && "input_checkpoint" in flow.sequence[0] ? flow.sequence[0].input_checkpoint.id : "");
   return flow;
 }
 
-function validateProfile(value: Record<string, unknown>, allowed: ReadonlySet<string>): void {
+function validateProfile(value: Record<string, unknown>, allowed: ReadonlySet<string>, v5: boolean): void {
   assertClosed(value, [
-    "profile", "info", "observationKind", "evidence", "confidence", "expiresAfter", "verification", "credentialSlots", "flows",
+    "profile", "info", "observationKind", "evidence", "confidence", "expiresAfter", "verification", "credentialSlots", "flows", ...(v5 ? ["inputSlots", "discovery"] : []),
   ], ["profile", "info", "observationKind", "evidence", "confidence", "expiresAfter", "verification", "credentialSlots", "flows"]);
-  if (value.profile !== "uws.browser-registration.1.0" ||
+  if (value.profile !== (v5 ? "uws.browser-registration.1.1" : "uws.browser-registration.1.0") ||
       !["accessibility_snapshot", "dom_text", "screenshot_ocr", "other"].includes(String(value.observationKind)) ||
       !["low", "medium", "high"].includes(String(value.confidence)) ||
       typeof value.expiresAfter !== "string" || !durationPattern.test(value.expiresAfter) || !/\d+(?:Y|M|W|D|H|S)/u.test(value.expiresAfter)) invalid();
@@ -72,11 +76,22 @@ function validateProfile(value: Record<string, unknown>, allowed: ReadonlySet<st
   const flows = boundedRecord(value.flows, 1, 32);
   for (const [name, raw] of Object.entries(flows)) {
     identifier(name);
-    validateFlow(record(raw), slots, allowed);
+    validateFlow(record(raw), slots, allowed, v5);
+  }
+  if (v5) {
+    validateInputDefinitions(value);
+    for (const raw of Object.values(flows)) validateInputSequence(value, record(raw));
+    if (value.discovery !== undefined) {
+      const discovery = record(value.discovery);
+      assertClosed(discovery, ["coverage", "entryPoints", "limitations"]);
+      if (!["partial", "owner_reviewed"].includes(String(discovery.coverage)) || !Array.isArray(discovery.entryPoints) || discovery.entryPoints.length < 1 || discovery.entryPoints.length > 32 || new Set(discovery.entryPoints).size !== discovery.entryPoints.length || !Array.isArray(discovery.limitations) || discovery.limitations.length > 5 || new Set(discovery.limitations).size !== discovery.limitations.length) invalid();
+      for (const entry of discovery.entryPoints) assertRegistrationURL(entry, allowed);
+      for (const limitation of discovery.limitations) if (!["authentication_required", "invitation_required", "conditional_flow", "unreachable_page", "unknown_routes"].includes(String(limitation))) invalid();
+    }
   }
 }
 
-function validateFlow(value: Record<string, unknown>, slots: Record<string, unknown>, allowed: ReadonlySet<string>): void {
+function validateFlow(value: Record<string, unknown>, slots: Record<string, unknown>, allowed: ReadonlySet<string>, v5: boolean): void {
   assertClosed(value, ["description", "sequence", "effects", "confirmationPolicy", "success"], ["sequence", "effects", "confirmationPolicy", "success"]);
   if (value.description !== undefined) boundedString(value.description, 0, 1_024);
   if (!Array.isArray(value.sequence) || value.sequence.length < 1 || value.sequence.length > 256) invalid();
@@ -85,9 +100,9 @@ function validateFlow(value: Record<string, unknown>, slots: Record<string, unkn
   for (const raw of value.sequence) {
     const step = record(raw);
     if (Object.keys(step).length !== 1) invalid();
-    validateStep(step as unknown as RegistrationStep, slots, allowed);
+    validateStep(step as unknown as RegistrationStep, slots, allowed, v5);
     if ("submit" in step) submits += 1;
-    if ("human_checkpoint" in step) checkpoints += 1;
+    if ("human_checkpoint" in step || v5 && "input_checkpoint" in step) checkpoints += 1;
   }
   if (submits !== 1) invalid();
   if (!Array.isArray(value.effects) || value.effects.length < 1 || value.effects.length > 3 ||
@@ -105,7 +120,23 @@ function validateFlow(value: Record<string, unknown>, slots: Record<string, unkn
   if (success.path !== undefined && (typeof success.path !== "string" || success.path.length > 2_048 || !cleanPathPattern.test(success.path))) invalid();
 }
 
-function validateStep(step: RegistrationStep, slots: Record<string, unknown>, allowed: ReadonlySet<string>): void {
+function validateStep(step: RegistrationStep, slots: Record<string, unknown>, allowed: ReadonlySet<string>, v5: boolean): void {
+  if (v5 && "input_checkpoint" in step) {
+    const value = record(step.input_checkpoint);
+    assertClosed(value, ["id", "slots"]);
+    identifier(value.id as string);
+    if (!Array.isArray(value.slots) || value.slots.length < 1 || value.slots.length > 64 || new Set(value.slots).size !== value.slots.length) invalid();
+    for (const slot of value.slots) identifier(slot);
+    return;
+  }
+  if (v5 && "fill_input" in step) {
+    const value = record(step.fill_input);
+    assertClosed(value, ["slot", "locator", "control"]);
+    identifier(value.slot as string);
+    validateLocator(record(value.locator));
+    if (!["fill", "check", "select"].includes(String(value.control))) invalid();
+    return;
+  }
   if ("navigate" in step) {
     assertRegistrationURL(step.navigate, allowed);
     return;
@@ -136,13 +167,14 @@ function validateStep(step: RegistrationStep, slots: Record<string, unknown>, al
 
 function validateBindings(request: RegisterMessage, flow: RegistrationFlow): void {
   const bindings = boundedRecord(request.credentialBindings, 1, 64);
-  const environments = boundedRecord(request.credentialEnvironment, 1, 64);
   const used = new Set(flow.sequence.flatMap((step) => "type_credential" in step ? [step.type_credential.slot] : []));
   if (Object.keys(bindings).length !== used.size || [...used].some((slot) => !Object.hasOwn(bindings, slot))) invalid();
   for (const [slot, binding] of Object.entries(bindings)) {
     identifier(slot);
     if (!Object.hasOwn(request.profile.credentialSlots, slot) || typeof binding !== "string" || !identifierPattern.test(binding)) invalid();
   }
+  if (request.version === "udon.browser-driver.v5") return;
+  const environments = boundedRecord(request.credentialEnvironment, 1, 64);
   const requiredBindings = new Set(Object.values(bindings) as string[]);
   if (Object.keys(environments).length !== requiredBindings.size || [...requiredBindings].some((binding) => !Object.hasOwn(environments, binding))) invalid();
   for (const [binding, environment] of Object.entries(environments)) {
@@ -249,6 +281,8 @@ export class RegistrationGuard {
 
   postCount(): number { return this.posts; }
 
+  rejectMutation(): void { this.blocked = "mutation"; }
+
   private async handle(route: Route): Promise<void> {
     const request = route.request();
     const method = request.method().toUpperCase();
@@ -333,7 +367,7 @@ function boundedString(value: unknown, min: number, max: number): asserts value 
   if (typeof value !== "string" || value.length < min || value.length > max || /[\0\r\n]/u.test(value)) invalid();
 }
 
-function identifier(value: string): void { if (!identifierPattern.test(value)) invalid(); }
+function identifier(value: string): void { if (typeof value !== "string" || !identifierPattern.test(value)) invalid(); }
 function dateTime(value: unknown): void { if (typeof value !== "string" || !Number.isFinite(Date.parse(value))) invalid(); }
 function invalid(): never { throw new DriverFailure("invalid_response"); }
 function originRejected(): never { throw new DriverFailure("origin_rejected"); }

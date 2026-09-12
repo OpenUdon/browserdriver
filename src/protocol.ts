@@ -3,8 +3,10 @@ import { randomUUID } from "node:crypto";
 export const protocolVersion = "udon.browser-driver.v2";
 export const protocolVersionV3 = "udon.browser-driver.v3";
 export const protocolVersionV4 = "udon.browser-driver.v4";
+export const protocolVersionV5 = "udon.browser-driver.v5";
+export type RegistrationProtocolVersion = typeof protocolVersionV4 | typeof protocolVersionV5;
 export type LegacyProtocolVersion = typeof protocolVersion | typeof protocolVersionV3;
-export type ProtocolVersion = LegacyProtocolVersion | typeof protocolVersionV4;
+export type ProtocolVersion = LegacyProtocolVersion | RegistrationProtocolVersion;
 export const maxMessageBytes = 1 << 20;
 
 export const statuses = [
@@ -57,7 +59,7 @@ export const registrationCheckpointKinds = [
 export type RegistrationCheckpointKind = (typeof registrationCheckpointKinds)[number];
 
 export interface RegistrationProfile {
-  profile: "uws.browser-registration.1.0";
+  profile: "uws.browser-registration.1.0" | "uws.browser-registration.1.1";
   info: {
     title: string;
     provider?: string;
@@ -71,6 +73,30 @@ export interface RegistrationProfile {
   verification: { lastVerifiedAt: string; uiStabilityScore?: number };
   credentialSlots: Record<string, { kind: "identifier" | "password" }>;
   flows: Record<string, RegistrationFlow>;
+  inputSlots?: Record<string, RegistrationInputSlot>;
+  discovery?: { coverage: "partial" | "owner_reviewed"; entryPoints: string[]; limitations: string[] };
+}
+
+export type RegistrationScalar = string | number | boolean | null;
+export interface RegistrationInputSlot {
+  type: "string" | "boolean" | "integer" | "number";
+  label: string;
+  required?: boolean;
+  requiredWhen?: { slot: string; equals: Exclude<RegistrationScalar, null> };
+  enum?: Exclude<RegistrationScalar, null>[];
+  minLength?: number;
+  maxLength?: number;
+  minimum?: number;
+  maximum?: number;
+}
+
+// Runtime-private. Neither this document nor its digest belongs in reports.
+export interface RegistrationInput {
+  version: "uws.browser-registration-input.1.0";
+  profileSha256: string;
+  registrationType: string;
+  revision: number;
+  values: Record<string, RegistrationScalar>;
 }
 
 export interface RegistrationFlow {
@@ -87,6 +113,8 @@ export type RegistrationStep =
   | { click: { locator: LocatorSpec } }
   | { submit: { locator: LocatorSpec } }
   | { human_checkpoint: { kind: RegistrationCheckpointKind; locator?: LocatorSpec } }
+  | { input_checkpoint: { id: string; slots: string[] } }
+  | { fill_input: { locator: LocatorSpec; slot: string; control: "fill" | "check" | "select" } }
   | { wait_for: { locator: LocatorSpec } };
 
 export interface RegistrationCallControls {
@@ -195,7 +223,7 @@ export interface ChallengeResponseMessage {
 }
 
 export interface RegisterMessage {
-  version: typeof protocolVersionV4;
+  version: RegistrationProtocolVersion;
   type: "register";
   requestId: string;
   operationId: string;
@@ -204,19 +232,31 @@ export interface RegisterMessage {
   flow: string;
   allowedOrigins: string[];
   credentialBindings: Record<string, string>;
-  credentialEnvironment: Record<string, string>;
+  credentialEnvironment?: Record<string, string>;
+  input?: RegistrationInput;
   controls: RegistrationCallControls;
 }
 
 export interface RegistrationCheckpointResponseMessage {
-  version: typeof protocolVersionV4;
+  version: RegistrationProtocolVersion;
   type: "registration_checkpoint_response";
   requestId: string;
   checkpointId: string;
   decision: "continue" | "deny";
+  inputRevision?: number;
+  inputSha256?: string;
 }
 
-export type InputMessage = AuthenticateMessage | ActionMessage | ChallengeResponseMessage | RegisterMessage | RegistrationCheckpointResponseMessage | {
+export interface RegistrationInputResponseMessage {
+  version: typeof protocolVersionV5;
+  type: "registration_input_response";
+  requestId: string;
+  checkpointId: string;
+  decision: "apply" | "stop";
+  input?: RegistrationInput;
+}
+
+export type InputMessage = AuthenticateMessage | ActionMessage | ChallengeResponseMessage | RegisterMessage | RegistrationCheckpointResponseMessage | RegistrationInputResponseMessage | {
   version: ProtocolVersion;
   type: "close";
   requestId: string;
@@ -226,22 +266,25 @@ export function parseInput(line: string): InputMessage {
   if (Buffer.byteLength(line) > maxMessageBytes) throw new DriverFailure("invalid_response");
   let value: unknown;
   try { value = JSON.parse(line); } catch { throw new DriverFailure("invalid_response"); }
-  if (!isRecord(value) || (value.version !== protocolVersion && value.version !== protocolVersionV3 && value.version !== protocolVersionV4) || typeof value.type !== "string" || typeof value.requestId !== "string") {
+  if (!isRecord(value) || (value.version !== protocolVersion && value.version !== protocolVersionV3 && value.version !== protocolVersionV4 && value.version !== protocolVersionV5) || typeof value.type !== "string" || typeof value.requestId !== "string") {
     throw new DriverFailure("invalid_response");
   }
   if (value.version === protocolVersionV3) validateV3Envelope(value);
   if (value.version === protocolVersionV4) validateV4Envelope(value);
+  if (value.version === protocolVersionV5) validateV5Envelope(value);
   return value as unknown as InputMessage;
 }
 
 export function registrationCheckpoint(
   requestId: string,
   kind: RegistrationCheckpointKind | "submit_approval",
+  version: RegistrationProtocolVersion = protocolVersionV4,
+  binding?: { inputRevision: number; inputSha256: string },
 ): { id: string; message: object } {
   const id = randomUUID();
   return {
     id,
-    message: { version: protocolVersionV4, type: "registration_checkpoint", requestId, checkpointId: id, kind },
+    message: { version, type: "registration_checkpoint", requestId, checkpointId: id, kind, ...binding },
   };
 }
 
@@ -289,6 +332,18 @@ function validateV4Envelope(value: Record<string, unknown>): void {
       "credentialBindings", "credentialEnvironment", "controls",
     ],
     registration_checkpoint_response: [...common, "checkpointId", "decision"],
+    close: common,
+  };
+  const allowed = fields[value.type as string];
+  if (!allowed || Object.keys(value).some((field) => !allowed.includes(field))) throw new DriverFailure("invalid_response");
+}
+
+function validateV5Envelope(value: Record<string, unknown>): void {
+  const common = ["version", "type", "requestId"];
+  const fields: Record<string, string[]> = {
+    register: [...common, "operationId", "sourceDigest", "profile", "flow", "allowedOrigins", "credentialBindings", "controls", "input"],
+    registration_checkpoint_response: [...common, "checkpointId", "decision", "inputRevision", "inputSha256"],
+    registration_input_response: [...common, "checkpointId", "decision", "input"],
     close: common,
   };
   const allowed = fields[value.type as string];

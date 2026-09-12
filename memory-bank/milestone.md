@@ -1,5 +1,11 @@
 # Milestones
 
+M11 is active: implement the approved generic registration 1.1 execution plan
+through additive protocol v5. Udon owns input activation and the private form;
+Browserdriver independently validates accepted private snapshots, applies
+typed controls and binds the one submit approval to the exact accepted state.
+See [status-M11.md](status-M11.md). Existing v2-v4 contracts remain unchanged.
+
 | Milestone | Status file | Scope |
 | --- | --- | --- |
 | M01 | `status-M01.md` | Persistent Playwright authentication and named-session driver |

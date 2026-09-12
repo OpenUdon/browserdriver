@@ -1,5 +1,12 @@
 # Product
 
+Registration 1.1 uses protocol v5. An accepted private snapshot supplies
+credentials and typed fields before browser creation. Named checkpoints admit
+Apply or Stop, credentials stay immutable, and the final submit decision binds
+the exact accepted revision and digest. Optional and conditional scalars use
+native fill/check/select controls. One account-creation submit is supported;
+uploads, arbitrary widgets and additional POST steps remain outside scope.
+
 Browserdriver is the trusted, private execution adapter that turns reviewed
 UWS browser authentication and action macros into Playwright operations. It
 supports sign-in and MFA while keeping all credential and live-session state
