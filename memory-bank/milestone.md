@@ -1,5 +1,9 @@
 # Milestones
 
+M12 is active: registration foreground and checkpoint deadlines. See [status-M12.md](status-M12.md).
+The owner approved implementation, focused synthetic tests and downstream
+qualification/adoption; real target operations remain separate.
+
 M11 is complete: implement the approved generic registration 1.1 execution plan
 through additive protocol v5. Udon owns input activation and the private form;
 Browserdriver independently validates accepted private snapshots, applies
@@ -17,6 +21,9 @@ See [status-M11.md](status-M11.md). Existing v2-v4 contracts remain unchanged.
 | M07 | `status-M07.md` | Align false presence flags with declared output extraction semantics |
 | M08 | `status-M08.md` | Distinguish runtime context failures from malformed response/profile input |
 | M09 | `status-M09.md` | Add closed protocol v4 trusted browser registration execution |
+| M10 | `status-M10.md` | Registration request and redirect boundaries |
+| M11 | `status-M11.md` | Private registration 1.1 execution |
+| M12 | `status-M12.md` | Registration foreground and checkpoint deadlines |
 
 M01 establishes the isolated v2 NDJSON process, closed authentication and
 browser macro execution, all planned MFA variants, exact-origin and ambiguity

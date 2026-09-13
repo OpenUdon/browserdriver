@@ -86,3 +86,25 @@ test("private checkpoint responses reject substitution and explicit Stop denies 
   const accepted = await readRegistrationInputResponse(line({ version: request.version, type: "registration_input_response", requestId: request.requestId, checkpointId: "details", decision: "apply", input: revisedInput(request) }), request, "details", 100, request.input!);
   assert.equal(accepted.revision, 2);
 });
+
+
+test("an elapsed advertised deadline cannot accept a queued checkpoint answer", async () => {
+  const request = inputRequest();
+  let reads = 0;
+  const source = { next: async () => { reads++; return { done: true as const, value: undefined }; } };
+  const timedOut = (error: unknown) => error instanceof DriverFailure && error.code === "registration_checkpoint_timeout";
+  await assert.rejects(() => readRegistrationCheckpointResponse(source, request.requestId, "checkpoint", 120_000, request.version, undefined, Date.now() - 1), timedOut);
+  await assert.rejects(() => readRegistrationInputResponse(source, request, "details", 120_000, request.input!, Date.now() - 1), timedOut);
+  assert.equal(reads, 0);
+});
+
+
+test("checkpoint response parsing cannot accept a reply after its deadline", async () => {
+  const request = inputRequest();
+  const source = { next: async () => {
+    await new Promise(resolve => setTimeout(resolve, 15));
+    return { done: false as const, value: JSON.stringify({version:request.version,type:"registration_checkpoint_response",requestId:request.requestId,checkpointId:"checkpoint",decision:"continue"}) };
+  } };
+  await assert.rejects(() => readRegistrationCheckpointResponse(source, request.requestId, "checkpoint", 120_000, request.version, undefined, Date.now() + 5),
+    (error: unknown) => error instanceof DriverFailure && error.code === "registration_checkpoint_timeout");
+});

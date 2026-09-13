@@ -1,5 +1,9 @@
 # Product
 
+Registration now brings its isolated page forward at launch and each input,
+human and submit checkpoint. The desktop compositor ultimately controls focus;
+this is a foreground request, not proof that a person can see the window.
+
 Registration 1.1 uses protocol v5. An accepted private snapshot supplies
 credentials and typed fields before browser creation. Named checkpoints admit
 Apply or Stop, credentials stay immutable, and the final submit decision binds

@@ -1,5 +1,9 @@
 # Tech Stack
 
+M12 keeps Node/Playwright pins unchanged. Optional v5 `deadline` metadata is
+private runtime timing, absent from UWS profiles and reduced results. Native
+v4/v5 loopback tests remain opt-in and need an existing headed display.
+
 V5 uses the same pinned browser and TypeScript implementation. Its opt-in
 loopback test is `BROWSERDRIVER_REGISTRATION_LIVE_TEST=1 node --test
 dist/test/registration-inputs-live.test.js`; a usable headed display and the

@@ -99,3 +99,16 @@ and the driver performs the lookup locally.
   selected disposition and is not performed by the driver.
 
 See [docs/protocol.md](docs/protocol.md) for the private process contract.
+
+## Registration window and checkpoint timing
+
+The headed registration page requests foreground presentation at launch and
+each input, human and final submit checkpoint. The desktop window manager may
+still require operator attention; foreground presentation grants no consent or
+submission decision.
+
+V5 checkpoint messages include an optional `deadline` timestamp. Matching Udon
+uses the earliest driver, broker or workflow deadline for its private form
+countdown. The driver rejects replies after its own deadline; transport and UI
+delays never restart that wait. V2-v4 wire shapes remain unchanged. Use the
+reviewed matching Udon/Browserdriver pair when adopting this additive v5 wire.

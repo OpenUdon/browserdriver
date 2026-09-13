@@ -135,6 +135,7 @@ test("registration executes in a closed unnamed context and emits only a fixed r
       },
     };
     const page = {
+      bringToFront: async () => undefined,
       mainFrame: () => registrationMainFrame,
       context: () => ({ newCDPSession: async () => ({ on: () => undefined, send: async () => undefined }) }),
       url: () => currentURL,
@@ -241,6 +242,7 @@ test("submit approval immediately precedes one POST and uncertainty forbids anot
       count: async () => 0,
     };
     const page = {
+      bringToFront: async () => { events.push("foreground"); },
       mainFrame: () => registrationMainFrame,
       context: () => ({ newCDPSession: async () => ({ on: () => undefined, send: async () => undefined }) }),
       url: () => currentURL,
@@ -278,7 +280,8 @@ test("submit approval immediately precedes one POST and uncertainty forbids anot
     await driver.register(request());
     assert.equal(messages.at(-1)!.failureCode, "registration_indeterminate");
     assert.equal(postCount, 1);
-    assert.deepEqual(events.slice(-3), ["checkpoint:submit_approval", "decision:submit_approval", "submit_click"]);
+    assert.equal(events[0], "foreground");
+    assert.deepEqual(events.slice(-4), ["foreground", "checkpoint:submit_approval", "decision:submit_approval", "submit_click"]);
     assert.equal(closeCount, 1);
 
     await driver.register({ ...request(), requestId: "registration_retry" });
@@ -310,6 +313,7 @@ test("a denied submit checkpoint prevents the POST and still closes the fresh co
       },
     };
     const page = {
+      bringToFront: async () => undefined,
       mainFrame: () => registrationMainFrame,
       context: () => ({ newCDPSession: async () => ({ on: () => undefined, send: async () => undefined }) }),
       url: () => currentURL,
@@ -336,6 +340,13 @@ test("a denied submit checkpoint prevents the POST and still closes the fresh co
     assert.equal(messages.at(-1)!.failureCode, "registration_checkpoint_denied");
     assert.equal(posts, 0);
     assert.equal(closed, true);
+    closed = false; messages.length = 0;
+    page.bringToFront = async () => { throw new Error("private window failure prose"); };
+    await driver.register({...request(),requestId:"foreground_failure",operationId:"foreground_failure"});
+    assert.equal(messages.at(-1)!.failureCode, "driver_error");
+    assert.equal(messages.some(message => message.type === "registration_checkpoint"), false);
+    assert.equal(posts, 0); assert.equal(closed, true);
+    assert.equal(JSON.stringify(messages).includes("private window failure prose"), false);
   } finally {
     restoreEnvironment("BROWSERDRIVER_TEST_IDENTIFIER", previousIdentifier);
     restoreEnvironment("BROWSERDRIVER_TEST_PASSWORD", previousPassword);

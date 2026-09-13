@@ -1,5 +1,11 @@
 # Architecture
 
+V5 checkpoint messages may include an absolute RFC3339 `deadline` computed
+before emission. The driver waits only for the remaining duration and rejects
+late replies even when cancellation delivery is delayed. Matching Udon bounds
+its own wait by that deadline. V2-v4 wire shapes and all one-submit, privacy and
+indeterminate-outcome rules remain unchanged.
+
 V5 extends the isolated registration branch with independently validated UWS
 1.1 definitions and private input envelopes. `registration-inputs.ts` validates
 checkpoint scope, immutable credentials and canonical scalar identity. The

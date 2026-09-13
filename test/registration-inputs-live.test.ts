@@ -31,6 +31,9 @@ test("headed v5 applies typed snapshots, clears inactive values and stops substi
   let active = inputRequest(origin);
   const source = { next: async () => {
     const pending = messages.at(-1)!;
+    assert.equal(typeof pending.deadline, "string");
+    const remaining = Date.parse(String(pending.deadline)) - Date.now();
+    assert.ok(remaining > 0 && remaining <= 120_000);
     if (pending.type === "registration_input_checkpoint") {
       const input = revisedInput(active);
       if (mode === "stale") input.revision = 1;

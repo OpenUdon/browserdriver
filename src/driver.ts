@@ -206,6 +206,7 @@ export class PersistentBrowserDriver {
         await context.routeWebSocket("**/*", async socket => { registrationGuard.rejectMutation(); await socket.close().catch(() => undefined); });
       }
       const page = await context.newPage();
+      await page.bringToFront();
       await guard.watchRedirects(page);
       for (const step of flow.sequence) {
         if (context.pages().length !== 1) throw new DriverFailure("invalid_response");
@@ -213,9 +214,12 @@ export class PersistentBrowserDriver {
         if ("input_checkpoint" in step && input) {
           if (initialCheckpoint) initialCheckpoint = false;
           else {
-            this.emit({ version: protocolVersionV5, type: "registration_input_checkpoint", requestId: request.requestId, checkpointId: step.input_checkpoint.id });
+            await page.bringToFront();
+            const timeoutMs = this.options.registrationCheckpointTimeoutMs ?? defaultRegistrationCheckpointTimeoutMs;
+            const deadlineMs = Date.now() + timeoutMs;
+            this.emit({ version: protocolVersionV5, type: "registration_input_checkpoint", requestId: request.requestId, checkpointId: step.input_checkpoint.id, deadline: new Date(deadlineMs).toISOString() });
             input = await readRegistrationInputResponse(this.lines, request, step.input_checkpoint.id,
-              this.options.registrationCheckpointTimeoutMs ?? defaultRegistrationCheckpointTimeoutMs, input);
+              timeoutMs, input, deadlineMs);
           }
         } else if ("navigate" in step) {
           assertRegistrationURL(step.navigate, allowed);
@@ -233,14 +237,14 @@ export class PersistentBrowserDriver {
         } else if ("human_checkpoint" in step) {
           if (step.human_checkpoint.locator) await exactLocator(page, step.human_checkpoint.locator);
           this.emit(status(request.requestId, "awaiting_registration_checkpoint", request.version));
-          await this.requestRegistrationCheckpoint(request.requestId, step.human_checkpoint.kind, request.version);
+          await this.requestRegistrationCheckpoint(page, request.requestId, step.human_checkpoint.kind, request.version);
           this.emit(status(request.requestId, "registering", request.version));
         } else if ("wait_for" in step) {
           await exactLocator(page, step.wait_for.locator);
         } else if ("submit" in step) {
           const submit = await exactLocator(page, step.submit.locator);
           this.emit(status(request.requestId, "awaiting_submit_approval", request.version));
-          await this.requestRegistrationCheckpoint(request.requestId, "submit_approval", request.version, input ? inputIdentity(input) : undefined);
+          await this.requestRegistrationCheckpoint(page, request.requestId, "submit_approval", request.version, input ? inputIdentity(input) : undefined);
           approved = true;
           this.approvedRegistrations.add(attemptKey);
           guard.beginSubmit();
@@ -389,17 +393,19 @@ export class PersistentBrowserDriver {
   }
 
   private async requestRegistrationCheckpoint(
+    page: Page,
     requestId: string,
     kind: RegistrationCheckpointKind | "submit_approval",
     version: RegistrationProtocolVersion = protocolVersionV4,
     binding?: { inputRevision: number; inputSha256: string },
   ): Promise<RegistrationCheckpointResponseMessage> {
+    await page.bringToFront();
+    const timeoutMs = this.options.registrationCheckpointTimeoutMs ?? defaultRegistrationCheckpointTimeoutMs;
+    const deadlineMs = Date.now() + timeoutMs;
     const pending = registrationCheckpoint(requestId, kind, version, binding);
-    this.emit(pending.message);
+    this.emit({ ...pending.message, ...(version === protocolVersionV5 ? { deadline: new Date(deadlineMs).toISOString() } : {}) });
     return readRegistrationCheckpointResponse(
-      this.lines, requestId, pending.id,
-      this.options.registrationCheckpointTimeoutMs ?? defaultRegistrationCheckpointTimeoutMs,
-      version, binding,
+      this.lines, requestId, pending.id, timeoutMs, version, binding, deadlineMs,
     );
   }
 }
@@ -431,6 +437,12 @@ export async function readChallengeResponse(
   return response as ChallengeResponseMessage;
 }
 
+function registrationCheckpointSignal(timeoutMs: number, deadlineMs?: number): AbortSignal {
+  const remaining = deadlineMs === undefined ? timeoutMs : Math.min(timeoutMs, deadlineMs - Date.now());
+  if (remaining <= 0) throw new DriverFailure("registration_checkpoint_timeout");
+  return AbortSignal.timeout(remaining);
+}
+
 export async function readRegistrationCheckpointResponse(
   lines: MessageSource,
   requestId: string,
@@ -438,8 +450,9 @@ export async function readRegistrationCheckpointResponse(
   timeoutMs: number,
   version: RegistrationProtocolVersion = protocolVersionV4,
   binding?: { inputRevision: number; inputSha256: string },
+  deadlineMs?: number,
 ): Promise<RegistrationCheckpointResponseMessage> {
-  const signal = AbortSignal.timeout(timeoutMs);
+  const signal = registrationCheckpointSignal(timeoutMs, deadlineMs);
   let line: IteratorResult<string>;
   try {
     line = await lines.next(signal);
@@ -454,13 +467,14 @@ export async function readRegistrationCheckpointResponse(
   if (value.version !== version || value.type !== "registration_checkpoint_response" ||
       value.requestId !== requestId || value.checkpointId !== checkpointId ||
       (value.decision !== "continue" && value.decision !== "deny")) throw new DriverFailure("invalid_response");
+  if (signal.aborted || deadlineMs !== undefined && Date.now() >= deadlineMs) throw new DriverFailure("registration_checkpoint_timeout");
   if (value.decision === "deny") throw new DriverFailure("registration_checkpoint_denied");
   if (binding ? value.inputRevision !== binding.inputRevision || value.inputSha256 !== binding.inputSha256 : value.inputRevision !== undefined || value.inputSha256 !== undefined) throw new DriverFailure("invalid_response");
   return value;
 }
 
-export async function readRegistrationInputResponse(lines: MessageSource, request: RegisterMessage, checkpointId: string, timeoutMs: number, previous: RegistrationInput): Promise<RegistrationInput> {
-  const signal = AbortSignal.timeout(timeoutMs);
+export async function readRegistrationInputResponse(lines: MessageSource, request: RegisterMessage, checkpointId: string, timeoutMs: number, previous: RegistrationInput, deadlineMs?: number): Promise<RegistrationInput> {
+  const signal = registrationCheckpointSignal(timeoutMs, deadlineMs);
   let line: IteratorResult<string>;
   try { line = await lines.next(signal); }
   catch { throw new DriverFailure(signal.aborted ? "registration_checkpoint_timeout" : "invalid_response"); }
@@ -469,7 +483,9 @@ export async function readRegistrationInputResponse(lines: MessageSource, reques
   if (value.version !== protocolVersionV5 || value.type !== "registration_input_response" || value.requestId !== request.requestId || value.checkpointId !== checkpointId) throw new DriverFailure("invalid_response");
   if (value.decision === "stop" && value.input === undefined) throw new DriverFailure("registration_checkpoint_denied");
   if (value.decision !== "apply") throw new DriverFailure("invalid_response");
-  return validateRegistrationInput(request, value.input, checkpointId, previous);
+  const accepted = validateRegistrationInput(request, value.input, checkpointId, previous);
+  if (signal.aborted || deadlineMs !== undefined && Date.now() >= deadlineMs) throw new DriverFailure("registration_checkpoint_timeout");
+  return accepted;
 }
 
 interface AppliedRegistrationControl { locator: Locator; control: "fill" | "check" | "select" }
