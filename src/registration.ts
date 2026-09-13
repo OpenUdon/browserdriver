@@ -1,3 +1,4 @@
+import { validateVerificationDescriptor } from "./verification-policy.js";
 import type { BrowserContext, Frame, Page, Route } from "playwright";
 import {
   DriverFailure, registrationCheckpointKinds, type LocatorSpec, type RegisterMessage,
@@ -21,30 +22,32 @@ const sensitiveQueryKeyPattern = /(?:^|[_-])(?:auth|authorization|bearer|code|cr
 const secretValuePattern = /(?:bearer\s+|eyJ[A-Za-z0-9_-]{8,}\.|-----BEGIN |sk-[A-Za-z0-9_-]{8,}|[A-Za-z0-9+/]{24,}={0,2}$)/u;
 
 export function validateRegistrationMessage(request: RegisterMessage): RegistrationFlow {
-  const v5 = request.version === "udon.browser-driver.v5";
+  const v6 = request.version === "udon.browser-driver.v6";
+  const v5 = request.version === "udon.browser-driver.v5" || v6;
   if (!v5 && request.version !== "udon.browser-driver.v4") invalid();
   assertClosed(request as unknown as Record<string, unknown>, [
     "version", "type", "requestId", "operationId", "sourceDigest", "profile", "flow", "allowedOrigins",
-    "credentialBindings", v5 ? "input" : "credentialEnvironment", "controls",
+    "credentialBindings", v5 ? "input" : "credentialEnvironment", "controls", ...(v6 ? ["deadline"] : []),
   ]);
   if (!requestIDPattern.test(request.requestId) || !identifierPattern.test(request.operationId) ||
       !digestPattern.test(request.sourceDigest) || !identifierPattern.test(request.flow)) invalid();
   const allowed = validateOrigins(request.allowedOrigins);
-  validateProfile(record(request.profile), allowed, v5);
+  validateProfile(record(request.profile), allowed, v5, v6);
+  if (v6 && (typeof request.deadline !== "string" || !Number.isFinite(Date.parse(request.deadline)) || Date.parse(request.deadline) <= Date.now())) invalid();
   if (!Object.hasOwn(request.profile.flows, request.flow)) invalid();
   const flow = request.profile.flows[request.flow];
   if (!flow) invalid();
   validateBindings(request, flow);
-  validateControls(request.controls as unknown as Record<string, unknown>);
+  validateControls(request.controls as unknown as Record<string, unknown>, v6);
   if (v5) validateRegistrationInput(request, request.input, flow.sequence[0] && "input_checkpoint" in flow.sequence[0] ? flow.sequence[0].input_checkpoint.id : "");
   return flow;
 }
 
-function validateProfile(value: Record<string, unknown>, allowed: ReadonlySet<string>, v5: boolean): void {
+export function validateProfile(value: Record<string, unknown>, allowed: ReadonlySet<string>, v5: boolean, v6 = false): void {
   assertClosed(value, [
     "profile", "info", "observationKind", "evidence", "confidence", "expiresAfter", "verification", "credentialSlots", "flows", ...(v5 ? ["inputSlots", "discovery"] : []),
   ], ["profile", "info", "observationKind", "evidence", "confidence", "expiresAfter", "verification", "credentialSlots", "flows"]);
-  if (value.profile !== (v5 ? "uws.browser-registration.1.1" : "uws.browser-registration.1.0") ||
+  if (value.profile !== (v6 ? "uws.browser-registration.1.2" : v5 ? "uws.browser-registration.1.1" : "uws.browser-registration.1.0") ||
       !["accessibility_snapshot", "dom_text", "screenshot_ocr", "other"].includes(String(value.observationKind)) ||
       !["low", "medium", "high"].includes(String(value.confidence)) ||
       typeof value.expiresAfter !== "string" || !durationPattern.test(value.expiresAfter) || !/\d+(?:Y|M|W|D|H|S)/u.test(value.expiresAfter)) invalid();
@@ -76,7 +79,7 @@ function validateProfile(value: Record<string, unknown>, allowed: ReadonlySet<st
   const flows = boundedRecord(value.flows, 1, 32);
   for (const [name, raw] of Object.entries(flows)) {
     identifier(name);
-    validateFlow(record(raw), slots, allowed, v5);
+    validateFlow(record(raw), slots, allowed, v5, v6);
   }
   if (v5) {
     validateInputDefinitions(value);
@@ -91,8 +94,12 @@ function validateProfile(value: Record<string, unknown>, allowed: ReadonlySet<st
   }
 }
 
-function validateFlow(value: Record<string, unknown>, slots: Record<string, unknown>, allowed: ReadonlySet<string>, v5: boolean): void {
-  assertClosed(value, ["description", "sequence", "effects", "confirmationPolicy", "success"], ["sequence", "effects", "confirmationPolicy", "success"]);
+function validateFlow(value: Record<string, unknown>, slots: Record<string, unknown>, allowed: ReadonlySet<string>, v5: boolean, v6: boolean): void {
+  assertClosed(value, ["description", "sequence", "effects", "confirmationPolicy", "success", ...(v6 ? ["humanVerification"] : [])], ["sequence", "effects", "confirmationPolicy", "success", ...(v6 ? ["humanVerification"] : [])]);
+  if (v6) {
+    validateVerificationDescriptor(value.humanVerification);
+    assertRegistrationURL((value.humanVerification as import("./protocol.js").VerificationDescriptor).submissionURL, allowed);
+  }
   if (value.description !== undefined) boundedString(value.description, 0, 1_024);
   if (!Array.isArray(value.sequence) || value.sequence.length < 1 || value.sequence.length > 256) invalid();
   let submits = 0;
@@ -101,6 +108,7 @@ function validateFlow(value: Record<string, unknown>, slots: Record<string, unkn
     const step = record(raw);
     if (Object.keys(step).length !== 1) invalid();
     validateStep(step as unknown as RegistrationStep, slots, allowed, v5);
+    if (v6 && (submits > 0 && !("wait_for" in step) || "human_checkpoint" in step && record(step.human_checkpoint).kind === "captcha")) invalid();
     if ("submit" in step) submits += 1;
     if ("human_checkpoint" in step || v5 && "input_checkpoint" in step) checkpoints += 1;
   }
@@ -173,7 +181,7 @@ function validateBindings(request: RegisterMessage, flow: RegistrationFlow): voi
     identifier(slot);
     if (!Object.hasOwn(request.profile.credentialSlots, slot) || typeof binding !== "string" || !identifierPattern.test(binding)) invalid();
   }
-  if (request.version === "udon.browser-driver.v5") return;
+  if (request.version === "udon.browser-driver.v5" || request.version === "udon.browser-driver.v6") return;
   const environments = boundedRecord(request.credentialEnvironment, 1, 64);
   const requiredBindings = new Set(Object.values(bindings) as string[]);
   if (Object.keys(environments).length !== requiredBindings.size || [...requiredBindings].some((binding) => !Object.hasOwn(environments, binding))) invalid();
@@ -183,9 +191,10 @@ function validateBindings(request: RegisterMessage, flow: RegistrationFlow): voi
   }
 }
 
-function validateControls(value: Record<string, unknown>): void {
-  assertClosed(value, ["approval", "duplicatePrevention", "onDuplicate", "ambiguousOutcome", "cleanupDisposition"],
-    ["approval", "duplicatePrevention", "onDuplicate", "ambiguousOutcome", "cleanupDisposition"]);
+function validateControls(value: Record<string, unknown>, v6: boolean): void {
+  assertClosed(value, ["approval", "duplicatePrevention", "onDuplicate", "ambiguousOutcome", "cleanupDisposition", ...(v6 ? ["verification"] : [])],
+    ["approval", "duplicatePrevention", "onDuplicate", "ambiguousOutcome", "cleanupDisposition", ...(v6 ? ["verification"] : [])]);
+  if (v6 && value.verification !== "reviewed_flow") invalid();
   if (typeof value.approval !== "string" || !identifierPattern.test(value.approval) ||
       value.duplicatePrevention !== "operator_attestation" || value.onDuplicate !== "fail" ||
       value.ambiguousOutcome !== "stop_without_retry" ||

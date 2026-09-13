@@ -4,7 +4,8 @@ export const protocolVersion = "udon.browser-driver.v2";
 export const protocolVersionV3 = "udon.browser-driver.v3";
 export const protocolVersionV4 = "udon.browser-driver.v4";
 export const protocolVersionV5 = "udon.browser-driver.v5";
-export type RegistrationProtocolVersion = typeof protocolVersionV4 | typeof protocolVersionV5;
+export const protocolVersionV6 = "udon.browser-driver.v6";
+export type RegistrationProtocolVersion = typeof protocolVersionV4 | typeof protocolVersionV5 | typeof protocolVersionV6;
 export type LegacyProtocolVersion = typeof protocolVersion | typeof protocolVersionV3;
 export type ProtocolVersion = LegacyProtocolVersion | RegistrationProtocolVersion;
 export const maxMessageBytes = 1 << 20;
@@ -24,6 +25,7 @@ export const failureCodes = [
   "mfa_timeout", "mfa_denied", "credentials_invalid", "session_expired", "driver_error",
   "unsupported_challenge", "captcha_required", "origin_rejected", "ambiguous_locator", "invalid_context", "invalid_response",
   "registration_indeterminate", "registration_checkpoint_timeout", "registration_checkpoint_denied",
+  "verification_unsupported", "verification_not_ready", "verification_expired", "verification_failed", "verification_timeout", "verification_policy", "verification_budget",
 ] as const;
 export type FailureCode = (typeof failureCodes)[number];
 
@@ -59,7 +61,7 @@ export const registrationCheckpointKinds = [
 export type RegistrationCheckpointKind = (typeof registrationCheckpointKinds)[number];
 
 export interface RegistrationProfile {
-  profile: "uws.browser-registration.1.0" | "uws.browser-registration.1.1";
+  profile: "uws.browser-registration.1.0" | "uws.browser-registration.1.1" | "uws.browser-registration.1.2";
   info: {
     title: string;
     provider?: string;
@@ -99,7 +101,15 @@ export interface RegistrationInput {
   values: Record<string, RegistrationScalar>;
 }
 
+export interface VerificationDescriptor {
+  provider: "turnstile" | "recaptcha_v2" | "hcaptcha";
+  activation: "before_approval" | "approved_submit";
+  widgetBinding: "single_in_submit_form";
+  submissionURL: string;
+  dependencies: { policy: "turnstile.v1" | "recaptcha_v2.v1" | "hcaptcha.v1"; maxRequests: number; maxResponseBytes: number; timeoutMs: number };
+}
 export interface RegistrationFlow {
+  humanVerification?: VerificationDescriptor;
   description?: string;
   sequence: RegistrationStep[];
   effects: Array<"creates_account" | "sends_verification" | "requires_human_verification">;
@@ -118,6 +128,7 @@ export type RegistrationStep =
   | { wait_for: { locator: LocatorSpec } };
 
 export interface RegistrationCallControls {
+  verification?: "reviewed_flow";
   approval: string;
   duplicatePrevention: "operator_attestation";
   onDuplicate: "fail";
@@ -222,7 +233,19 @@ export interface ChallengeResponseMessage {
   value?: string;
 }
 
+export interface VerifyMessage {
+  version: typeof protocolVersionV6;
+  type: "verify";
+  requestId: string;
+  sourceDigest: string;
+  profile: RegistrationProfile;
+  flow: string;
+  allowedOrigins: string[];
+  deadline: string;
+}
+
 export interface RegisterMessage {
+  deadline?: string;
   version: RegistrationProtocolVersion;
   type: "register";
   requestId: string;
@@ -248,7 +271,7 @@ export interface RegistrationCheckpointResponseMessage {
 }
 
 export interface RegistrationInputResponseMessage {
-  version: typeof protocolVersionV5;
+  version: typeof protocolVersionV5 | typeof protocolVersionV6;
   type: "registration_input_response";
   requestId: string;
   checkpointId: string;
@@ -256,7 +279,7 @@ export interface RegistrationInputResponseMessage {
   input?: RegistrationInput;
 }
 
-export type InputMessage = AuthenticateMessage | ActionMessage | ChallengeResponseMessage | RegisterMessage | RegistrationCheckpointResponseMessage | RegistrationInputResponseMessage | {
+export type InputMessage = VerifyMessage | AuthenticateMessage | ActionMessage | ChallengeResponseMessage | RegisterMessage | RegistrationCheckpointResponseMessage | RegistrationInputResponseMessage | {
   version: ProtocolVersion;
   type: "close";
   requestId: string;
@@ -266,12 +289,12 @@ export function parseInput(line: string): InputMessage {
   if (Buffer.byteLength(line) > maxMessageBytes) throw new DriverFailure("invalid_response");
   let value: unknown;
   try { value = JSON.parse(line); } catch { throw new DriverFailure("invalid_response"); }
-  if (!isRecord(value) || (value.version !== protocolVersion && value.version !== protocolVersionV3 && value.version !== protocolVersionV4 && value.version !== protocolVersionV5) || typeof value.type !== "string" || typeof value.requestId !== "string") {
+  if (!isRecord(value) || (value.version !== protocolVersion && value.version !== protocolVersionV3 && value.version !== protocolVersionV4 && value.version !== protocolVersionV5 && value.version !== protocolVersionV6) || typeof value.type !== "string" || typeof value.requestId !== "string") {
     throw new DriverFailure("invalid_response");
   }
   if (value.version === protocolVersionV3) validateV3Envelope(value);
   if (value.version === protocolVersionV4) validateV4Envelope(value);
-  if (value.version === protocolVersionV5) validateV5Envelope(value);
+  if (value.version === protocolVersionV5 || value.version === protocolVersionV6) validateV5Envelope(value);
   return value as unknown as InputMessage;
 }
 
@@ -341,11 +364,12 @@ function validateV4Envelope(value: Record<string, unknown>): void {
 function validateV5Envelope(value: Record<string, unknown>): void {
   const common = ["version", "type", "requestId"];
   const fields: Record<string, string[]> = {
-    register: [...common, "operationId", "sourceDigest", "profile", "flow", "allowedOrigins", "credentialBindings", "controls", "input"],
+    register: [...common, "operationId", "sourceDigest", "profile", "flow", "allowedOrigins", "credentialBindings", "controls", "input", ...(value.version === protocolVersionV6 ? ["deadline"] : [])],
     registration_checkpoint_response: [...common, "checkpointId", "decision", "inputRevision", "inputSha256"],
     registration_input_response: [...common, "checkpointId", "decision", "input"],
     close: common,
   };
+  if (value.version === protocolVersionV6) fields.verify = [...common, "sourceDigest", "profile", "flow", "allowedOrigins", "deadline"];
   const allowed = fields[value.type as string];
   if (!allowed || Object.keys(value).some((field) => !allowed.includes(field))) throw new DriverFailure("invalid_response");
 }
