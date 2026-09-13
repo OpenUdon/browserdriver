@@ -35,3 +35,15 @@ fixed registration status, and tears the context down before reporting.
 Recovery, password changes, logout, arbitrary browser scripts, CAPTCHA bypass,
 public session storage, registration retry after an approved submit, and
 driver-managed account cleanup are non-goals.
+
+## Verification candidate (September 13)
+
+The active coordinated verification work adds BRP and registration-call 1.2,
+author-session/result v4, review v3, transaction v4, authoring-authority v2,
+driver v6 and execution-report v4. Published older contracts remain unchanged.
+The candidate covers one standard Turnstile, reCAPTCHA v2 or hCaptcha widget
+bound to the reviewed submit form. Explicit dependency review grants finite
+provider traffic; it grants no application mutation. Readiness remains client
+evidence and actual challenges remain human-operated. The source candidate is
+not yet a qualified or adopted runtime. Provider integration and production
+acceptance have separate authorization gates.

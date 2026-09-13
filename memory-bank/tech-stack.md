@@ -53,3 +53,15 @@ shared closed vocabulary. Its success response is the fixed
 Output extraction treats only `presence === true` as Boolean match mode. A
 present-but-false flag is semantically identical to omission and therefore
 preserves the output's declared type across browser 1.5, 1.6, and 1.7.
+
+## Verification candidate (September 13)
+
+The active coordinated verification work adds BRP and registration-call 1.2,
+author-session/result v4, review v3, transaction v4, authoring-authority v2,
+driver v6 and execution-report v4. Published older contracts remain unchanged.
+The candidate covers one standard Turnstile, reCAPTCHA v2 or hCaptcha widget
+bound to the reviewed submit form. Explicit dependency review grants finite
+provider traffic; it grants no application mutation. Readiness remains client
+evidence and actual challenges remain human-operated. The source candidate is
+not yet a qualified or adopted runtime. Provider integration and production
+acceptance have separate authorization gates.

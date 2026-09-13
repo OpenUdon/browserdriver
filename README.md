@@ -1,5 +1,9 @@
 # OpenUdon Browser Driver
 
+Registration 1.2 uses [driver v6 verification](docs/verification.md) for reviewed
+Turnstile, reCAPTCHA v2 and hCaptcha dependencies, automatic readiness and a
+separate no-input diagnostic. Adoption requires the tested dependency closure.
+
 This repository provides the trusted Playwright process for
 `udon.browser-driver.v2`, additive `udon.browser-driver.v3`, and the closed
 registration-only `udon.browser-driver.v4`. One process lives for one Udon workflow execution, so

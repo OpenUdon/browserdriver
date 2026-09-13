@@ -106,6 +106,9 @@ network-wide boundary must enforce it outside the browser driver.
 
 ## V4 registration
 
+For additive registration 1.2/v6 verification, including closed progress and the
+verification-only diagnostic, see [verification](verification.md).
+
 V4 accepts only `register`, `registration_checkpoint_response`, and `close`
 inputs. A register request carries one complete, already validated
 `uws.browser-registration.1.0` profile, selected flow, exact origin allowlist,
