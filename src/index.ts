@@ -39,6 +39,7 @@ try {
       if (message.type === "authenticate") await driver.authenticate(message);
       else if (message.type === "action") await driver.action(message);
       else if (message.type === "register") await driver.register(message);
+      else if (message.type === "verify") await driver.verify(message);
       else throw new DriverFailure("invalid_response");
     } catch (error) {
       emit(failure(requestId, error instanceof DriverFailure ? error.code : "invalid_response", requestVersion));

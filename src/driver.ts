@@ -3,13 +3,14 @@ import {
   type ActionMessage, type AuthenticateMessage, type AuthenticationStep, type BrowserOutput, type BrowserWait,
   type ChallengeKind, type ChallengeResponseMessage, DriverFailure, challenge, failure,
   type RegisterMessage, type RegistrationCheckpointKind, type RegistrationCheckpointResponseMessage,
-  type RegistrationInput, type RegistrationProtocolVersion,
-  parseInput, protocolVersionV3, protocolVersionV4, protocolVersionV5, registrationCheckpoint, status, success,
+  type RegistrationInput, type RegistrationProtocolVersion, type VerifyMessage,
+  parseInput, protocolVersionV3, protocolVersionV4, protocolVersionV5, protocolVersionV6, registrationCheckpoint, status, success,
 } from "./protocol.js";
 import { assertAllowedURL, credentialValue, exactOrigin, totp } from "./security.js";
 import type { SessionStateStore } from "./session-store.js";
 import { RuntimeContexts, type BrowserTarget } from "./contexts.js";
-import { RegistrationGuard, assertRegistrationURL, validateRegistrationMessage } from "./registration.js";
+import { RegistrationGuard, assertRegistrationURL, validateRegistrationMessage, validateProfile } from "./registration.js";
+import { VerificationGuard, waitForVerification } from "./verification.js";
 import { inputIdentity, inputValue, validateRegistrationInput } from "./registration-inputs.js";
 
 export interface MessageSource {
@@ -178,7 +179,7 @@ export class PersistentBrowserDriver {
 
   async register(request: RegisterMessage): Promise<void> {
     let context: BrowserContext | undefined;
-    let guard: RegistrationGuard | undefined;
+    let guard: RegistrationGuard | VerificationGuard | undefined;
     let approved = false;
     let completed = false;
     let resultCode: import("./protocol.js").FailureCode | undefined;
@@ -188,7 +189,7 @@ export class PersistentBrowserDriver {
       const attemptKey = `${request.operationId}\0${request.sourceDigest}`;
       if (this.approvedRegistrations.has(attemptKey)) throw new DriverFailure("registration_indeterminate");
       const first = flow.sequence[0];
-      let input = request.version === protocolVersionV5
+      let input = request.version === protocolVersionV5 || request.version === protocolVersionV6
         ? validateRegistrationInput(request, request.input, first && "input_checkpoint" in first ? first.input_checkpoint.id : "") : undefined;
       let initialCheckpoint = true;
       const applied = new Map<string, Map<string, AppliedRegistrationControl>>();
@@ -199,9 +200,11 @@ export class PersistentBrowserDriver {
       const allowed = new Set(request.allowedOrigins);
       this.emit(status(request.requestId, "registering", request.version));
       context = await this.createContext();
-      guard = new RegistrationGuard(context, allowed);
+      guard = request.version === protocolVersionV6
+        ? new VerificationGuard(context, flow.humanVerification!, allowed, registrationNavigationURLs(flow), Date.parse(request.deadline!))
+        : new RegistrationGuard(context, allowed);
       await guard.install();
-      if (input) {
+      if (input && !(guard instanceof VerificationGuard)) {
         const registrationGuard = guard;
         await context.routeWebSocket("**/*", async socket => { registrationGuard.rejectMutation(); await socket.close().catch(() => undefined); });
       }
@@ -216,8 +219,8 @@ export class PersistentBrowserDriver {
           else {
             await page.bringToFront();
             const timeoutMs = this.options.registrationCheckpointTimeoutMs ?? defaultRegistrationCheckpointTimeoutMs;
-            const deadlineMs = Date.now() + timeoutMs;
-            this.emit({ version: protocolVersionV5, type: "registration_input_checkpoint", requestId: request.requestId, checkpointId: step.input_checkpoint.id, deadline: new Date(deadlineMs).toISOString() });
+            const deadlineMs = Math.min(Date.now() + timeoutMs, request.deadline ? Date.parse(request.deadline) : Infinity);
+            this.emit({ version: request.version, type: "registration_input_checkpoint", requestId: request.requestId, checkpointId: step.input_checkpoint.id, deadline: new Date(deadlineMs).toISOString() });
             input = await readRegistrationInputResponse(this.lines, request, step.input_checkpoint.id,
               timeoutMs, input, deadlineMs);
           }
@@ -237,19 +240,37 @@ export class PersistentBrowserDriver {
         } else if ("human_checkpoint" in step) {
           if (step.human_checkpoint.locator) await exactLocator(page, step.human_checkpoint.locator);
           this.emit(status(request.requestId, "awaiting_registration_checkpoint", request.version));
-          await this.requestRegistrationCheckpoint(page, request.requestId, step.human_checkpoint.kind, request.version);
+          await this.requestRegistrationCheckpoint(page, request.requestId, step.human_checkpoint.kind, request.version, undefined, request.deadline ? Date.parse(request.deadline) : undefined);
           this.emit(status(request.requestId, "registering", request.version));
         } else if ("wait_for" in step) {
           await exactLocator(page, step.wait_for.locator);
         } else if ("submit" in step) {
           const submit = await exactLocator(page, step.submit.locator);
+          if (guard instanceof VerificationGuard) {
+            await guard.bindSubmit(submit);
+            if (flow.humanVerification!.activation === "before_approval") {
+              await waitForVerification(guard, state => this.verificationProgress(request, guard as VerificationGuard, state));
+            } else {
+              // Verify the form/widget binding before granting trigger authority.
+              await guard.state();
+            }
+          }
           this.emit(status(request.requestId, "awaiting_submit_approval", request.version));
-          await this.requestRegistrationCheckpoint(page, request.requestId, "submit_approval", request.version, input ? inputIdentity(input) : undefined);
+          await this.requestRegistrationCheckpoint(page, request.requestId, "submit_approval", request.version, input ? inputIdentity(input) : undefined,
+            guard instanceof VerificationGuard ? guard.submission.deadline : undefined);
           approved = true;
           this.approvedRegistrations.add(attemptKey);
+          if (guard instanceof VerificationGuard && flow.humanVerification!.activation === "before_approval") await guard.state();
           guard.beginSubmit();
-          await submit.click();
+          const submissionNavigation = guard instanceof VerificationGuard
+            ? page.waitForEvent("framenavigated", {predicate: frame => frame === page.mainFrame(), timeout: Math.max(1, guard.submission.deadline - Date.now())})
+            : undefined;
+          // Keep failures observed even when the submission gate stops first.
+          void submissionNavigation?.catch(() => undefined);
+          await submit.click({ timeout: guard instanceof VerificationGuard ? Math.max(1, guard.submission.deadline - Date.now()) : 30_000 });
+          if (guard instanceof VerificationGuard) await waitForVerification(guard, state => this.verificationProgress(request, guard as VerificationGuard, state), true);
           guard.finishSubmit();
+          if (submissionNavigation) { await submissionNavigation; await page.waitForLoadState("domcontentloaded"); }
           this.emit(status(request.requestId, "registering", request.version));
         } else throw new DriverFailure("invalid_response");
         guard.assertSafe();
@@ -265,18 +286,56 @@ export class PersistentBrowserDriver {
       completed = true;
     } catch (error) {
       try { guard?.assertSafe(); } catch (boundaryError) { error = boundaryError; }
-      resultCode = approved ? "registration_indeterminate" : failureCode(error);
+      resultCode = (guard instanceof VerificationGuard ? guard.postCount() > 0 : approved) ? "registration_indeterminate" : failureCode(error);
     } finally {
       if (context) {
         try { await context.close(); }
         catch { resultCode = approved ? "registration_indeterminate" : "driver_error"; completed = false; }
       }
     }
+    if (guard instanceof VerificationGuard) this.verificationProgress(request, guard, guard.submission.state);
     if (completed && !resultCode) {
       this.emit(success(request.requestId, { status: "success" }, request.version));
       return;
     }
     this.emit(failure(request.requestId, resultCode ?? "driver_error", request.version));
+  }
+
+  private verificationProgress(request: RegisterMessage | VerifyMessage, guard: VerificationGuard, state: import("./verification-policy.js").VerificationState): void {
+    this.emit({ version: protocolVersionV6, type: "verification_progress", requestId: request.requestId,
+      provider: request.profile.flows[request.flow]!.humanVerification!.provider, state,
+      deadline: new Date(guard.submission.deadline).toISOString(), ...guard.counts() });
+  }
+
+  async verify(request: VerifyMessage): Promise<void> {
+    let context: BrowserContext | undefined;
+    let guard: VerificationGuard | undefined;
+    let code: import("./protocol.js").FailureCode | undefined;
+    try {
+      if (!this.options.headed || request.version !== protocolVersionV6 || !Number.isFinite(Date.parse(request.deadline)) || Date.parse(request.deadline) <= Date.now() || !/^sha256:[a-f0-9]{64}$/u.test(request.sourceDigest)) throw new DriverFailure("invalid_response");
+      const allowed = new Set(request.allowedOrigins);
+      validateProfile(request.profile as unknown as Record<string, unknown>, allowed, true, true);
+      const flow = request.profile.flows[request.flow];
+      if (!flow || flow.humanVerification?.activation !== "before_approval") throw new DriverFailure("verification_unsupported");
+      const navigation = flow.sequence.find(step => "navigate" in step);
+      const submission = flow.sequence.find(step => "submit" in step);
+      if (!navigation || !("navigate" in navigation) || !submission || !("submit" in submission)) throw new DriverFailure("verification_unsupported");
+      context = await this.createContext();
+      guard = new VerificationGuard(context, flow.humanVerification, allowed, new Set([navigation.navigate]), Date.parse(request.deadline), true);
+      await guard.install();
+      const page = await context.newPage();
+      await page.bringToFront();
+      await guard.watchRedirects(page);
+      await page.goto(navigation.navigate, { waitUntil: "domcontentloaded" });
+      await guard.bindSubmit(await exactLocator(page, submission.submit.locator));
+      await waitForVerification(guard, state => this.verificationProgress(request, guard!, state));
+      guard.assertSafe();
+    } catch (error) { code = failureCode(error); }
+    finally {
+      if (context) try { await context.close(); } catch { code = "driver_error"; }
+    }
+    if (guard) this.verificationProgress(request, guard, guard.submission.state);
+    this.emit(code ? failure(request.requestId, code, request.version) : success(request.requestId, { verification: "ready", teardown: "complete", applicationPosts: 0 }, request.version));
   }
 
   async close(): Promise<void> {
@@ -398,12 +457,13 @@ export class PersistentBrowserDriver {
     kind: RegistrationCheckpointKind | "submit_approval",
     version: RegistrationProtocolVersion = protocolVersionV4,
     binding?: { inputRevision: number; inputSha256: string },
+    operationDeadline?: number,
   ): Promise<RegistrationCheckpointResponseMessage> {
     await page.bringToFront();
     const timeoutMs = this.options.registrationCheckpointTimeoutMs ?? defaultRegistrationCheckpointTimeoutMs;
-    const deadlineMs = Date.now() + timeoutMs;
+    const deadlineMs = Math.min(Date.now() + timeoutMs, operationDeadline ?? Infinity);
     const pending = registrationCheckpoint(requestId, kind, version, binding);
-    this.emit({ ...pending.message, ...(version === protocolVersionV5 ? { deadline: new Date(deadlineMs).toISOString() } : {}) });
+    this.emit({ ...pending.message, ...(version !== protocolVersionV4 ? { deadline: new Date(deadlineMs).toISOString() } : {}) });
     return readRegistrationCheckpointResponse(
       this.lines, requestId, pending.id, timeoutMs, version, binding, deadlineMs,
     );
@@ -480,7 +540,7 @@ export async function readRegistrationInputResponse(lines: MessageSource, reques
   catch { throw new DriverFailure(signal.aborted ? "registration_checkpoint_timeout" : "invalid_response"); }
   if (line.done) throw new DriverFailure("registration_checkpoint_timeout");
   const value = parseInput(line.value);
-  if (value.version !== protocolVersionV5 || value.type !== "registration_input_response" || value.requestId !== request.requestId || value.checkpointId !== checkpointId) throw new DriverFailure("invalid_response");
+  if (value.version !== request.version || value.type !== "registration_input_response" || value.requestId !== request.requestId || value.checkpointId !== checkpointId) throw new DriverFailure("invalid_response");
   if (value.decision === "stop" && value.input === undefined) throw new DriverFailure("registration_checkpoint_denied");
   if (value.decision !== "apply") throw new DriverFailure("invalid_response");
   const accepted = validateRegistrationInput(request, value.input, checkpointId, previous);
@@ -937,3 +997,9 @@ function contextID(value: Record<string, unknown>): string {
 function isPageTarget(value: BrowserTarget): value is Page { return "mainFrame" in value; }
 
 function unique<T>(values: T[]): T[] { return [...new Set(values)]; }
+
+function registrationNavigationURLs(flow: import("./protocol.js").RegistrationFlow): Set<string> {
+  const urls = new Set(flow.sequence.flatMap(step => "navigate" in step ? [step.navigate] : []));
+  if (flow.success.path !== undefined) urls.add(flow.success.origin + flow.success.path);
+  return urls;
+}
