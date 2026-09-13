@@ -3,7 +3,7 @@
 | Item | State | Notes |
 | --- | --- | --- |
 | M12.1 Implement and verify | `[+]` | Bring the isolated registration page forward at launch and each human/input/submit checkpoint; publish its fixed checkpoint deadline through optional v5 timing metadata. Preserve v2-v4 and one-submit/no-retry semantics. |
-| M12.2 Review and close | `[ ]` | Focused offline/race and authorized numeric-loopback browser checks, required owner gates, bounded review with no P1/P2; maximum ten iterations. |
+| M12.2 Review and close | `[+]` | Focused offline/race and authorized numeric-loopback browser checks, required owner gates, bounded review with no P1/P2; maximum ten iterations. |
 
 The owner approved this generic successor after a local visibility check.
 M11 remains completed history. W8M W16 coordinates integration and exact
@@ -22,3 +22,7 @@ remaining P1/P2 finding in deadline propagation, legacy wire scope, privacy,
 foreground failure, one-submit enforcement, expiration or teardown. Existing
 evolution direction remains unchanged; timing metadata does not alter public
 UWS or authorization semantics. Closure bookkeeping follows this task commit.
+
+Milestone review closes at iteration 2. Integration and exact new runtime
+qualification/adoption remain owned by OpenUdon E14 and W8M W16; no live
+registration authority is granted.

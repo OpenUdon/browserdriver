@@ -1,6 +1,6 @@
 # Milestones
 
-M12 is active: registration foreground and checkpoint deadlines. See [status-M12.md](status-M12.md).
+M12 is complete: registration foreground and checkpoint deadlines. See [status-M12.md](status-M12.md).
 The owner approved implementation, focused synthetic tests and downstream
 qualification/adoption; real target operations remain separate.
 
