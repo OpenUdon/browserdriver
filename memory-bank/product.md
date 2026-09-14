@@ -1,5 +1,9 @@
 # Product
 
+M13.18 coordinates proposed publication of the passing M13.17/a diagnostic repair. The successor still needs separate authority, complete frozen integration qualification and exact-byte adoption under W8M W16.4i.9; production provider readiness remains unproven.
+
+M13.17 adds verification-only v7 diagnostics and preserves a blocked request’s specific guard failure when navigation reports a generic error. The snapshot uses existing closed observations/network classes and no captured provider text. V6 registration, reviewed network permissions and human challenge handling are unchanged. The production Turnstile cause remains unknown; this candidate is not yet adopted. M13.17a’s one authorized synthetic browser smoke now passes both ready and API-failure cases, frozen W8M wire checks and sixteen-process teardown without force; publication and qualification/adoption remain pending.
+
 M13.16 repairs verification form-property shadowing using native getters,
 containment and submitter-field insertion. Exact destination, method, target
 and one-POST authority remain enforced. Ninety offline tests and the affected

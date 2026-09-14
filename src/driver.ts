@@ -5,7 +5,7 @@ import {
   type ChallengeKind, type ChallengeResponseMessage, DriverFailure, challenge, failure,
   type RegisterMessage, type RegistrationCheckpointKind, type RegistrationCheckpointResponseMessage,
   type RegistrationInput, type RegistrationProtocolVersion, type VerifyMessage,
-  parseInput, protocolVersionV3, protocolVersionV4, protocolVersionV5, protocolVersionV6, registrationCheckpoint, status, success,
+  parseInput, protocolVersionV3, protocolVersionV4, protocolVersionV5, protocolVersionV6, protocolVersionV7, registrationCheckpoint, status, success,
 } from "./protocol.js";
 import { assertAllowedURL, credentialValue, exactOrigin, totp } from "./security.js";
 import type { SessionStateStore } from "./session-store.js";
@@ -303,7 +303,7 @@ export class PersistentBrowserDriver {
   }
 
   private verificationProgress(request: RegisterMessage | VerifyMessage, guard: VerificationGuard, state: import("./verification-policy.js").VerificationState): void {
-    this.emit({ version: protocolVersionV6, type: "verification_progress", requestId: request.requestId,
+    this.emit({ version: request.version, type: "verification_progress", requestId: request.requestId,
       provider: request.profile.flows[request.flow]!.humanVerification!.provider, state,
       deadline: new Date(guard.submission.deadline).toISOString(), ...guard.counts() });
   }
@@ -313,7 +313,7 @@ export class PersistentBrowserDriver {
     let guard: VerificationGuard | undefined;
     let code: import("./protocol.js").FailureCode | undefined;
     try {
-      if (!this.options.headed || request.version !== protocolVersionV6 || !Number.isFinite(Date.parse(request.deadline)) || Date.parse(request.deadline) <= Date.now() || !/^sha256:[a-f0-9]{64}$/u.test(request.sourceDigest)) throw new DriverFailure("invalid_response");
+      if (!this.options.headed || ![protocolVersionV6, protocolVersionV7].includes(request.version) || !Number.isFinite(Date.parse(request.deadline)) || Date.parse(request.deadline) <= Date.now() || !/^sha256:[a-f0-9]{64}$/u.test(request.sourceDigest)) throw new DriverFailure("invalid_response");
       const allowed = new Set(request.allowedOrigins);
       validateProfile(request.profile as unknown as Record<string, unknown>, allowed, true, true);
       const flow = request.profile.flows[request.flow];
@@ -331,11 +331,18 @@ export class PersistentBrowserDriver {
       await guard.bindSubmit(await exactLocator(page, submission.submit.locator));
       await waitForVerification(guard, state => this.verificationProgress(request, guard!, state));
       guard.assertSafe();
-    } catch (error) { code = failureCode(error); }
+    } catch (error) {
+      // A blocked request can surface as a generic navigation/evaluation error.
+      // Preserve the guard's closed cause, as registration already does.
+      try { guard?.assertSafe(); } catch (boundaryError) { error = boundaryError; }
+      code = failureCode(error);
+    }
     finally {
       if (context) try { if (guard) await guard.close(); else await context.close(); } catch (error) { code ??= failureCode(error); }
     }
     if (guard) this.verificationProgress(request, guard, guard.submission.state);
+    if (request.version === protocolVersionV7) this.emit({ version: request.version, type: "verification_diagnostics",
+      requestId: request.requestId, diagnostics: guard?.diagnostics() ?? null, counts: guard?.counts() ?? null });
     this.emit(code ? failure(request.requestId, code, request.version) : success(request.requestId, { verification: "ready", teardown: "complete", applicationPosts: 0 }, request.version));
   }
 

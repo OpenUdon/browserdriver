@@ -18,6 +18,9 @@
 | M13.14 | `[+]` | Authorized v5 batch ran all six official-key provider/mode pairs once: six passes, six discarded local POSTs. Exact reports/claims, 93 worker and six supervisor identities, six closed listener inodes and bounded execution review verify without force. All permissions consumed; publication, complete qualification/adoption and production acceptance remain pending. |
 | M13.15 | `[+]` | Published source aefdd875633b passes focused owner checks, fresh complete acceptance v2 and independent exact-byte adoption under W8M W16.4i.2. Integration review iteration 2 closes with no open P1/P2. Earlier failed and consumed evidence remains preserved. |
 | M13.16 | `[+]` | Source repair, owner tests and focused local browser validation pass. Published exact dependencies complete 39 fresh native stages, three W8M journeys, independent verification and exact tested-byte adoption under W16.4i.4. Integration review iteration 3 closes with no open P1/P2; prior failures and consumed invocations remain preserved. |
+| M13.17 | `[+]` | Source repair/review and M13.17a’s authorized local smoke pass: verification-only v7 diagnostics, guard-cause preservation, 94 offline tests, W8M receipt/race checks and real-browser wire compatibility. V6 registration and provider permissions remain unchanged. Publication, complete qualification and exact adoption remain pending under W16.4i.8. |
+| M13.17a | `[+]` | The exact frozen local smoke ran once: ready/API-failure cases passed, zero provider requests or application POSTs, both emitted v7 streams accepted by frozen W8M v3, and all sixteen recorded process identities gone without force. Frozen inputs and prior evidence are preserved. Execution review iteration 1 passes with no open P1/P2; authority consumed. |
+| M13.18 | `[ ]` | Publication/qualification proposal is prepared under W8M W16.4i.8. M13.17/a prerequisites pass; publish the reviewed repair only after separate authority, then require OpenUdon E15.6 and W16.4i.9 full qualification and exact adoption. Bounded preparation review iteration 1 passes with no open P1/P2; execution remains pending. |
 
 The approved September 13 verification release covers Turnstile, reCAPTCHA v2
 and hCaptcha, including invisible widgets activated by an approved Submit.
@@ -997,3 +1000,88 @@ English authoring and the dependent verification-only probe still require new
 exact authority. Existing evolution direction is retained.
 
 Bounded integration review iteration 3 passes with no open P1/P2.
+
+### Probe diagnostics source review iteration 1 — September 14
+
+Started the bounded whole-change review after Browserdriver offline tests, W8M
+fast tests/vet and the browser-free TypeScript-to-Go wire check passed. Review
+covers v7/v3 compatibility, privacy, failure/teardown evidence, zero-submission
+authority, operator instructions and the separately prepared local smoke.
+Browser execution, publication and runtime adoption remain pending.
+
+Review iteration 1 passes with no open P1/P2 in the source candidate and prepared
+scope. Confirmed gaps: the live probe discarded available closed diagnostics and
+progress, and a generic navigation error could mask the guard's policy failure.
+V7 emits the existing snapshot only for verification probes; W8M v3 strictly
+bounds and persists it, rejects false readiness, preserves failed-peer evidence,
+and distinguishes explicit pre-guard nulls from absent crash output. No provider
+error text/code, challenge contents or token is captured. The production error
+may still map to awaiting_interaction until timeout; its cause remains unknown.
+
+Verification: 94 Browserdriver offline passes, 13 opt-in skips; cached offline
+npm audit reports zero vulnerabilities. W8M fast tests/vet, focused race tests,
+and an actual browser-free TypeScript-driver-to-Go-consumer wire check pass.
+Three inert supervisor tests verify normal exit, timeout and descendant cleanup.
+The new smoke source compiles but no browser validation is claimed. Source code,
+docs, history exclusion, one-attempt handling, diagnostic privacy and exact old
+runtime/package preservation were reviewed. W8M's file allowlist admits only the
+two new diagnostic Go files, preserving current/history deployment exclusions.
+
+Prepared evidence is under
+`/home/peter/.local/state/w8m-browser/w16-probe-diagnostics-20260914-becr7ie7`.
+The local smoke proposal covers one stage with two synthetic Turnstile contexts:
+ready and API failure, zero provider requests, zero application POSTs, no real
+accounts, exclusive claims and verified process teardown. Before either page,
+tell the owner to leave it alone and wait for automatic closure. Publication,
+complete qualification/adoption and a new real probe are separate gates. Existing
+kits, selected English package and all consumed attempts remain preserved. No
+commit, push, browser, provider/target invocation or production change occurred.
+
+### Local probe smoke execution review iteration 1 — September 14
+
+Started after the one authorized smoke stage passed both expected scenarios and
+both real-browser v7 message streams passed the frozen W8M v3 consumer checks.
+Review covers exact authority/claims, expected diagnostic behavior, zero provider
+traffic and application POSTs, listener/guard shutdown, all sixteen recorded
+process identities absent without force, and frozen-source/prior evidence
+preservation. No second browser invocation is authorized.
+
+The local smoke execution review passes at iteration 1 with no open P1/P2.
+The one stage completed in 2.508 seconds (3.555 seconds including the Node test
+runner). It opened exactly two contexts: ready -> response_ready/success, then
+API exception -> api_exception/verification_failed. Each made one loopback
+application GET, zero provider requests and zero application POSTs. The expected
+second failure is successful diagnostic validation, not provider rejection.
+Both actual browser message streams pass the frozen W8M v3 consumer offline.
+
+The native report records guard and server closure; the supervisor exited zero,
+used no forced cleanup and recorded sixteen process identities, independently
+confirmed absent. All 1,054 frozen scope entries, twenty-four prior closeout/
+package references and seven existing ledger references remain unchanged. The
+native and supervisor claims are consumed. No real W8M contact, registration,
+new identity, provider operation, commit, push or runtime adoption occurred.
+
+Evidence: `smoke-report.json`, `smoke-supervisor.json`, `smoke-preservation.json`,
+`smoke-ledger-preservation.json`, the two `smoke-wire-*.ndjson` streams and passing
+consumer logs under the prepared W16 probe-diagnostics root. The old Turnstile
+error remains unexplained. Next is W16.4i.8 publication/pin/qualification
+preparation; the successful English package and adopted kit remain preserved.
+
+Closeout browser-free `make fast` and both repository diff checks pass.
+`smoke-closeout.md` and `smoke-execution-review.json` bind the final outcome.
+
+## Diagnostic publication preparation — September 14
+
+W8M W16.4i.8 prepares the exact Browserdriver patch and downstream publication
+sequence in `/home/peter/.local/state/w8m-browser/w16-probe-publication-20260914-v0fqc06l/publication-qualification-proposal.md`. M13.17/a source
+and local smoke evidence remain passing and consumed; no provider retest is
+requested. Bounded preparation review iteration 1 is open. M13.18 execution
+requires separate authority and a passing complete frozen gate before adoption.
+
+Preparation review iteration 1 passes with no open P1/P2. The exact fourteen-file
+Browserdriver patch passes disposable-index application; the real index and
+source HEAD are unchanged. W8M preservation verifies the tested implementation,
+consumed smoke inputs/evidence and prior adopted runtime. Browser-free W8M and
+OpenUdon document checks pass. The proposal includes the existing OpenUdon exact-
+pin test alongside its driver compatibility revision. M13.18 remains pending
+separate publication/qualification/adoption authority; no new browser ran.

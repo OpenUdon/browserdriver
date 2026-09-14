@@ -1,8 +1,8 @@
 import type { VerificationDescriptor } from "./protocol.js";
 import { verificationStates, type VerificationState } from "./verification-policy.js";
 
-// This is an internal, separately versioned diagnostic surface. Driver v6
-// messages do not gain fields. Never accept URLs, provider prose or DOM values.
+// This separately versioned surface is exported only by verification-only v7
+// and local fixtures. V6 is unchanged. Never accept URLs, prose or DOM values.
 export const probeReasons = ["unbound", "form_binding", "widget_binding", "response_binding",
   "api_loading", "response_pending", "enterprise", "expiry_api_missing", "provider_expired",
   "response_type", "response_changed", "response_mismatch", "response_ready", "visible_frame",

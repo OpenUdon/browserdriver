@@ -1,5 +1,9 @@
 # Architecture
 
+M13.18 publication feeds OpenUdon E15.6 through its exact Browserdriver compatibility pin, then W8M verifies the v7/probe-v3 consumer in the complete frozen closure. No Udon registration or public BRP/UWS change is needed.
+
+M13.17 adds v7 only for verify requests. After guard shutdown it emits final progress, one verification_diagnostics envelope with the existing diagnostic v3 snapshot and final counts (or explicit nulls before guard creation), then the normal closed result. W8M owns strict consumption and private probe v3 persistence. Udon registration remains on v6; BRP/UWS and authoring contracts are unchanged. M13.17a’s one authorized synthetic browser smoke now passes both ready and API-failure cases, frozen W8M wire checks and sixteen-process teardown without force; publication and qualification/adoption remain pending.
+
 M13.16 repairs verification form-property shadowing using native getters,
 containment and submitter-field insertion. Exact destination, method, target
 and one-POST authority remain enforced. Ninety offline tests and the affected

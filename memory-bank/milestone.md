@@ -1,5 +1,9 @@
 # Milestones
 
+M13.18 tracks publication and complete qualification of the passing M13.17/a repair, coordinated through OpenUdon E15.6 and W8M W16.4i.8/9. Preparation reviews exact patches and mechanical pins; publication, the single full gate and conditional adoption stay pending separate authority. Existing evolution direction is retained.
+
+M13.17 coordinates with W8M W16.4i.7: offline probe diagnosis, additive verification-only v7, guard failure preservation, bounded diagnostic/privacy tests, then one separately authorized affected synthetic smoke. Publication, complete integration qualification and exact adoption follow separately. No earlier consumed attempt or provider failure is rewritten; production readiness remains unestablished. M13.17a’s one authorized synthetic browser smoke now passes both ready and API-failure cases, frozen W8M wire checks and sixteen-process teardown without force; publication and qualification/adoption remain pending.
+
 M13.16 repairs verification form-property shadowing using native getters,
 containment and submitter-field insertion. Exact destination, method, target
 and one-POST authority remain enforced. Ninety offline tests and the affected

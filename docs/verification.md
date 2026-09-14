@@ -268,3 +268,33 @@ three simulated providers in both modes, destination/method/target escapes and
 zero-POST rejection of forms that mask `getAttribute` or `hasAttribute`. Those shapes break
 the installed Playwright accessibility reader and remain unsupported with a
 closed driver failure; no locator fallback or automatic retry is introduced.
+
+## Verification-only v7 diagnostics
+
+V7 accepts only a complete `verify` request with the same fields as v6 verify.
+Registration and all existing v2-v6 message shapes remain unchanged. Older
+drivers reject v7 before browser execution. V7 does not extend UWS, provider
+permissions, widget adapters or the one-POST registration state machine.
+
+After cleanup: final `verification_progress` when a guard exists, exactly one
+`verification_diagnostics` message, then `result`. The diagnostic message contains
+`version`, `type`, `requestId`, `diagnostics` and `counts`. `diagnostics` is the
+existing `browserdriver.verification-diagnostics.v3` snapshot with shutdown flags;
+`counts` has the same five integer fields as progress. Both are null when failure
+precedes guard creation. Consumers distinguish absent crash output from these
+explicit nulls and cannot infer readiness from failure or clean shutdown.
+
+The snapshot has at most 32 observations and 32 network events, omission counts
+and the first active network failure; later shutdown events cannot overwrite it.
+It returns closed state/reason/response-kind labels, endpoint/method/frame/status/
+transport classes and shutdown booleans. It does not capture provider error text,
+error codes, challenge content, response tokens, URLs or exception prose. Empty
+responses after a visible provider error can still time out; the diagnostics
+improve the next investigation without claiming to identify that earlier cause.
+
+The opt-in `BROWSERDRIVER_PROBE_LIVE_TEST=1 node --test
+dist/test/verification-probe-live.test.js` runs two local synthetic probes: ready
+and API failure. No provider endpoints or accounts are used and every application
+POST is forbidden. Explain before launch: leave the pages alone; do not fill or
+submit anything; the test closes them automatically. Browser execution needs
+separate explicit authorization and the existing sandbox helper.

@@ -1,5 +1,9 @@
 # Tech Stack
 
+M13.18 reuses the passing 94 offline tests and once-consumed two-context synthetic smoke as prerequisites. Complete acceptance v2 uses the existing Node/Playwright/Chromium toolchain and sandbox helper in a fresh kit; its publication and execution require separate authorization.
+
+M13.17 uses the existing Node/Playwright pins. npm test includes browser-free fake-boundary driver tests; the actual driver/guard/reducer produce wire data that W8M checks through W8M_PROBE_WIRE_FIXTURE. BROWSERDRIVER_PROBE_LIVE_TEST=1 selects the separately authorized two-context loopback probe smoke. No provider SDK, account data or application POST is needed. Full qualification remains pending. M13.17a’s one authorized synthetic browser smoke now passes both ready and API-failure cases, frozen W8M wire checks and sixteen-process teardown without force; publication and qualification/adoption remain pending.
+
 M13.16 repairs verification form-property shadowing using native getters,
 containment and submitter-field insertion. Exact destination, method, target
 and one-POST authority remain enforced. Ninety offline tests and the affected
