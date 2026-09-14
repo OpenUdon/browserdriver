@@ -9,17 +9,25 @@ import { verificationDescriptor } from "./verification-fixture.js";
 const canary = "private-token-credential-provider-prose-canary";
 function probeHarness(provider: "turnstile" | "recaptcha_v2" | "hcaptcha") {
   let calls = 0, rendered = false, value: unknown = "", fieldValue = "", fail = false, expired = false, visible = false;
-  const form = {target: "", method: "post", action: "https://registration.example/register", contains: () => true};
+  const attributes = {target: "", method: "post", action: "https://registration.example/register"};
+  const form: Record<string, unknown> = {...attributes};
+  const prototype = Object.fromEntries([]);
+  for (const name of ["action", "method", "target"] as const) Object.defineProperty(prototype, name, {get: () => attributes[name]});
+  const overrides: Record<string, string> = {};
   const widget = {matches: () => true};
   const field = {form, get value() {return fieldValue;}};
-  const element = {form, isConnected: true, type: "submit", hasAttribute: () => false};
+  const element = {form, isConnected: true, type: "submit", hasAttribute: (name: string) => name in overrides,
+    get formAction() { return overrides.formaction; }, get formMethod() { return overrides.formmethod; }, get formTarget() { return overrides.formtarget; }};
   const binding = {form, widget};
   const api = {isExpired: () => {calls++; if (!rendered) throw Error(canary); return expired;},
     getResponse: () => {calls++; if (!rendered || fail) throw Error(canary); return value;}};
-  const context = {element, binding, options: {provider, submissionURL: form.action}, window: {
+  const context = {HTMLFormElement: {prototype}, Node: {prototype: {contains: () => true}}, element, binding, options: {provider, submissionURL: attributes.action}, window: {
     [provider === "turnstile" ? "turnstile" : provider === "recaptcha_v2" ? "grecaptcha" : "hcaptcha"]: api},
     document: {querySelectorAll: (selector: string) => selector.startsWith(".cf-") ? [widget] : selector === "iframe" ? visible ? [{getBoundingClientRect:()=>({width:100,height:100})}] : [] : rendered ? [field] : []},getComputedStyle:()=>({visibility:"visible"})};
   return {probe: () => runInNewContext(`(${browserVerificationProbe.toString()})(element, options, binding)`, context) as VerificationObservation,
+    shadow: () => {for (const key of ["action", "method", "target", "contains", "getAttribute", "append", "submit"]) form[key] = {value: canary};},
+    attribute: (key: keyof typeof attributes, value: string) => {attributes[key] = value;},
+    override: (key: string, value: string) => {overrides[key] = value;},
     render: () => {rendered = true;}, ready: () => {value = fieldValue = canary;}, remove: () => {rendered = false;}, fail: () => {fail = true;}, calls: () => calls, set: (response:unknown, field="")=>{value=response;fieldValue=field;}, expire:()=>{expired=true;}, visible:()=>{visible=true;}};
 }
 
@@ -124,4 +132,23 @@ test("response kind is closed, retained across state deduplication and never con
   assert.deepEqual(trace.snapshot().observations.map(o=>o.responseKind),["undefined","string","string"]);
   assert.equal(JSON.stringify(trace.snapshot()).includes(canary),false);
   assert.equal(trace.observe({state:"ready",reason:"response_ready",responseKind:canary}).reason,"invalid_observation");
+});
+
+
+test("named form controls cannot hide native destinations, methods, targets or submitter overrides", () => {
+  for (const provider of ["turnstile", "recaptcha_v2", "hcaptcha"] as const) {
+    const good = probeHarness(provider); good.shadow(); good.render(); good.ready();
+    assert.equal(good.probe().state, "ready");
+    assert.equal(JSON.stringify(good.probe()).includes(canary), false);
+    for (const [name, value] of [["action", "https://escape.example/register"], ["method", "get"], ["target", "_blank"]] as const) {
+      const changed = probeHarness(provider); changed.shadow(); changed.render(); changed.ready(); changed.attribute(name, value);
+      assert.equal(changed.probe().reason, "form_binding");
+    }
+    for (const [name, value] of [["formaction", "https://escape.example/register"], ["formaction", ""], ["formmethod", "get"], ["formtarget", "_blank"]]) {
+      const changed = probeHarness(provider); changed.shadow(); changed.render(); changed.ready(); changed.override(name!, value!);
+      assert.equal(changed.probe().reason, "form_binding");
+    }
+    good.override("formaction", "https://registration.example/register"); good.override("formmethod", "POST"); good.override("formtarget", "_self");
+    assert.equal(good.probe().state, "ready");
+  }
 });

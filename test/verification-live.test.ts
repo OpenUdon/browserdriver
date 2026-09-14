@@ -20,7 +20,15 @@ test("v6 synthetic providers, delayed invisible callbacks, readiness loss, cance
   if(req.url==="/complete") {res.writeHead(200,{"content-type":"text/html"}).end('<div role="status" aria-label="Created">Created</div>');return;}
   if(req.url!=="/register"){res.writeHead(404).end();return;}
   const widget=scenario==="missing"?"":`<div class="${markers[provider]}"></div><input type="hidden" name="${names[provider]}" value="">`;
-  const html=inputForm.replace('action="/complete"','action="/register"').replace('</form>',widget+(scenario==="ambiguous"?widget:"")+"</form>");
+  const shadows=["action","method","target","contains","append","submit"].map(name=>`<input type="hidden" name="${name}" value="named-control-canary">`).join("");
+  const unsupportedShadow=["dom_api_shadow","dom_click_shadow"].includes(scenario)?`<input type="hidden" name="${scenario==="dom_api_shadow"?"getAttribute":"hasAttribute"}" value="named-control-canary">`:"";
+  let html=inputForm.replace('<button type="submit">','<button type="submit" name="intent" value="register">').replace('action="/complete"','action="/register"').replace('</form>',shadows+unsupportedShadow+widget+(scenario==="ambiguous"?widget:"")+"</form>");
+  if(scenario==="form_action")html=html.replace('action="/register"','action="/other"');
+  if(scenario==="form_method")html=html.replace('method="post"','method="get"');
+  if(scenario==="form_target")html=html.replace('<form ','<form target="_blank" ');
+  for(const [name,value] of [["formaction","/other"],["formmethod","get"],["formtarget","_blank"]]) {
+   if(scenario===name)html=html.replace('<button type="submit"',`<button ${name}="${value}" type="submit"`);
+  }
   const script=`<script>
    const responseField=document.querySelector('[name="${names[provider]}"]');
    let responseValue='', expiryStarted=false;
@@ -32,10 +40,10 @@ test("v6 synthetic providers, delayed invisible callbacks, readiness loss, cance
     event.preventDefault();
     if('${scenario}'==='forged'){
      const binding=Object.keys(window).find(key=>key.startsWith('__udon_verification_'));
-     window[binding]('ready').then(()=>document.querySelector('form').submit()).catch(()=>{});return;
+     window[binding]('ready').then(()=>HTMLFormElement.prototype.submit.call(document.querySelector('form'))).catch(()=>{});return;
     }
-    if('${scenario}'==='premature'){document.querySelector('form').submit();return;}
-    setTimeout(()=>{ready();document.querySelector('form').submit();if('${scenario}'==='duplicate')document.querySelector('form').submit();},250);
+    if('${scenario}'==='premature'){HTMLFormElement.prototype.submit.call(document.querySelector('form'));return;}
+    setTimeout(()=>{ready();HTMLFormElement.prototype.submit.call(document.querySelector('form'));if('${scenario}'==='duplicate')HTMLFormElement.prototype.submit.call(document.querySelector('form'));},250);
    });
    window.expireSynthetic=()=>{responseValue='replacement-'+responseValue;if(responseField)responseField.value=responseValue;};
   </script>`;
@@ -64,7 +72,7 @@ test("v6 synthetic providers, delayed invisible callbacks, readiness loss, cance
    assert.ok(ready>=0);if(activation==="before_approval")assert.ok(approval>ready);
   }}
   provider="turnstile";
-  for(const [next,expected] of [["missing","verification_unsupported"],["ambiguous","verification_unsupported"],["rejected","verification_failed"],["cancel","registration_checkpoint_denied"],["premature","verification_not_ready"],["forged","verification_not_ready"],["expired","verification_expired"],["rebind","verification_expired"],["blocked","verification_timeout"]]){
+  for(const [next,expected] of [["dom_api_shadow","driver_error"],["dom_click_shadow","driver_error"],["form_action","verification_unsupported"],["form_method","verification_unsupported"],["form_target","verification_unsupported"],["formaction","verification_unsupported"],["formmethod","verification_unsupported"],["formtarget","verification_unsupported"],["missing","verification_unsupported"],["ambiguous","verification_unsupported"],["rejected","verification_failed"],["cancel","registration_checkpoint_denied"],["premature","verification_not_ready"],["forged","verification_not_ready"],["expired","verification_expired"],["rebind","verification_expired"],["blocked","verification_timeout"]]){
    scenario=next!;activation=["premature","forged"].includes(scenario)?"approved_submit":"before_approval";
    active=verificationRequest(provider,activation,origin);active.requestId=`verification_${++serial}`;active.operationId=active.requestId;
    if(scenario==="blocked")active.profile.flows.member!.humanVerification!.dependencies.timeoutMs=1500;
@@ -76,6 +84,6 @@ test("v6 synthetic providers, delayed invisible callbacks, readiness loss, cance
   scenario="ready";activation="before_approval";active=verificationRequest(provider,activation,origin);
   const diagnostic:VerifyMessage={version:"udon.browser-driver.v6",type:"verify",requestId:"diagnostic",sourceDigest:active.sourceDigest,profile:active.profile,flow:active.flow,allowedOrigins:active.allowedOrigins,deadline:active.deadline!};
   const before=posts;messages.length=0;await driver.verify(diagnostic);assert.equal(messages.at(-1)!.result,"success");assert.equal(posts,before);assert.equal(messages.some(m=>m.type==="registration_checkpoint"),false);
-  const wire=JSON.stringify(allMessages);for(const secret of [canary,"synthetic@example.invalid","synthetic-password","private-provider-prose"])assert.equal(wire.includes(secret),false);
+  const wire=JSON.stringify(allMessages);for(const secret of [canary,"named-control-canary","synthetic@example.invalid","synthetic-password","private-provider-prose"])assert.equal(wire.includes(secret),false);
  }finally{await driver.close();await new Promise<void>(resolve=>server.close(()=>resolve()));}
 });

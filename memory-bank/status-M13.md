@@ -17,6 +17,7 @@
 | M13.13 | `[+]` | Fresh six-case scope/authority/result v5 prepared against the unchanged M13.12 candidate and passing smoke. Required report v4/claim v2, bounded Ready progress, strict predecessor bindings and PID/listener closure. Ordered fake cases, nineteen failure scenarios, cancellation tests, preservation and bounded review pass. No browser/provider execution or new authority. |
 | M13.14 | `[+]` | Authorized v5 batch ran all six official-key provider/mode pairs once: six passes, six discarded local POSTs. Exact reports/claims, 93 worker and six supervisor identities, six closed listener inodes and bounded execution review verify without force. All permissions consumed; publication, complete qualification/adoption and production acceptance remain pending. |
 | M13.15 | `[+]` | Published source aefdd875633b passes focused owner checks, fresh complete acceptance v2 and independent exact-byte adoption under W8M W16.4i.2. Integration review iteration 2 closes with no open P1/P2. Earlier failed and consumed evidence remains preserved. |
+| M13.16 | `[+]` | Native form binding and submitter preservation repaired. 90 offline passes; fresh all-provider/both-mode synthetic runtime and adversarial cases pass with verified teardown. Review iteration 2 passes. Full qualification/adoption remain downstream. |
 
 The approved September 13 verification release covers Turnstile, reCAPTCHA v2
 and hCaptcha, including invisible widgets activated by an approved Submit.
@@ -939,3 +940,26 @@ Bounded integration review iteration 2 passes with no open P1/P2.
 Owner acceptance and the full changed-source range were reviewed. Existing
 evolution direction is retained; no new contract or product scope was added.
 The selected executable source remains `aefdd875633bbf880ec5138feed5fb227da896a0`.
+
+## September 14 authoring-repair validation
+
+The owner-source repair and focused validation pass under W8M W16.4i.3.
+Browsertools/OpenUdon full module tests and vet, OpenUdon diagnostic/teardown
+race tests, and 90 Browserdriver offline tests pass. An explicit private go.work
+binds unpublished development sources; release module pins still need publication.
+
+Fresh local synthetic checks cover all providers in both modes, native form
+binding and rejected overrides, author/review/package promotion, rendered closed
+failures and privacy canaries. The two failed authoring smokes, local property
+isolation and corrected UI-test Host setup remain recorded with their outcomes.
+Six form-property collisions are supported; masked getAttribute/hasAttribute DOM
+APIs remain explicit no-submission failures in the pinned Playwright implementation.
+No provider network, real account or fresh W8M attempt was invoked. All stage
+supervisors verified teardown without force.
+
+Evidence: `/home/peter/.local/state/w8m-browser/w16-authoring-repair-20260914-jltzggqq`.
+See W8M status-W16.md, W16.4i.3 for source inventories, stage timings, preserved
+failure history and validation details. Bounded source review iteration 2 has no
+open P1/P2; existing evolution direction is retained. E15.5/W16.4i.4 still require
+publication, frozen complete qualification and exact-byte adoption. No commit or
+push occurred; the prior adopted kit and consumed English authoring remain intact.

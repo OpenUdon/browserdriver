@@ -254,3 +254,17 @@ one separately authorized reCAPTCHA approved_submit diagnostic, then require an
 evidence-backed local correction when indicated and final six-case validation.
 V3 diagnostics/reports require a new strict supervisor; frozen v1/v2 evidence and
 the currently adopted runtime stay unchanged. Driver v6 and UWS remain unchanged.
+
+### Native form properties
+
+Verification reads action, method and target through native form getters and
+checks widget containment through the native Node method. Named controls cannot
+replace those properties. The submission boundary also uses native appendChild
+when preserving the successful submitter value. Exact resolved destination,
+POST method, target, form identity and submitter overrides are rechecked.
+
+The loopback verification suite includes six colliding control names, all
+three simulated providers in both modes, destination/method/target escapes and
+zero-POST rejection of forms that mask `getAttribute` or `hasAttribute`. Those shapes break
+the installed Playwright accessibility reader and remain unsupported with a
+closed driver failure; no locator fallback or automatic retry is introduced.

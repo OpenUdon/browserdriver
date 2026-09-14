@@ -13,8 +13,13 @@ export function browserVerificationProbe(element: HTMLElement | SVGElement, opti
     const result = (state: VerificationState, reason: ProbeReason): VerificationObservation => ({ state, reason, responseKind });
     const control = element as HTMLButtonElement | HTMLInputElement;
     const form = control.form;
-    if (!control.isConnected || !form || control.type !== "submit" || form !== binding.form || (form.target && form.target !== "_self") || (control.hasAttribute("formtarget") && control.formTarget !== "_self" && control.formTarget !== "") || form.method.toUpperCase() !== "POST" || form.action !== options.submissionURL ||
-        control.formAction && control.hasAttribute("formaction") && control.formAction !== form.action ||
+    if (!control.isConnected || !form || control.type !== "submit" || form !== binding.form) return result("unsupported", "form_binding");
+    // HTML named controls can hide instance properties and methods. Read the
+    // native reflected attributes, retaining URL resolution and browser defaults.
+    const property = (name: "action" | "method" | "target"): string => Object.getOwnPropertyDescriptor(HTMLFormElement.prototype, name)!.get!.call(form) as string;
+    const action = property("action"), method = property("method"), target = property("target");
+    if ((target && target !== "_self") || (control.hasAttribute("formtarget") && control.formTarget !== "_self" && control.formTarget !== "") || method.toUpperCase() !== "POST" || action !== options.submissionURL ||
+        control.hasAttribute("formaction") && control.formAction !== action ||
         control.hasAttribute("formmethod") && control.formMethod.toUpperCase() !== "POST") return result("unsupported", "form_binding");
     const selectors = { turnstile: ".cf-turnstile", recaptcha_v2: ".g-recaptcha", hcaptcha: ".h-captcha" };
     const fields = { turnstile: "cf-turnstile-response", recaptcha_v2: "g-recaptcha-response", hcaptcha: "h-captcha-response" };
@@ -22,7 +27,7 @@ export function browserVerificationProbe(element: HTMLElement | SVGElement, opti
     const widgets = [...document.querySelectorAll(".cf-turnstile,.g-recaptcha,.h-captcha")];
     const responses = [...document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(`[name="${fields[provider]}"]`)];
     // hCaptcha may also create a compatibility g-recaptcha-response field.
-    if (widgets.length !== 1 || widgets[0] !== binding.widget || widgets.some(widget => !widget.matches(selectors[provider]) || !(form.contains(widget) || widget === control))) return result("unsupported", "widget_binding");
+    if (widgets.length !== 1 || widgets[0] !== binding.widget || widgets.some(widget => !widget.matches(selectors[provider]) || !(Node.prototype.contains.call(form, widget) || widget === control))) return result("unsupported", "widget_binding");
     if (responses.length > 1 || responses.some(response => response.form !== form)) return result("unsupported", "response_binding");
     const globals = window as unknown as Record<string, { getResponse?: () => unknown; isExpired?: () => unknown; enterprise?: unknown }>;
     const api = globals[provider === "turnstile" ? "turnstile" : provider === "recaptcha_v2" ? "grecaptcha" : "hcaptcha"];
@@ -86,7 +91,7 @@ const installSubmissionBoundary = new Function("return " + `(element, options) =
       if (submitter && submitter.name) {
         const field = document.createElement("input");
         field.type = "hidden"; field.name = submitter.name; field.value = submitter.value;
-        form.append(field);
+        Node.prototype.appendChild.call(form, field);
       }
       nativeSubmit.call(form);
     }).catch(() => {});
