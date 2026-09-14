@@ -17,7 +17,7 @@
 | M13.13 | `[+]` | Fresh six-case scope/authority/result v5 prepared against the unchanged M13.12 candidate and passing smoke. Required report v4/claim v2, bounded Ready progress, strict predecessor bindings and PID/listener closure. Ordered fake cases, nineteen failure scenarios, cancellation tests, preservation and bounded review pass. No browser/provider execution or new authority. |
 | M13.14 | `[+]` | Authorized v5 batch ran all six official-key provider/mode pairs once: six passes, six discarded local POSTs. Exact reports/claims, 93 worker and six supervisor identities, six closed listener inodes and bounded execution review verify without force. All permissions consumed; publication, complete qualification/adoption and production acceptance remain pending. |
 | M13.15 | `[+]` | Published source aefdd875633b passes focused owner checks, fresh complete acceptance v2 and independent exact-byte adoption under W8M W16.4i.2. Integration review iteration 2 closes with no open P1/P2. Earlier failed and consumed evidence remains preserved. |
-| M13.16 | `[+]` | Native form binding and submitter preservation repaired. 90 offline passes; fresh all-provider/both-mode synthetic runtime and adversarial cases pass with verified teardown. Review iteration 2 passes. Full qualification/adoption remain downstream. |
+| M13.16 | `[+]` | Source repair, owner tests and focused local browser validation pass. Published exact dependencies complete 39 fresh native stages, three W8M journeys, independent verification and exact tested-byte adoption under W16.4i.4. Integration review iteration 3 closes with no open P1/P2; prior failures and consumed invocations remain preserved. |
 
 The approved September 13 verification release covers Turnstile, reCAPTCHA v2
 and hCaptcha, including invisible widgets activated by an approved Submit.
@@ -963,3 +963,37 @@ failure history and validation details. Bounded source review iteration 2 has no
 open P1/P2; existing evolution direction is retained. E15.5/W16.4i.4 still require
 publication, frozen complete qualification and exact-byte adoption. No commit or
 push occurred; the prior adopted kit and consumed English authoring remain intact.
+
+## M13.16 qualified adoption closure — September 14
+
+The authorized W16.4i.4 acceptance-v2 run passed in 4391.332 seconds
+(73.2 minutes): 39 fresh native stages and three fresh W8M journeys,
+with nine workflow receipts, three discarded local registrations and nine local
+logins. Every journey reports zero unauthorized mutations, rejected retries,
+fresh contexts, required session reuse and verified teardown. Development cache
+results were not used as qualification.
+
+The independent aggregate verifier and retained OpenUdon binary verify the
+aggregate/native/offline evidence. Twenty frozen source inventories and all
+eight runtime hashes across the three retained passes match. Pass one's exact
+tested files are adopted without rebuilding. The disabled synthetic adapter
+preflight passes without browser launch or application mutation. The required
+sandbox helper's path, hash, root ownership and mode remain bound.
+
+Private evidence: `/home/peter/.local/state/w8m-browser/w16-authoring-qualification-20260914-bgw53tdf`.
+Acceptance SHA-256: `0457bd061aa367ae45b0fb767806501f64fd7f909dcb9500f4a0bf3733e69a17`.
+Adoption SHA-256: `cdf956150bd6bb770277282c751f4336ccc9d03a837a951a5992361d5ca95be4`.
+All 4,841 preservation hashes pass; earlier kits, failed local checks and every
+consumed operation remain unchanged. Tofu's two inherited edits remain outside
+these task commits. Later coordination records do not replace the frozen
+execution-source pins.
+
+This qualifies synthetic integration with application-request allowlists, not
+network-wide containment or production provider acceptance. The
+consumed English attempt's hidden live cause remains unproven. Masked
+getAttribute/hasAttribute forms still stop without submission. No provider
+fixture, W8M contact, real account operation or deployment occurred. Fresh
+English authoring and the dependent verification-only probe still require new
+exact authority. Existing evolution direction is retained.
+
+Bounded integration review iteration 3 passes with no open P1/P2.

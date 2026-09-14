@@ -4,8 +4,8 @@ M13.16 repairs verification form-property shadowing using native getters,
 containment and submitter-field insertion. Exact destination, method, target
 and one-POST authority remain enforced. Ninety offline tests and the affected
 all-provider/both-mode synthetic smoke pass; bounded source review iteration 2
-closes. DOM-API shapes unsupported by Playwright still stop. Publication and
-complete qualification/adoption remain pending. See [status-M13.md](status-M13.md).
+closes. DOM-API shapes unsupported by Playwright still stop. Published Browserdriver fb207237a001 now passes
+complete fresh qualification and exact-byte adoption under W16.4i.4. See [status-M13.md](status-M13.md).
 
 M13.15 completes publication, fresh three-repeat integration qualification
 and exact tested-byte adoption under W8M W16.4i.2. Browserdriver aefdd875633b
