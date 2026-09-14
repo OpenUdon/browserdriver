@@ -1,4 +1,5 @@
 import { chromium, type Browser, type BrowserContext, type Locator, type Page, type Route } from "playwright";
+import { sandboxedChromiumOptions } from "./browser-launch.js";
 import {
   type ActionMessage, type AuthenticateMessage, type AuthenticationStep, type BrowserOutput, type BrowserWait,
   type ChallengeKind, type ChallengeResponseMessage, DriverFailure, challenge, failure,
@@ -289,8 +290,8 @@ export class PersistentBrowserDriver {
       resultCode = (guard instanceof VerificationGuard ? guard.postCount() > 0 : approved) ? "registration_indeterminate" : failureCode(error);
     } finally {
       if (context) {
-        try { await context.close(); }
-        catch { resultCode = approved ? "registration_indeterminate" : "driver_error"; completed = false; }
+        try { if (guard instanceof VerificationGuard) await guard.close(); else await context.close(); }
+        catch (error) { resultCode ??= (guard instanceof VerificationGuard ? guard.postCount() > 0 : approved) ? "registration_indeterminate" : failureCode(error); completed = false; }
       }
     }
     if (guard instanceof VerificationGuard) this.verificationProgress(request, guard, guard.submission.state);
@@ -332,7 +333,7 @@ export class PersistentBrowserDriver {
       guard.assertSafe();
     } catch (error) { code = failureCode(error); }
     finally {
-      if (context) try { await context.close(); } catch { code = "driver_error"; }
+      if (context) try { if (guard) await guard.close(); else await context.close(); } catch (error) { code ??= failureCode(error); }
     }
     if (guard) this.verificationProgress(request, guard, guard.submission.state);
     this.emit(code ? failure(request.requestId, code, request.version) : success(request.requestId, { verification: "ready", teardown: "complete", applicationPosts: 0 }, request.version));
@@ -346,7 +347,7 @@ export class PersistentBrowserDriver {
   }
 
   private async createContext(binding?: string): Promise<BrowserContext> {
-    this.browser ??= await chromium.launch({ headless: !this.options.headed });
+    this.browser ??= await chromium.launch(sandboxedChromiumOptions(this.options.headed ?? false));
     if (!binding) return this.browser.newContext({ serviceWorkers: "block" });
     if (!this.options.sessionStore) throw new DriverFailure("session_expired");
     const storageState = await this.options.sessionStore.load(binding);

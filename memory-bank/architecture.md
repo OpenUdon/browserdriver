@@ -90,3 +90,39 @@ provider traffic; it grants no application mutation. Readiness remains client
 evidence and actual challenges remain human-operated. The source candidate is
 not yet a qualified or adopted runtime. Provider integration and production
 acceptance have separate authorization gates.
+
+
+M13.5 keeps v6/UWS authority unchanged and adds same-origin checked GET/HEAD
+subresource redirects, fragment-aware provider ancestry and explicit joined
+shutdown. Provider POSTs never replay on redirects or share the application
+POST allowance. Internal diagnostics and disposable fixture reports are v2;
+active failure evidence survives the separately labeled shutdown phase. The
+fixture alone adds readiness confirmation before loading providers and starting
+its fixed verification phase. See `docs/verification.md` and `status-M13.md`.
+
+
+M13.7 advances internal diagnostics and disposable fixture reports to v3 while
+preserving driver v6. The probe treats initial Turnstile undefined as pending,
+never readiness, and invalidates approval on any later response change. Closed
+return kinds and bounded fixture lifecycle/error evidence distinguish execute
+exceptions from callbacks without exporting response values or exception prose.
+Fixture snapshots are reduced inside the browser; first errors survive eviction.
+The next scope is one reCAPTCHA approved_submit diagnostic, separately authorized.
+
+M13.11 adds an independent local-only fixture-presentation v1 diagnostic after
+the later six-case batch stopped at Ready without an owner-visible window. It
+shares the unchanged fixture launch options and confirmation handling, records
+bounded closed presentation samples before teardown, and contains no provider
+or submission path. It cannot reinterpret historical failures or qualify a
+runtime. The earlier sandboxed visibility helper was not an exact fixture launch
+comparison. Provider v3 and wire v6 remain unchanged; see `docs/verification.md`.
+
+
+M13.12 requires sandboxed Chromium across the trusted driver and both fixture
+entries, with no fallback after launch failure. Local presentation v2 removes
+page-screen geometry and the invalid containment comparison. Provider fixture v4
+adds the same bounded Ready-only window trace, stopping all such probes before
+provider loading. Entry report-version negotiation and v2 claims reject older
+launchers before execution; driver v6 and verification diagnostics v3 are
+unchanged. A single-case synthetic smoke and fresh six-case provider scope must
+use the new exact frozen candidate; old evidence and operating kits remain intact.

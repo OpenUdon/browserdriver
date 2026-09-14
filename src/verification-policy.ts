@@ -21,7 +21,7 @@ export function permitsVerificationURL(provider: VerificationDescriptor["provide
   let url: URL;
   try { url = new URL(raw); } catch { return false; }
   if (url.protocol !== "https:" || url.username || url.password || url.hash || url.port ||
-      /[\\\s]/u.test(raw) || /%(?:2e|2f|5c|00)/iu.test(url.pathname) || !["GET", "HEAD", "POST"].includes(method)) return false;
+      /[\\\s]/u.test(raw) || /%(?:2e|2f|5c|00)/iu.test(raw.split(/[?#]/u, 1)[0]!) || !["GET", "HEAD", "POST"].includes(method)) return false;
   const host = url.hostname, path = url.pathname;
   if (provider === "turnstile") return host === "challenges.cloudflare.com" &&
     (path.startsWith("/turnstile/") || path.startsWith("/cdn-cgi/challenge-platform/"));
@@ -31,6 +31,18 @@ export function permitsVerificationURL(provider: VerificationDescriptor["provide
     return host === "www.google.com" || host === "www.recaptcha.net";
   }
   return provider === "hcaptcha" && (host === "hcaptcha.com" || /^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+hcaptcha\.com$/u.test(host));
+}
+
+// Redirects remain inside an already reviewed provider origin and path policy.
+// Do not normalize raw escapes into authority, replay a POST, or disguise a
+// redirected document's base URL by fulfilling it under its original URL.
+export function verificationRedirect(provider: VerificationDescriptor["provider"], current: string, location: string, method: string, navigation: boolean): string | null {
+  if (navigation || !["GET", "HEAD"].includes(method) || /[\\\s]/u.test(location) ||
+      /%(?:2e|2f|5c|00)/iu.test(location.split(/[?#]/u, 1)[0]!)) return null;
+  try {
+    const target = new URL(location, current);
+    return target.origin === new URL(current).origin && permitsVerificationURL(provider, target.href, method) ? target.href : null;
+  } catch { return null; }
 }
 
 // One nonrenewable readiness/approval window. A released POST consumes the
