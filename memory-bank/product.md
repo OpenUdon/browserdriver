@@ -1,5 +1,16 @@
 # Product
 
+W16.4i.9 published the reviewed diagnostic repair and exact pins, but its
+qualification launch stopped at the native offline driver_unit prerequisite.
+Fresh source preparation omitted Browserdriver's installed node_modules;
+validation stopped before driver tests or acceptance-v2 browser stages.
+The invocation is consumed and no runtime was adopted. The previous kit stays
+selected. Clean teardown and preservation verify. A separate corrected local
+preparation builds and passes 94 driver tests with 13 browser skips; complete
+qualification still needs new authority. W16.4i.10 now prepares the corrected
+twenty-source/499-dependency-entry successor; positive and missing-prerequisite
+preflights pass. W16.4i.11 awaits separate authority. See the latest owner status record.
+
 M13.18 coordinates proposed publication of the passing M13.17/a diagnostic repair. The successor still needs separate authority, complete frozen integration qualification and exact-byte adoption under W8M W16.4i.9; production provider readiness remains unproven.
 
 M13.17 adds verification-only v7 diagnostics and preserves a blocked request’s specific guard failure when navigation reports a generic error. The snapshot uses existing closed observations/network classes and no captured provider text. V6 registration, reviewed network permissions and human challenge handling are unchanged. The production Turnstile cause remains unknown; this candidate is not yet adopted. M13.17a’s one authorized synthetic browser smoke now passes both ready and API-failure cases, frozen W8M wire checks and sixteen-process teardown without force; publication and qualification/adoption remain pending.

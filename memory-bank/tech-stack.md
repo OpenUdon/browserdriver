@@ -1,5 +1,16 @@
 # Tech Stack
 
+W16.4i.9 published the reviewed diagnostic repair and exact pins, but its
+qualification launch stopped at the native offline driver_unit prerequisite.
+Fresh source preparation omitted Browserdriver's installed node_modules;
+validation stopped before driver tests or acceptance-v2 browser stages.
+The invocation is consumed and no runtime was adopted. The previous kit stays
+selected. Clean teardown and preservation verify. A separate corrected local
+preparation builds and passes 94 driver tests with 13 browser skips; complete
+qualification still needs new authority. W16.4i.10 now prepares the corrected
+twenty-source/499-dependency-entry successor; positive and missing-prerequisite
+preflights pass. W16.4i.11 awaits separate authority. See the latest owner status record.
+
 M13.18 reuses the passing 94 offline tests and once-consumed two-context synthetic smoke as prerequisites. Complete acceptance v2 uses the existing Node/Playwright/Chromium toolchain and sandbox helper in a fresh kit; its publication and execution require separate authorization.
 
 M13.17 uses the existing Node/Playwright pins. npm test includes browser-free fake-boundary driver tests; the actual driver/guard/reducer produce wire data that W8M checks through W8M_PROBE_WIRE_FIXTURE. BROWSERDRIVER_PROBE_LIVE_TEST=1 selects the separately authorized two-context loopback probe smoke. No provider SDK, account data or application POST is needed. Full qualification remains pending. M13.17a’s one authorized synthetic browser smoke now passes both ready and API-failure cases, frozen W8M wire checks and sixteen-process teardown without force; publication and qualification/adoption remain pending.

@@ -20,7 +20,8 @@
 | M13.16 | `[+]` | Source repair, owner tests and focused local browser validation pass. Published exact dependencies complete 39 fresh native stages, three W8M journeys, independent verification and exact tested-byte adoption under W16.4i.4. Integration review iteration 3 closes with no open P1/P2; prior failures and consumed invocations remain preserved. |
 | M13.17 | `[+]` | Source repair/review and M13.17a’s authorized local smoke pass: verification-only v7 diagnostics, guard-cause preservation, 94 offline tests, W8M receipt/race checks and real-browser wire compatibility. V6 registration and provider permissions remain unchanged. Publication, complete qualification and exact adoption remain pending under W16.4i.8. |
 | M13.17a | `[+]` | The exact frozen local smoke ran once: ready/API-failure cases passed, zero provider requests or application POSTs, both emitted v7 streams accepted by frozen W8M v3, and all sixteen recorded process identities gone without force. Frozen inputs and prior evidence are preserved. Execution review iteration 1 passes with no open P1/P2; authority consumed. |
-| M13.18 | `[ ]` | Publication/qualification proposal is prepared under W8M W16.4i.8. M13.17/a prerequisites pass; publish the reviewed repair only after separate authority, then require OpenUdon E15.6 and W16.4i.9 full qualification and exact adoption. Bounded preparation review iteration 1 passes with no open P1/P2; execution remains pending. |
+| M13.18 | `[!]` | Publication and exact pins pass. One qualification launch failed at native offline driver_unit because fresh preparation omitted installed node_modules; acceptance-v2/browser stages never started. Canonical failure evidence, 536-process teardown and prior preservation verify. No adoption; authority consumed. Corrected separate preparation passes 94 driver tests/13 browser skips, but complete qualification needs new authority. |
+| M13.19 | `[ ]` | W16.4i.10 corrected preparation passes twenty source bindings, 499 installed-dependency entries, driver build/94 tests and fail-closed preflight checks. Await separate W16.4i.11 full qualification/adoption authority. Preserve the failed M13.18 invocation and current adopted kit. |
 
 The approved September 13 verification release covers Turnstile, reCAPTCHA v2
 and hCaptcha, including invisible widgets activated by an approved Submit.
@@ -1085,3 +1086,60 @@ consumed smoke inputs/evidence and prior adopted runtime. Browser-free W8M and
 OpenUdon document checks pass. The proposal includes the existing OpenUdon exact-
 pin test alongside its driver compatibility revision. M13.18 remains pending
 separate publication/qualification/adoption authority; no new browser ran.
+
+## Authorized diagnostic integration — September 14
+
+The owner authorized W16.4i.9’s exact proposal. Browserdriver
+`46a8437b89e0c8eaa2f20f0412b3212df233ba3d` is published, and the
+OpenUdon driver lock and existing exact-pin test select that revision. UWS,
+Browsertools, Udon and all fourteen auxiliary inputs remain fixed. Integration
+review iteration 1 starts before source freeze and the single fresh full gate.
+The private kit is `/home/peter/.local/state/w8m-browser/w16-probe-qualification-20260914-4c3izjxi`.
+Prior runtime, consumed attempts and inherited Tofu edits remain preserved.
+
+## M13.18 qualification failure and preparation correction
+
+The owner-authorized publication completed at Browserdriver
+`46a8437b89e0c8eaa2f20f0412b3212df233ba3d`, OpenUdon
+`15251baf8933fba41ae0ff31c4d7b4912db8db1e`, Tofu
+`bdf1dfe38ba8b17f3a2eed7e73dc048a5f760e12` and W8M
+`84aa16c97026056fbf5719a489d80086bb13db74`. Exact pins and owner browser-free
+gates passed. The frozen qualification launch then failed at native_offline /
+driver_unit after openudon_unit and browsertools_unit passed.
+
+The confirmed preparation omission is absent node_modules in the fresh driver
+copy. StageBrowserdriver checks that directory before compiling or running
+unit tests. This failure does not establish a driver code regression or a
+provider problem. The private diagnostic records component_validation with
+empty command streams. OpenUdon's independent verifier accepts the canonical
+failure report and deliberately exits 1 for status fail.
+
+Exactly one qualification launch was consumed; acceptance-v2 was invoked zero
+times, no browser stage started, and no acceptance/adoption artifact exists.
+The supervisor exited 1 with clean teardown and no forced cleanup; all 536
+recorded process identities are absent. Twenty frozen source inventories,
+4,919 prior file hashes and the previous adopted kit verify unchanged. The
+selected English package and all consumed operation/identity records remain
+preserved. Failure evidence is `/home/peter/.local/state/w8m-browser/w16-probe-qualification-20260914-4c3izjxi`; the current adopted runtime remains
+`w16-authoring-qualification-20260914-bgw53tdf`.
+
+A separate browser-free preparation at `/home/peter/.local/state/w8m-browser/w16-probe-preparation-repair-20260914-_hme36i5` supplies a private read-only
+copy of the previously installed, matching dependencies without installation.
+The same driver revision now compiles and passes 94 tests (13 browser skips).
+The failed kit is unchanged; no qualification or browser retry occurred.
+Prepare a fresh complete dependency inventory and checked launch scope before
+new qualification authority. Real W8M/provider operations remain separately
+gated and the earlier Turnstile cause/readiness remain unresolved.
+
+Bounded failure-evidence review iteration 1 has no open P1/P2 in closeout;
+qualification/adoption acceptance remains unmet. The preparation defect is
+corrected locally, with full integration still unqualified. Existing evolution
+direction is retained. Publication authority includes these failure records.
+
+Corrected preparation review iteration 1 passes. The exact successor proposal
+is `/home/peter/.local/state/w8m-browser/w16-probe-preparation-repair-20260914-_hme36i5/qualification-proposal.md`. Twenty fresh source inventories match the published candidate, and
+499 installed-dependency entries are separately bound and read-only. Driver
+build/94 tests pass with 13 browser skips. Preflight passes with dependencies
+and rejects missing dependencies or absent execution authority before a claim.
+Source-copy modes are preserved. No second qualification or browser invocation
+ran; the original failed kit is untouched. The successor remains unarmed.
