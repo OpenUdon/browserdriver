@@ -1,5 +1,12 @@
 # Tech Stack
 
+M13.15 completes publication, fresh three-repeat integration qualification
+and exact tested-byte adoption under W8M W16.4i.2. Browserdriver aefdd875633b
+retains the six-case-tested provider repairs and required Chromium sandbox.
+All 39 native stages and three W8M journeys pass; bounded integration review
+iteration 2 closes. Earlier consumed fixture failures and the unexplained
+historical window visibility remain preserved. See [status-M13.md](status-M13.md).
+
 M12 keeps Node/Playwright pins unchanged. Optional v5 `deadline` metadata is
 private runtime timing, absent from UWS profiles and reduced results. Native
 v4/v5 loopback tests remain opt-in and need an existing headed display.

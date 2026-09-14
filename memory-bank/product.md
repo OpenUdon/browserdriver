@@ -1,5 +1,12 @@
 # Product
 
+M13.15 completes publication, fresh three-repeat integration qualification
+and exact tested-byte adoption under W8M W16.4i.2. Browserdriver aefdd875633b
+retains the six-case-tested provider repairs and required Chromium sandbox.
+All 39 native stages and three W8M journeys pass; bounded integration review
+iteration 2 closes. Earlier consumed fixture failures and the unexplained
+historical window visibility remain preserved. See [status-M13.md](status-M13.md).
+
 Registration now brings its isolated page forward at launch and each input,
 human and submit checkpoint. The desktop compositor ultimately controls focus;
 this is a foreground request, not proof that a person can see the window.

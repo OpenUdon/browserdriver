@@ -1,5 +1,12 @@
 # Milestones
 
+M13.15 completes publication, fresh three-repeat integration qualification
+and exact tested-byte adoption under W8M W16.4i.2. Browserdriver aefdd875633b
+retains the six-case-tested provider repairs and required Chromium sandbox.
+All 39 native stages and three W8M journeys pass; bounded integration review
+iteration 2 closes. Earlier consumed fixture failures and the unexplained
+historical window visibility remain preserved. See [status-M13.md](status-M13.md).
+
 ## Approved verification successor — M13
 
 The approved September 13 verification release covers Turnstile, reCAPTCHA v2
@@ -81,7 +88,7 @@ See [status-M11.md](status-M11.md). Existing v2-v4 contracts remain unchanged.
 | M10 | `status-M10.md` | Registration request and redirect boundaries |
 | M11 | `status-M11.md` | Private registration 1.1 execution |
 | M12 | `status-M12.md` | Registration foreground and checkpoint deadlines |
-| M13 | [status-M13.md](status-M13.md) | Implementation review complete: driver v6 and probe; downstream qualification pending; evolution v8 |
+| M13 | [status-M13.md](status-M13.md) | Verification and provider repairs qualified/adopted through W16.4i.2; consumed history preserved; evolution v12 |
 
 M01 establishes the isolated v2 NDJSON process, closed authentication and
 browser macro execution, all planned MFA variants, exact-origin and ambiguity

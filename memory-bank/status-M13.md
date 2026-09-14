@@ -16,7 +16,7 @@
 | M13.12 | `[+]` | Shared sandbox-required launch and Ready-only versioned observations verified: 89 offline passes and one separately authorized frozen synthetic Turnstile smoke passed (4.268 s, one discarded local POST). Fourteen process identities absent, two listeners closed without force; bounded execution review passes. Smoke authority consumed. Fresh six-case provider scope/authorization and qualification/adoption remain pending. |
 | M13.13 | `[+]` | Fresh six-case scope/authority/result v5 prepared against the unchanged M13.12 candidate and passing smoke. Required report v4/claim v2, bounded Ready progress, strict predecessor bindings and PID/listener closure. Ordered fake cases, nineteen failure scenarios, cancellation tests, preservation and bounded review pass. No browser/provider execution or new authority. |
 | M13.14 | `[+]` | Authorized v5 batch ran all six official-key provider/mode pairs once: six passes, six discarded local POSTs. Exact reports/claims, 93 worker and six supervisor identities, six closed listener inodes and bounded execution review verify without force. All permissions consumed; publication, complete qualification/adoption and production acceptance remain pending. |
-| M13.15 | `[~]` | Owner-authorized publication and renewed frozen acceptance-v2 adoption, coordinated by W8M W16.4i.2. Provider-tested source bytes match; publication review iteration 1 in progress. Earlier invocations remain consumed. |
+| M13.15 | `[+]` | Published source aefdd875633b passes focused owner checks, fresh complete acceptance v2 and independent exact-byte adoption under W8M W16.4i.2. Integration review iteration 2 closes with no open P1/P2. Earlier failed and consumed evidence remains preserved. |
 
 The approved September 13 verification release covers Turnstile, reCAPTCHA v2
 and hCaptcha, including invisible widgets activated by an approved Submit.
@@ -912,3 +912,30 @@ and consumed invocations remain literal history.
 Publication precedes OpenUdon pinning and W8M source freeze. Complete qualification
 and exact-byte adoption remain pending in W16.4i.2; this source commit itself
 creates no operating authority. No new provider run or real account is included.
+
+
+M13.15 integration review iteration 2 starts against the published aefdd87
+source and W8M W16.4i.2 r4 freeze. All 39 fresh native stages pass, including
+three loopback and registration handoff repeats. The three W8M journeys,
+independent evidence verification and exact-byte adoption remain pending.
+Review preserves protocol/authority boundaries and every consumed invocation.
+
+## M13.15 qualified adoption closure — September 14
+
+The renewed W8M W16.4i.2 r4 gate passes all 39 fresh native stages and three
+fresh consumer journeys (nine workflow receipts). Independent aggregate and
+retained-binary report verification pass; twenty frozen source inventories and
+eight identical runtime hashes across all three retained passes match. Exact
+pass-one bytes are adopted without rebuilding. Prior kits and consumed attempts
+remain preserved. This is synthetic qualification, not production acceptance.
+
+Private evidence: `/home/peter/.local/state/w8m-browser/w16-renewed-qualification-20260914-r4`.
+Acceptance SHA-256: `d461337cb623f53614aa361971f96b2b510d61a8d28a97f18be013c722288d32`.
+Adoption SHA-256: `6de112f1d14461fc80464c5d534c31c2f53376730663b4028bacd7d6a5c3569a`.
+No new provider fixture, real account operation or deployment occurred. Later
+coordination-only commits leave the frozen executable-source pins unchanged.
+
+Bounded integration review iteration 2 passes with no open P1/P2.
+Owner acceptance and the full changed-source range were reviewed. Existing
+evolution direction is retained; no new contract or product scope was added.
+The selected executable source remains `aefdd875633bbf880ec5138feed5fb227da896a0`.
