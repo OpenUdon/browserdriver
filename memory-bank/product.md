@@ -1,15 +1,16 @@
 # Product
 
-W16.4i.9 published the reviewed diagnostic repair and exact pins, but its
-qualification launch stopped at the native offline driver_unit prerequisite.
-Fresh source preparation omitted Browserdriver's installed node_modules;
-validation stopped before driver tests or acceptance-v2 browser stages.
-The invocation is consumed and no runtime was adopted. The previous kit stays
-selected. Clean teardown and preservation verify. A separate corrected local
-preparation builds and passes 94 driver tests with 13 browser skips; complete
-qualification still needs new authority. W16.4i.10 now prepares the corrected
-twenty-source/499-dependency-entry successor; positive and missing-prerequisite
-preflights pass. W16.4i.11 awaits separate authority. See the latest owner status record.
+W16.4i.11 ran the corrected qualification once. All native offline prerequisites
+passed, including driver_unit, then acceptance-v2 stopped at the first repeat's
+udon_browser_contract cancellation test after four passing native stages.
+The test reported a grandchild PID still present; all 1,047 recorded process
+identities are absent after clean teardown without forced cleanup. Native
+failure evidence verifies; the incomplete aggregate is rejected for adoption.
+No runtime was adopted and this invocation is consumed. The previous kit stays
+selected. Sources, installed dependencies and prior evidence remain unchanged.
+The supervisor's deferred orphan reaping is a leading hypothesis, not a proven
+cause. A focused browser-free reproduction is the next engineering step;
+any fresh full qualification needs new authority. See the latest owner status.
 
 M13.18 coordinates proposed publication of the passing M13.17/a diagnostic repair. The successor still needs separate authority, complete frozen integration qualification and exact-byte adoption under W8M W16.4i.9; production provider readiness remains unproven.
 

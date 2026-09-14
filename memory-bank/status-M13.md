@@ -21,7 +21,7 @@
 | M13.17 | `[+]` | Source repair/review and M13.17a’s authorized local smoke pass: verification-only v7 diagnostics, guard-cause preservation, 94 offline tests, W8M receipt/race checks and real-browser wire compatibility. V6 registration and provider permissions remain unchanged. Publication, complete qualification and exact adoption remain pending under W16.4i.8. |
 | M13.17a | `[+]` | The exact frozen local smoke ran once: ready/API-failure cases passed, zero provider requests or application POSTs, both emitted v7 streams accepted by frozen W8M v3, and all sixteen recorded process identities gone without force. Frozen inputs and prior evidence are preserved. Execution review iteration 1 passes with no open P1/P2; authority consumed. |
 | M13.18 | `[!]` | Publication and exact pins pass. One qualification launch failed at native offline driver_unit because fresh preparation omitted installed node_modules; acceptance-v2/browser stages never started. Canonical failure evidence, 536-process teardown and prior preservation verify. No adoption; authority consumed. Corrected separate preparation passes 94 driver tests/13 browser skips, but complete qualification needs new authority. |
-| M13.19 | `[ ]` | W16.4i.10 corrected preparation passes twenty source bindings, 499 installed-dependency entries, driver build/94 tests and fail-closed preflight checks. Await separate W16.4i.11 full qualification/adoption authority. Preserve the failed M13.18 invocation and current adopted kit. |
+| M13.19 | `[!]` | Corrected offline prerequisites pass. One acceptance-v2 invocation failed at repeat-one udon_browser_contract cancellation test after four native passes; no W8M journeys or adoption. Canonical native failure, rejected incomplete aggregate, all 1,047 process identities absent and 5,016 preservation hashes verify. Deferred orphan reaping is a hypothesis requiring focused reproduction. Authority consumed; previous runtime stays selected. Failure-evidence review iteration 1 passes. |
 
 The approved September 13 verification release covers Turnstile, reCAPTCHA v2
 and hCaptcha, including invisible widgets activated by an approved Submit.
@@ -1143,3 +1143,65 @@ build/94 tests pass with 13 browser skips. Preflight passes with dependencies
 and rejects missing dependencies or absent execution authority before a claim.
 Source-copy modes are preserved. No second qualification or browser invocation
 ran; the original failed kit is untouched. The successor remains unarmed.
+
+## M13.19 corrected qualification execution
+
+The owner authorized a fresh run of the corrected proposal. Execution intake
+passes source, dependency, tool, desktop and publication bindings and preserves
+5,016 prior evidence files. The private kit is `/home/peter/.local/state/w8m-browser/w16-probe-preparation-repair-20260914-_hme36i5`.
+Fresh authority is recorded in authorization.json against launch-scope.json.
+Bounded integration review iteration 1 starts. Run once using automated local
+forms and synthetic verification responses; adopt only independently verified
+passing retained bytes. No real W8M/provider operation or account is authorized.
+The preceding failed qualification remains failed and consumed.
+
+## M13.19 corrected qualification failure closure
+
+The owner authorized one fresh run of the corrected W16.4i.10 proposal,
+conditional passing-byte adoption and scoped outcome publication. Intake
+verified twenty source inventories, 499 read-only installed-dependency entries,
+existing tools/desktop and published source ancestry. No source or pin changed.
+The previous missing-node_modules preparation defect is corrected: driver_unit
+and all other native offline prerequisites passed, as did independent offline
+verification and W8M's uncached policy/artifact/history/tests/vet gate.
+
+Acceptance-v2 ran once for 279.143 seconds and stopped at native repeat one,
+stage udon_browser_contract. ui_browser, registration_ui, supervised_control
+and build_inputs passed. TestSubprocessCancellationTerminatesProcessGroup
+failed because its grandchild PID remained visible to kill(pid, 0) during the
+three-second cancellation check. No W8M consumer journey started. The report
+contains four passing native stages and one failed stage; the remaining stages
+and repeats were not run. There was no automatic retry or adoption.
+
+Read-only inspection identifies a possible harness interaction: the outer
+supervisor is a subreaper, adopts orphan descendants and calls waitpid only
+after the main qualification child exits. The cancellation test treats any
+existing PID as alive, including an exited zombie. This is a leading hypothesis;
+historical process states were not recorded, so it is not yet a demonstrated
+cause or evidence of a Udon/Browserdriver code regression. Reproduce the orphan
+lifecycle with browser-free subprocesses before changing the supervisor or test.
+
+The native failure report extracted verbatim from the bound private aggregate
+diagnostic passes its owner's structural verification; the CLI deliberately
+returns exit 1 with browser-system-eval: fail. W8M's aggregate verifier returns
+acceptance_evidence, correctly rejecting the incomplete result for adoption.
+Failure verification is distinct from successful qualification. The retained
+runtime directory exists but is empty; no adoption/preflight artifact exists.
+
+The supervisor returned exit 1 with joined teardown and no forced cleanup.
+All 1,047 recorded PID/start-time identities, including the reported grandchild,
+are independently absent. Twenty candidate source inventories, all 499 installed
+dependency entries, twenty prior failed-kit source inventories and 5,016 prior
+evidence hashes verify unchanged. The previous adopted kit's sources and eight
+runtime hashes also verify. The English package and every consumed operation
+remain preserved. W16.4i.9/M13.18/E15.6 remain failed/consumed independently.
+The selected runtime remains w16-authoring-qualification-20260914-bgw53tdf.
+
+Private evidence: `/home/peter/.local/state/w8m-browser/w16-probe-preparation-repair-20260914-_hme36i5`. failure-review.json binds the authority, exclusive
+claim, supervisor/process closeout, reports, extracted diagnostic, independent
+verification and preservation records. Bounded failure-evidence review iteration
+1 has no open P1/P2 in closeout; qualification/adoption acceptance remains unmet.
+No official-key fixture, real W8M/provider contact, real account operation or
+production change occurred. New qualification and live operations remain
+separately authorized. Existing evolution direction is retained. Tofu's inherited
+E13/A27 edits remain outside outcome publication.
