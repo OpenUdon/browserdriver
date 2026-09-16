@@ -1,13 +1,20 @@
 # M13 — Trusted browser verification
 
-W16.4i.34 implements the approved initialization observer repair and bounded
-v9/v5 diagnostics. .34a passed offline review; .34b is failed/consumed and
-.34b1 owns the local fixture correction, coordinated with
-Browserdriver M13.22 and OpenUdon E18. Local implementation, browser-free checks
-and isolated synthetic smoke are authorized. Publication, runtime adoption and
-one fresh supervised W8M probe remain explicit later gates. The adopted .28d
-runtime, consumed .31/.33 probes, prior private evidence and inherited edits
-remain preserved. No successful live verification or provider cause is claimed.
+The initialization repair is published: Browserdriver 3522821, OpenUdon
+d4c0a80, scoped Tofu a9b20f0 and W8M 776c20b; qualification freezes W8M d3f7957.
+W16.4i.34d's single full qualification failed/consumed at repetition three's
+loopback_scenarios after 33 native passes. The synthetic mfa-sms-otp authoring
+controller reports worker_protocol; its exact cause remains unresolved.
+registration_driver passes all five tests in each of three fresh repetitions.
+Independent failure verification rejects the aggregate and confirms unforced
+cleanup: all 4,886 execution and eight verifier identities are absent.
+
+No W8M consumer journey, adoption or live probe followed. The .28d runtime
+remains adopted (driver v8, diagnostics/probe v4; registration v6); the published
+v9/v5 repair is not adopted. The authorized .34e probe remains unstarted behind
+passing qualification/adoption and current desktop readiness. Both failed local
+smokes, consumed .31/.33 probes, earlier evidence and inherited edits remain
+preserved. Neither the authoring failure nor live api_loading causation is proved.
 
 Earlier recorded context:
 
@@ -52,7 +59,7 @@ Task records and prior context:
 | M13.19 | `[!]` | Corrected offline prerequisites pass. One acceptance-v2 invocation failed at repeat-one udon_browser_contract cancellation test after four native passes; no W8M journeys or adoption. Canonical native failure, rejected incomplete aggregate, all 1,047 process identities absent and 5,016 preservation hashes verify. Deferred orphan reaping is a hypothesis requiring focused reproduction. Authority consumed; previous runtime stays selected. Failure-evidence review iteration 1 passes. |
 | M13.20 | `[+]` | Reviewed v8/v4 observability and strict consumers are published, pass the repaired four-test smoke and all three native repeats within W8M acceptance-v2 (39 stages plus three journeys), and are independently verified/adopted under W16.4i.28d. Final record review 2 passes. Legacy v7/v3 and registration v6 remain preserved; provider cause unresolved. |
 | M13.21 | `[+]` | Fixture-only ordinary 5 s and intentional 50 ms budgets pass 109 offline tests, a controlled old-budget failure, the renewed four-test smoke and all three fresh native repeats. Runtime deadlines stay fixed. Original failed smoke remains consumed; historical cause unproven. |
-| M13.22 | `[~]` | Initialization repair and v9/v5 offline gates/review pass; .34b smoke failed with four existing cases passing. .34b1 corrects synthetic startup allowance and failure context; runtime source unchanged. |
+| M13.22 | `[!]` | Published 3522821 initialization repair passes 127 offline tests, the repaired five-case smoke and all three five-test registration_driver repetitions. W8M .34d qualification failed/consumed at repeat-three mfa-sms-otp authoring/controller worker_protocol after 33 native passes. Independent failure/cleanup verify; old .28d runtime remains selected. Failure closeout review 4 passes; no adoption or live probe. |
 
 The approved September 13 verification release covers Turnstile, reCAPTCHA v2
 and hCaptcha, including invisible widgets activated by an approved Submit.
@@ -1371,3 +1378,55 @@ identities absent). The offline driver suite passes 127 tests, 15 opt-in skips.
 Source review 3 and smoke closeout review 2 pass. Two earlier failed scopes stay
 consumed. M13.22 remains coordinated with .34c pending explicit scoped publication;
 adopted .28d and real provider causation remain unchanged/unresolved.
+
+
+### W16.4i.34d / M13.22 / E18.1 verified failed qualification
+
+The single fresh acceptance-v2 invocation fails at native repetition three's
+loopback_scenarios. First two repetitions pass completely; repetition three
+passes seven stages then fails. Its scenario report has 22 passes and one
+mfa-sms-otp authoring_v2 failure. A report-bound closed diagnostic identifies
+controller/worker_protocol. Exact source inspection shows receive/scanner and
+terminal-drain paths share that label; the original stream/error/exit sequence
+was not retained. No precise cause or causal link to the initialization repair
+is established. All three registration_driver stages pass five tests/zero skips
+with the exact maintained inventory. Five remaining native stages and all three
+W8M consumer journeys are unstarted; the aggregate cannot qualify a runtime.
+
+Independent native/scenario/diagnostic checks pass and the canonical W8M reader
+rejects the failed aggregate. All 4,886 execution and eight verifier PID/start
+identities are absent without force. Twenty current sources, eighty earlier
+source inventories, 499 installed dependency entries, 12,589 preserved files
+and one retained adopted-runtime tree match. No source/runtime bytes changed.
+
+Closeout review 3 found two preparation metadata modes at 0664 inside an owned
+0700 directory. Exact original bytes and modes were recorded before tightening
+only those modes to 0600. The initial strict-reader rejection is preserved;
+authority/scope/claim/report bytes are unchanged. Review 4 continues after the
+restriction and successful browser-free verification. Future kits must check
+their final metadata modes before consuming a claim. This post-run correction
+does not retroactively establish correct preparation or qualification success.
+
+The previous .28d runtime remains selected. Conditional adoption and .34e live
+probing are unstarted. The private live helper draft has no packet, authority
+copy or claim; no real provider/W8M operation or registration occurred. Earlier
+consumed attempts and inherited Tofu E13/A27 edits remain preserved. A focused
+authoring follow-up is proposed; no automatic full qualification retry follows.
+
+Private evidence: /home/peter/.local/state/w8m-browser/w16-initialization-repair-20260916-dzvaigw3/execution-20260916/qualification/failure-closeout.
+See independent-checks.json, findings.md, diagnostic-source-bindings.json and
+follow-up-proposal.md there. Failure closeout/record review remains at iteration
+4 of ten; the underlying milestone and real acceptance remain unfinished.
+
+
+### W16.4i.34d failure closeout review 4 passed
+
+Whole failure-scope review 4 has no open P1/P2 after the restrictive metadata
+mode correction, original-byte/mode preservation, canonical failure verification,
+clean teardown and current record checks. The underlying worker_protocol cause
+remains unresolved and is an explicit integration blocker, not a passing result.
+This invocation is failed/consumed; the previous runtime remains selected. No
+new qualification, adoption, live probe or real registration is implied. The
+final metadata mode/artifact checks and scoped record publication retain all
+private evidence and exclude inherited Tofu E13/A27 edits. The broader milestone
+and real acceptance remain unfinished.

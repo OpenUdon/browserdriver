@@ -1,13 +1,20 @@
 # Product
 
-W16.4i.34 implements the initialization observer repair and bounded v9/v5
-diagnostics. Source review 3 and the .34b2 fresh synthetic smoke/independent
-verification pass: five tests, zero skips, including ten initialization cases.
-The .34b and .34b1 failures remain consumed. W16.4i.34c now prepares exact scoped
-publication with Browserdriver M13.22 and OpenUdon E18; commit/push, adoption and
-real W8M/provider contact remain explicit later gates. The adopted .28d runtime
-and consumed .31/.33 probes are preserved. The live api_loading cause remains
-unresolved; local tests do not establish a live repair.
+The initialization repair is published: Browserdriver 3522821, OpenUdon
+d4c0a80, scoped Tofu a9b20f0 and W8M 776c20b; qualification freezes W8M d3f7957.
+W16.4i.34d's single full qualification failed/consumed at repetition three's
+loopback_scenarios after 33 native passes. The synthetic mfa-sms-otp authoring
+controller reports worker_protocol; its exact cause remains unresolved.
+registration_driver passes all five tests in each of three fresh repetitions.
+Independent failure verification rejects the aggregate and confirms unforced
+cleanup: all 4,886 execution and eight verifier identities are absent.
+
+No W8M consumer journey, adoption or live probe followed. The .28d runtime
+remains adopted (driver v8, diagnostics/probe v4; registration v6); the published
+v9/v5 repair is not adopted. The authorized .34e probe remains unstarted behind
+passing qualification/adoption and current desktop readiness. Both failed local
+smokes, consumed .31/.33 probes, earlier evidence and inherited edits remain
+preserved. Neither the authoring failure nor live api_loading causation is proved.
 
 Earlier recorded context:
 
