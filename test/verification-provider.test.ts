@@ -8,9 +8,9 @@ const selected = process.env.BROWSERDRIVER_PROVIDER_NETWORK_TEST;
 const mode = process.env.BROWSERDRIVER_PROVIDER_ACTIVATION;
 const report = process.env.BROWSERDRIVER_PROVIDER_REPORT;
 const reportVersion = process.env.BROWSERDRIVER_PROVIDER_REPORT_VERSION;
-const valid = reportVersion === "browserdriver.provider-fixture.v4" && Object.hasOwn(officialProviders, selected ?? "") && ["before_approval", "approved_submit"].includes(mode ?? "") && report && isAbsolute(report);
+const valid = reportVersion === "browserdriver.provider-fixture.v5" && Object.hasOwn(officialProviders, selected ?? "") && ["before_approval", "approved_submit"].includes(mode ?? "") && report && isAbsolute(report);
 
-test("provider fixture selection requires one provider, one mode, report v4 and an exclusive report path", {skip: [selected, mode, report, reportVersion].every(value => value === undefined)}, () => {
+test("provider fixture selection requires one provider, one mode, report v5 and an exclusive report path", {skip: [selected, mode, report, reportVersion].every(value => value === undefined)}, () => {
   assert.ok(valid, "provider_fixture_selection_invalid");
 });
 
@@ -24,7 +24,7 @@ for (const provider of Object.keys(officialProviders) as Array<keyof typeof offi
       try {
         try {await lstat(report!); assert.fail("provider_fixture_report_exists");}
         catch (error) {if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;}
-        await writeFile(report! + ".claim.json", JSON.stringify({version: "browserdriver.provider-fixture-claim.v2", reportVersion, provider, activation}) + "\n", {flag: "wx", mode: 0o600});
+        await writeFile(report! + ".claim.json", JSON.stringify({version: "browserdriver.provider-fixture-claim.v3", reportVersion, provider, activation}) + "\n", {flag: "wx", mode: 0o600});
       } catch {assert.fail("provider_fixture_claim_failed");}
       // Test stdout is TAP-wrapped by Node and streams immediately; t.diagnostic
       // defers its output until completion, too late for a human attention cue.

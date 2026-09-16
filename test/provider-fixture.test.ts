@@ -135,7 +135,7 @@ test("old or incomplete selectors and consumed claims fail before browser execut
     const invoke = (extra: Record<string, string>) => spawnSync(process.execPath, ["--test", new URL("./verification-provider.test.js", import.meta.url).pathname], {
       env: {PATH: process.env.PATH!, BROWSERDRIVER_PROVIDER_NETWORK_TEST: "hcaptcha", ...extra}, encoding: "utf8", timeout: 10_000,
     });
-    for (const version of [undefined, "browserdriver.provider-fixture.v3", "unsupported"]) {
+    for (const version of [undefined, "browserdriver.provider-fixture.v3", "browserdriver.provider-fixture.v4", "unsupported"]) {
       const env: Record<string, string> = {BROWSERDRIVER_PROVIDER_ACTIVATION: "approved_submit", BROWSERDRIVER_PROVIDER_REPORT: report};
       if (version !== undefined) env.BROWSERDRIVER_PROVIDER_REPORT_VERSION = version;
       assert.match(invoke(env).stdout, /provider_fixture_selection_invalid/u);
@@ -146,14 +146,14 @@ test("old or incomplete selectors and consumed claims fail before browser execut
     assert.equal(old.status, 1);
     assert.match(old.stdout, /provider_fixture_selection_invalid/u);
     await writeFile(report, "preserved-result\n", {flag: "wx"});
-    const collision = invoke({BROWSERDRIVER_PROVIDER_ACTIVATION: "approved_submit", BROWSERDRIVER_PROVIDER_REPORT: report, BROWSERDRIVER_PROVIDER_REPORT_VERSION: "browserdriver.provider-fixture.v4"});
+    const collision = invoke({BROWSERDRIVER_PROVIDER_ACTIVATION: "approved_submit", BROWSERDRIVER_PROVIDER_REPORT: report, BROWSERDRIVER_PROVIDER_REPORT_VERSION: "browserdriver.provider-fixture.v5"});
     assert.equal(collision.status, 1);
     assert.match(collision.stdout, /provider_fixture_claim_failed/u);
     assert.equal(await readFile(report, "utf8"), "preserved-result\n");
     await assert.rejects(readFile(claim), {code: "ENOENT"});
     await rm(report);
     await writeFile(claim, "consumed-evidence\n", {flag: "wx"});
-    const consumed = invoke({BROWSERDRIVER_PROVIDER_ACTIVATION: "approved_submit", BROWSERDRIVER_PROVIDER_REPORT: report, BROWSERDRIVER_PROVIDER_REPORT_VERSION: "browserdriver.provider-fixture.v4"});
+    const consumed = invoke({BROWSERDRIVER_PROVIDER_ACTIVATION: "approved_submit", BROWSERDRIVER_PROVIDER_REPORT: report, BROWSERDRIVER_PROVIDER_REPORT_VERSION: "browserdriver.provider-fixture.v5"});
     assert.equal(consumed.status, 1);
     assert.match(consumed.stdout, /provider_fixture_claim_failed/u);
     assert.equal(await readFile(claim, "utf8"), "consumed-evidence\n");

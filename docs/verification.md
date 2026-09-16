@@ -67,16 +67,15 @@ no dependency installation or host configuration change is performed. A report's
 `chromiumSandbox:true` records the required launch setting, not an independent
 kernel sandbox attestation.
 
-Provider reports are now `browserdriver.provider-fixture.v4`; local presentation
+Provider reports are now `browserdriver.provider-fixture.v5`; local presentation
 reports are `browserdriver.fixture-presentation.v2`. Their independent claim files
-are v2 and bind the requested report version. Launchers must supply the exact
+are provider claim v3 and presentation claim v2 and bind the requested report version. Launchers must supply the exact
 `BROWSERDRIVER_PROVIDER_REPORT_VERSION` or
 `BROWSERDRIVER_FIXTURE_VISIBILITY_REPORT_VERSION` respectively. Missing or older
-versions stop before claims and browser launch. Frozen v3/v1 reports and older
-supervisors remain unchanged; driver wire v6 and verification diagnostics v3 do
-not change.
+versions stop before claims and browser launch. Frozen older reports and supervisors remain unchanged. Driver wire v6 remains
+unchanged; new provider reports embed verification diagnostics v4.
 
-Both fixtures share the Ready-page observer. Provider v4 embeds
+Both fixtures share the Ready-page observer. Provider v5 embeds
 `browserdriver.fixture-window.v1` under `presentation`; local v2 retains its
 `samples` and `omittedSamples`. Samples contain only phase, elapsed milliseconds,
 Chromium outer-window bounds and closed page visibility/focus values. They never
@@ -122,7 +121,7 @@ absolute `BROWSERDRIVER_VERIFICATION_REPAIR_REPORT`, then run only
 `dist/test/verification-repair-live.test.js`. This opt-in case consumes an exclusive
 synthetic claim, starts one sandboxed browser, uses the actual provider fixture
 with every provider fetch replaced by loopback transport, automatically clicks
-only the local synthetic Ready control, and produces a v4 report even on failure.
+only the local synthetic Ready control, and produces a v5 report even on failure.
 It creates no real account and contacts no provider. It tests execution, not
 human visibility. Missing selection or an existing report/claim stops before
 browser launch. The selected case skips all other provider/mode rows and the
@@ -137,7 +136,7 @@ activation mode per invocation, with a new absolute private report path:
 BROWSERDRIVER_PROVIDER_NETWORK_TEST=turnstile \
   BROWSERDRIVER_PROVIDER_ACTIVATION=before_approval \
   BROWSERDRIVER_PROVIDER_REPORT=/absolute/private/turnstile-before.json \
-  BROWSERDRIVER_PROVIDER_REPORT_VERSION=browserdriver.provider-fixture.v4 \
+  BROWSERDRIVER_PROVIDER_REPORT_VERSION=browserdriver.provider-fixture.v5 \
   node --test dist/test/verification-provider.test.js
 ```
 
@@ -149,7 +148,7 @@ one nonrenewable two-minute verification phase, including loading, with a visibl
 countdown. Cancel or closing the window stops before provider loading. A queued
 confirmation received after expiry cannot extend it. The overall fixture limit
 is 450 seconds plus teardown; the test runner limit is 480 seconds. A new
-supervisor scope must accommodate these limits and explicitly request and accept v4 reports;
+supervisor scope must accommodate these limits and explicitly request and accept v5 reports;
 the old frozen supervisor/candidate must not be edited or reused for this code.
 This readiness prompt belongs to disposable fixtures; runtime registration
 approval/consent protocols and their existing deadlines remain unchanged.
@@ -171,7 +170,7 @@ human-operated. Turnstile test pages disable its configurable automatic retry
 and expired-response refresh. Other provider-internal requests remain bounded
 by the same guard; the fixture never resets, reloads or repeats a Submit click.
 
-`browserdriver.provider-fixture.v4` records one mode's outcome, failing phase,
+`browserdriver.provider-fixture.v5` records one mode's outcome, failing phase,
 duration, confirmation and verification deadlines, final local POST count, request counts and context/browser/server
 closure on failure as well as success. `lastObservedCallbacks` contains only
 fixed flags, saturated counts, a 32-event lifecycle trace, omitted-event count
@@ -298,3 +297,52 @@ and API failure. No provider endpoints or accounts are used and every applicatio
 POST is forbidden. Explain before launch: leave the pages alone; do not fill or
 submit anything; the test closes them automatically. Browser execution needs
 separate explicit authorization and the existing sandbox helper.
+
+
+## Verification-only v8 and diagnostics v4
+
+M13.20 adds verification-only `udon.browser-driver.v8`. Its request and message
+sequence are the same as v7; the diagnostic payload selects
+`browserdriver.verification-diagnostics.v4`. V7 continues to emit the exact v3
+shape, and registration remains v6. W8M's matching consumer writes probe v4 and
+requires v8/v4 for new preparation. Historical v3 diagnostics remain verifiable
+but cannot satisfy that new prerequisite.
+
+V4 adds three required fields:
+
+- `frame`: latest pending-response frame observation, with `visibility` equal to
+  `unavailable`, `visible`, `hidden` or `ambiguous`, and `associatedFrames` from
+  zero through 32. Frame discovery checks the existing provider URL policy,
+  direct parent and composed ancestry to the reviewed widget. Element handles
+  include supported shadow roots; no challenge content is inspected. Readiness
+  and expiry are evaluated first; other observations export unavailable/zero.
+- `lifecycle`: application-page SDK observations. `availability` is unavailable,
+  partial, or observed; observed means all six existing callbacks were wrapped
+  during an observed explicit render. `hooks` records successfully instrumented
+  hooks, not continuous coverage or absence of unobserved events. Implicit or
+  late hooks are at most partial. Existing callback receiver, arguments, return,
+  throw and ordering are preserved. Missing hooks are never installed. Counts
+  for success/error/expired/timeout/before_interactive/after_interactive and six
+  fixed error families saturate at 1,000,000 with an explicit `saturated` flag.
+  Error families are configuration, timeout, clock_or_cache, frame_load,
+  challenge and unknown. First/last error retain only a family or none. Callback
+  indications never establish readiness and never trigger recovery or a retry.
+- `summary`: `unit` is diagnostic_events. Sixteen fixed phase/endpoint counters
+  retain events, blockedReads, provider4xx, provider5xx and fatal; fixed
+  fatalReasons counts and firstAbnormal/lastAbnormal reduced events survive
+  the 32-event ring. Counters saturate at 1,000,000 with `saturated`. Active and
+  shutdown phases remain distinct. Provider request/POST/byte counts keep their
+  existing meanings. Null firstFailure still excludes neither blocked reads nor
+  HTTP errors; status classes do not establish a provider failure's cause.
+
+Provider-fixture v5 embeds v4 and requires claim v3; synthetic fixture claims
+are v2. Old v4 reports and consumed claims are immutable. No provider fixture is
+armed by a version update. Private enclosing readers must select the new version
+in a freshly reviewed scope before use.
+
+Default `npm test` is browser-free. The maintained
+`verification-observability-live.test.js` is selected only by the explicitly
+authorized native registration_driver stage. It checks synthetic shadow frames,
+callback errors with an empty response, matching readiness, API exceptions,
+zero provider requests/zero probe application POSTs and joined teardown. Frame
+responses are locally fulfilled. No real CAPTCHA or account operation occurs.

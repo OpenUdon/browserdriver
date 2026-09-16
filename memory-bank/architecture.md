@@ -1,5 +1,13 @@
 # Architecture
 
+W8M W16.4i.28b's single synthetic smoke failed at the existing v4 consent
+checkpoint. The new observability test passed; the whole gate remains failed.
+Failure evidence and clean teardown independently verify. Publication, full
+qualification and adoption are stopped; no automatic retry is authorized.
+The candidate source is preserved and the adopted .24l runtime is unchanged.
+
+M13.20 keeps readiness, expiration and submission authority in the existing response-matching path. Frame association uses driver handles and the existing provider policy. A main-page observer wraps only existing callbacks; missing/opaque hooks remain unavailable. V8 exports fixed v4 lifecycle and event-summary fields; v7 preserves v3. W8M probe v4 is the strict current consumer. Provider-fixture v5/claim v3 update the enclosing diagnostic contract; Udon v6 and BRP/call 1.2 remain unchanged.
+
 W16.4i.11 ran the corrected qualification once. All native offline prerequisites
 passed, including driver_unit, then acceptance-v2 stopped at the first repeat's
 udon_browser_contract cancellation test after four passing native stages.

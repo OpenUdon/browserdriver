@@ -260,7 +260,7 @@ export async function runProviderFixture(provider: Provider, activation: Activat
     context = await browser.newContext({serviceWorkers: "block", acceptDownloads: false});
     context.setDefaultTimeout(5_000);
     guard = new VerificationGuard(context, verificationDescriptor(provider, activation, origin), new Set([origin]),
-      new Set([origin + "/ready", origin + "/register", origin + "/complete"]), operationDeadline);
+      new Set([origin + "/ready", origin + "/register", origin + "/complete"]), operationDeadline, false, true);
     await guard.install();
     const page = await context.newPage();
     await guard.watchRedirects(page);
@@ -330,7 +330,7 @@ export async function runProviderFixture(provider: Provider, activation: Activat
     try {await new Promise<void>((resolve, reject) => server.close(error => error && server.listening ? reject(error) : resolve())); teardown.server = !server.listening;}
     catch {failure ??= "provider_fixture_teardown";}
   }
-  return {version: "browserdriver.provider-fixture.v4" as const, chromiumSandbox: true,
+  return {version: "browserdriver.provider-fixture.v5" as const, chromiumSandbox: true,
     presentation: presentation?.snapshot() ?? {version: "browserdriver.fixture-window.v1" as const, samples: [], omittedSamples: 0},
     provider, activation, outcome: failure ? "failure" : "success",
     failureCode: failure, phase, durationMs: Date.now() - started, lastObservedCallbacks: callbacks, localPosts,

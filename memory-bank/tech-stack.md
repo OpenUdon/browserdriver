@@ -1,5 +1,13 @@
 # Tech Stack
 
+W8M W16.4i.28b's single synthetic smoke failed at the existing v4 consent
+checkpoint. The new observability test passed; the whole gate remains failed.
+Failure evidence and clean teardown independently verify. Publication, full
+qualification and adoption are stopped; no automatic retry is authorized.
+The candidate source is preserved and the adopted .24l runtime is unchanged.
+
+M13.20 retains the Node/Playwright/Chromium dependencies and sandbox policy. npm test includes modeled shadow frames, callback transparency, event eviction/saturation, privacy and v7/v8 wire controls. Native registration_driver will select the new opt-in verification-observability-live cases for the authorized affected smoke and complete qualification. No browser attempt has run for this candidate. Source preparation must preserve installed dependencies without fetching or upgrading them.
+
 W16.4i.11 ran the corrected qualification once. All native offline prerequisites
 passed, including driver_unit, then acceptance-v2 stopped at the first repeat's
 udon_browser_contract cancellation test after four passing native stages.

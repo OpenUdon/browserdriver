@@ -1,5 +1,13 @@
 # Product
 
+W8M W16.4i.28b's single synthetic smoke failed at the existing v4 consent
+checkpoint. The new observability test passed; the whole gate remains failed.
+Failure evidence and clean teardown independently verify. Publication, full
+qualification and adoption are stopped; no automatic retry is authorized.
+The candidate source is preserved and the adopted .24l runtime is unchanged.
+
+M13.20 candidate source adds provider-bound frame attention hints and closed SDK/network observations. Verification-only v8 selects diagnostics v4; registration remains v6. The existing adopted W8M .24l runtime and consumed .25/.27 probes remain unchanged until the authorized .28 qualification/adoption gates pass. The provider failure cause is still unresolved.
+
 W16.4i.11 ran the corrected qualification once. All native offline prerequisites
 passed, including driver_unit, then acceptance-v2 stopped at the first repeat's
 udon_browser_contract cancellation test after four passing native stages.

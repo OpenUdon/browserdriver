@@ -6,7 +6,7 @@ import type { VerifyMessage } from "../src/protocol.js";
 import { verificationRequest } from "./verification-fixture.js";
 
 export const probeCanary = "private-token-credential-provider-error-canary";
-export type ProbeScenario = "ready" | "timeout" | "api_exception" | "policy" | "shutdown" | "unstarted";
+export type ProbeScenario = "ready" | "timeout" | "api_exception" | "lifecycle_exception" | "policy" | "shutdown" | "unstarted";
 export async function runFakeProbe(scenario: ProbeScenario, provider: "turnstile" | "recaptcha_v2" | "hcaptcha" = "turnstile", version: VerifyMessage["version"] = "udon.browser-driver.v7") {
  const input = verificationRequest(provider), flow = input.profile.flows.member!;
  if (scenario === "timeout") flow.humanVerification!.dependencies.timeoutMs = 25;
@@ -15,15 +15,18 @@ export async function runFakeProbe(scenario: ProbeScenario, provider: "turnstile
  let closed = false;
  const observation = scenario === "api_exception" ? {state:"failed",reason:"api_exception",responseKind:"unobserved"} : scenario === "timeout" ? {state:"awaiting_interaction",reason:"visible_frame",responseKind:"string"} : {state:"ready",reason:"response_ready",responseKind:"string"};
  const locator = {first:()=>locator, waitFor:async()=>{}, count:async()=>1,
-  elementHandle:async()=>({evaluateHandle:async()=>({evaluate:async()=>({...observation, response:probeCanary})})})};
+  elementHandle:async()=>({evaluateHandle:async()=>({evaluateHandle:async()=>({}),evaluate:async(fn: Function)=>{
+   if(scenario==="lifecycle_exception"&&fn.toString().includes(".lifecycle"))throw Error(probeCanary);
+   return {...observation, response:probeCanary};
+  }})})};
  const main = {url:()=>"https://registration.example/register",parentFrame:()=>null};
- const page = {mainFrame:()=>main, bringToFront:async()=>{}, getByRole:()=>locator,
+ const page = {frames:()=>[],mainFrame:()=>main, bringToFront:async()=>{}, getByRole:()=>locator,
   goto:async()=>{
    if(scenario!=="policy")return;
    await routeHandler({request:()=>({url:()=>`https://unapproved.example/${probeCanary}`,method:()=>"POST",resourceType:()=>"fetch",frame:()=>main,isNavigationRequest:()=>false}),abort:async()=>{}} as unknown as Route);
    throw Error(probeCanary);
   }};
- const context = {route:async(_pattern:string, handle:typeof routeHandler)=>{routeHandler=handle;},routeWebSocket:async()=>{},on:()=>{},exposeBinding:async()=>{},newPage:async()=>page,
+ const context = {addInitScript:async()=>{},route:async(_pattern:string, handle:typeof routeHandler)=>{routeHandler=handle;},routeWebSocket:async()=>{},on:()=>{},exposeBinding:async()=>{},newPage:async()=>page,
   request:{dispose:async()=>{}},close:async()=>{closed=true;if(scenario==="shutdown")throw Error(probeCanary);},
   newCDPSession:async()=>({on:()=>{},send:async()=>{}})} as unknown as BrowserContext;
  const messages: Record<string,unknown>[] = [];

@@ -1,5 +1,16 @@
 # Milestones
 
+M13.20 is blocked after the consumed W8M .28b smoke failure. The new v8
+case passed, but the existing v4 consent case timed out. Source is preserved;
+publication/qualification/adoption stopped under the explicit no-retry boundary.
+
+M13.20 executes W8M W16.4i.28a's authorized diagnostic repair and coordinated
+versioning. Browserdriver owns visibility/lifecycle/network observations;
+W8M owns the ordered smoke/publication/fresh qualification/adoption gates.
+Preserve prior reports and the adopted runtime; stop on any failed or uncertain
+browser attempt without retry. No live provider/W8M contact is included.
+
+
 W16.4i.11 ran the corrected qualification once. All native offline prerequisites
 passed, including driver_unit, then acceptance-v2 stopped at the first repeat's
 udon_browser_contract cancellation test after four passing native stages.

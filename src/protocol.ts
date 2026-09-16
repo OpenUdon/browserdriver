@@ -7,9 +7,10 @@ export const protocolVersionV5 = "udon.browser-driver.v5";
 export const protocolVersionV6 = "udon.browser-driver.v6";
 // V7 is verification-only; registration continues to use v6.
 export const protocolVersionV7 = "udon.browser-driver.v7";
+export const protocolVersionV8 = "udon.browser-driver.v8";
 export type RegistrationProtocolVersion = typeof protocolVersionV4 | typeof protocolVersionV5 | typeof protocolVersionV6;
 export type LegacyProtocolVersion = typeof protocolVersion | typeof protocolVersionV3;
-export type ProtocolVersion = LegacyProtocolVersion | RegistrationProtocolVersion | typeof protocolVersionV7;
+export type ProtocolVersion = LegacyProtocolVersion | RegistrationProtocolVersion | typeof protocolVersionV7 | typeof protocolVersionV8;
 export const maxMessageBytes = 1 << 20;
 
 export const statuses = [
@@ -236,7 +237,7 @@ export interface ChallengeResponseMessage {
 }
 
 export interface VerifyMessage {
-  version: typeof protocolVersionV6 | typeof protocolVersionV7;
+  version: typeof protocolVersionV6 | typeof protocolVersionV7 | typeof protocolVersionV8;
   type: "verify";
   requestId: string;
   sourceDigest: string;
@@ -291,13 +292,13 @@ export function parseInput(line: string): InputMessage {
   if (Buffer.byteLength(line) > maxMessageBytes) throw new DriverFailure("invalid_response");
   let value: unknown;
   try { value = JSON.parse(line); } catch { throw new DriverFailure("invalid_response"); }
-  if (!isRecord(value) || (value.version !== protocolVersion && value.version !== protocolVersionV3 && value.version !== protocolVersionV4 && value.version !== protocolVersionV5 && value.version !== protocolVersionV6 && value.version !== protocolVersionV7) || typeof value.type !== "string" || typeof value.requestId !== "string") {
+  if (!isRecord(value) || (value.version !== protocolVersion && value.version !== protocolVersionV3 && value.version !== protocolVersionV4 && value.version !== protocolVersionV5 && value.version !== protocolVersionV6 && value.version !== protocolVersionV7 && value.version !== protocolVersionV8) || typeof value.type !== "string" || typeof value.requestId !== "string") {
     throw new DriverFailure("invalid_response");
   }
   if (value.version === protocolVersionV3) validateV3Envelope(value);
   if (value.version === protocolVersionV4) validateV4Envelope(value);
   if (value.version === protocolVersionV5 || value.version === protocolVersionV6) validateV5Envelope(value);
-  if (value.version === protocolVersionV7) {
+  if (value.version === protocolVersionV7 || value.version === protocolVersionV8) {
     const fields = ["version", "type", "requestId", "sourceDigest", "profile", "flow", "allowedOrigins", "deadline"];
     if (value.type !== "verify" || Object.keys(value).length !== fields.length || Object.keys(value).some(field => !fields.includes(field)) ||
         typeof value.sourceDigest !== "string" || !isRecord(value.profile) || typeof value.flow !== "string" ||

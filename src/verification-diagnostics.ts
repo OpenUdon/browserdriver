@@ -1,8 +1,11 @@
 import type { VerificationDescriptor } from "./protocol.js";
 import { verificationStates, type VerificationState } from "./verification-policy.js";
+import { VerificationNetworkSummary } from "./verification-summary.js";
+import { reduceLifecycle, unavailableLifecycle } from "./verification-lifecycle.js";
+import type { FrameObservation } from "./verification-visibility.js";
 
-// This separately versioned surface is exported only by verification-only v7
-// and local fixtures. V6 is unchanged. Never accept URLs, prose or DOM values.
+// This separately versioned surface is exported only by verification-only v7/v8
+// and local fixtures. V7 keeps v3; v8 selects v4. V6 is unchanged. Never accept URLs, prose or DOM values.
 export const probeReasons = ["unbound", "form_binding", "widget_binding", "response_binding",
   "api_loading", "response_pending", "enterprise", "expiry_api_missing", "provider_expired",
   "response_type", "response_changed", "response_mismatch", "response_ready", "visible_frame",
@@ -68,6 +71,11 @@ export function reduceNetwork(reason: NetworkReason, endpoint: EndpointClass, me
 }
 
 export class VerificationDiagnostics {
+  private readonly summary = new VerificationNetworkSummary();
+  private frame: FrameObservation = { visibility: "unavailable", associatedFrames: 0 };
+  private lifecycle = unavailableLifecycle();
+  observeFrame(value: FrameObservation): void { this.frame = { ...value }; }
+  observeLifecycle(value: unknown): void { this.lifecycle = reduceLifecycle(value); }
   private phase: "active" | "shutdown" = "active";
   beginShutdown(): void { this.phase = "shutdown"; }
   private observations: VerificationObservation[] = [];
@@ -88,6 +96,7 @@ export class VerificationDiagnostics {
   }
   network(event: NetworkDiagnostic): void {
     event = { ...event, phase: this.phase };
+    this.summary.observe(event);
     if (event.phase === "active" && !["response", "unapproved_read", "provider_redirect_followed"].includes(event.reason)) this.firstFailure ??= { ...event };
     if (this.events.length === 32) { this.events.shift(); this.omittedEvents++; }
     this.events.push({ ...event });
@@ -97,5 +106,9 @@ export class VerificationDiagnostics {
       observations: this.observations.map(value => ({ ...value })), omittedObservations: this.omittedObservations,
       network: this.events.map(value => ({ ...value })), omittedNetworkEvents: this.omittedEvents,
       firstFailure: this.firstFailure && { ...this.firstFailure } };
+  }
+  snapshotV4() {
+    return { ...this.snapshot(), version: "browserdriver.verification-diagnostics.v4" as const,
+      frame: { ...this.frame }, lifecycle: reduceLifecycle(this.lifecycle), summary: this.summary.snapshot() };
   }
 }

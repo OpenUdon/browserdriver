@@ -3,12 +3,14 @@ import type { BrowserContext, Frame, Locator, Page, Route } from "playwright";
 import { DriverFailure, type VerificationDescriptor } from "./protocol.js";
 import { permitsVerificationURL, verificationRedirect, VerificationSubmission, type VerificationState } from "./verification-policy.js";
 import { endpointClass, reduceNetwork, transportClass, VerificationDiagnostics, type NetworkDiagnostic, type NetworkReason, type ProbeReason, type VerificationObservation } from "./verification-diagnostics.js";
+import { observeProviderFrame, type FrameObservation } from "./verification-visibility.js";
+import { installLifecycleObserver } from "./verification-lifecycle.js";
 
 class VerificationShutdown extends Error {}
 
 // This trusted evaluator returns only a closed state. Provider response values
 // are compared within the website realm and never cross the Playwright wire.
-export function browserVerificationProbe(element: HTMLElement | SVGElement, options: Pick<VerificationDescriptor, "provider" | "submissionURL">, binding: {form: HTMLFormElement | null; widget: Element | null; response?: string}): VerificationObservation {
+export function browserVerificationProbe(element: HTMLElement | SVGElement, options: Pick<VerificationDescriptor, "provider" | "submissionURL"> & { frameVisibility?: FrameObservation["visibility"] }, binding: {form: HTMLFormElement | null; widget: Element | null; response?: string}): VerificationObservation {
     let responseKind: VerificationObservation["responseKind"] = "unobserved";
     const result = (state: VerificationState, reason: ProbeReason): VerificationObservation => ({ state, reason, responseKind });
     const control = element as HTMLButtonElement | HTMLInputElement;
@@ -61,10 +63,7 @@ export function browserVerificationProbe(element: HTMLElement | SVGElement, opti
       }
       // Visibility does not prove a challenge was presented. This is a prompt
       // for human attention, never a claim about provider/backend acceptance.
-      const visibleFrame = [...document.querySelectorAll("iframe")].some(frame => {
-        const box = frame.getBoundingClientRect();
-        return box.width > 0 && box.height > 0 && getComputedStyle(frame).visibility !== "hidden";
-      });
+      const visibleFrame = options.frameVisibility === "visible";
       return visibleFrame ? result("awaiting_interaction", "visible_frame") : result("loading", "no_visible_frame");
     } catch { return result("failed", "api_exception"); }
 }
@@ -78,7 +77,8 @@ const installSubmissionBoundary = new Function("return " + `(element, options) =
   // This identity lives in a closure held by a Playwright JSHandle. It is
   // neither a window property nor returned as serializable response data.
   const identity = { form, widget: document.querySelector(".cf-turnstile,.g-recaptcha,.h-captcha") };
-  const current = () => probe(element, options, identity);
+  let visibility = "unavailable";
+  const current = () => probe(element, {...options, frameVisibility: visibility}, identity);
   const nativeSubmit = HTMLFormElement.prototype.submit;
   let pending = false;
   const submit = (submitter) => {
@@ -106,12 +106,16 @@ const installSubmissionBoundary = new Function("return " + `(element, options) =
     event.preventDefault();
     submit(event.submitter);
   });
-  return { probe: current };
-}`)() as (element: HTMLElement | SVGElement, options: {provider: VerificationDescriptor["provider"]; submissionURL: string; binding: string}) => false | {probe: () => VerificationObservation};
+  return { widget: identity.widget, probe: (observed) => { visibility = observed; return current(); },
+    setVisibility: (observed) => { visibility = observed; },
+    lifecycle: () => typeof window[options.lifecycle] === "function" ? window[options.lifecycle](identity.widget) : null };
+}`)() as (element: HTMLElement | SVGElement, options: {provider: VerificationDescriptor["provider"]; submissionURL: string; binding: string; lifecycle: string}) => false | {widget: Element | null; probe: (visibility: FrameObservation["visibility"]) => VerificationObservation; setVisibility: (visibility: FrameObservation["visibility"]) => void; lifecycle: () => unknown};
 
 export class VerificationGuard {
   private blocked: DriverFailure | undefined;
   private main: Frame | undefined;
+  private page: Page | undefined;
+  private readonly lifecycleKey = "__udon_lifecycle_" + randomUUID().replaceAll("-", "");
   private providerRequests = 0;
   private providerPosts = 0;
   private responseBytes = 0;
@@ -134,7 +138,7 @@ export class VerificationGuard {
 
   constructor(private readonly context: BrowserContext, private readonly descriptor: VerificationDescriptor,
     private readonly applicationOrigins: ReadonlySet<string>, private readonly navigationURLs: ReadonlySet<string>,
-    deadline: number, private readonly diagnostic = false) {
+    deadline: number, private readonly diagnostic = false, private readonly expanded = false) {
     this.submission = new VerificationSubmission(descriptor, deadline, Date.now, false);
   }
 
@@ -169,10 +173,23 @@ export class VerificationGuard {
         throw new Error("verification_stopped");
       }
     })()));
-    const adapter = await control.evaluateHandle(installSubmissionBoundary, { provider: this.descriptor.provider, submissionURL: this.descriptor.submissionURL, binding });
+    const adapter = await control.evaluateHandle(installSubmissionBoundary, { provider: this.descriptor.provider, submissionURL: this.descriptor.submissionURL, binding, lifecycle: this.lifecycleKey });
+    const widget = await adapter.evaluateHandle(value => value === false ? null : value.widget);
     this.readiness = async () => {
       try {
-        const observation = await adapter.evaluate(value => value === false ? { state: "unsupported", reason: "form_binding", responseKind: "unobserved" } : value.probe());
+        // Readiness/expiry is evaluated before optional frame geometry. A usable
+        // matched response never waits on frame discovery or SDK activity.
+        let observation = await adapter.evaluate(value => value === false ? { state: "unsupported", reason: "form_binding", responseKind: "unobserved" } as VerificationObservation : value.probe("unavailable"));
+        const frame = observation.reason === "no_visible_frame" && this.page ? await observeProviderFrame(this.page, widget, this.descriptor.provider) : { visibility: "unavailable" as const, associatedFrames: 0 };
+        this.trace.observeFrame(frame);
+        if (frame.visibility === "visible") {
+          await adapter.evaluate((value, visibility) => { if (value !== false) value.setVisibility(visibility); }, frame.visibility);
+          observation = { ...observation, state: "awaiting_interaction", reason: "visible_frame" };
+        }
+        if (this.expanded) {
+          try { this.trace.observeLifecycle(await adapter.evaluate(value => value === false ? null : value.lifecycle())); }
+          catch { this.trace.observeLifecycle(null); } // Optional evidence never changes readiness.
+        }
         return this.trace.observe(observation).state;
       } catch {
         this.trace.observe({ state: "failed", reason: "evaluation_failed", responseKind: "unobserved" });
@@ -192,8 +209,11 @@ export class VerificationGuard {
     return { providerRequests: this.providerRequests, providerPosts: this.providerPosts,
       providerResponseBytes: this.responseBytes, applicationRequests: this.applicationRequests, applicationPosts: this.postCount() };
   }
-  diagnostics() { return {...this.trace.snapshot(), shutdown: {...this.shutdown}}; }
+  diagnostics() { return {...(this.expanded ? this.trace.snapshotV4() : this.trace.snapshot()), shutdown: {...this.shutdown}}; }
   async install(): Promise<void> {
+    if (this.expanded && this.descriptor.provider === "turnstile") {
+      await this.context.addInitScript(installLifecycleObserver, this.lifecycleKey);
+    }
     await this.context.route("**/*", route => this.track(this.handle(route)));
     await this.context.routeWebSocket("**/*", socket => this.track((async () => {
       this.rejectMutation("persistent_channel"); await socket.close().catch(() => undefined);
@@ -209,6 +229,7 @@ export class VerificationGuard {
   async watchRedirects(page: Page): Promise<void> {
     if (this.main) throw new DriverFailure("invalid_response");
     this.main = page.mainFrame();
+    this.page = page;
     const session = await this.context.newCDPSession(page);
     session.on("Fetch.requestPaused", event => this.track((async () => {
       let reason: NetworkReason = "redirect_transport";

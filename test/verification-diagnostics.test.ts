@@ -21,14 +21,14 @@ function probeHarness(provider: "turnstile" | "recaptcha_v2" | "hcaptcha") {
   const binding = {form, widget};
   const api = {isExpired: () => {calls++; if (!rendered) throw Error(canary); return expired;},
     getResponse: () => {calls++; if (!rendered || fail) throw Error(canary); return value;}};
-  const context = {HTMLFormElement: {prototype}, Node: {prototype: {contains: () => true}}, element, binding, options: {provider, submissionURL: attributes.action}, window: {
+  const context = {HTMLFormElement: {prototype}, Node: {prototype: {contains: () => true}}, element, binding, options: {provider, submissionURL: attributes.action, frameVisibility: "unavailable"}, window: {
     [provider === "turnstile" ? "turnstile" : provider === "recaptcha_v2" ? "grecaptcha" : "hcaptcha"]: api},
     document: {querySelectorAll: (selector: string) => selector.startsWith(".cf-") ? [widget] : selector === "iframe" ? visible ? [{getBoundingClientRect:()=>({width:100,height:100})}] : [] : rendered ? [field] : []},getComputedStyle:()=>({visibility:"visible"})};
   return {probe: () => runInNewContext(`(${browserVerificationProbe.toString()})(element, options, binding)`, context) as VerificationObservation,
     shadow: () => {for (const key of ["action", "method", "target", "contains", "getAttribute", "append", "submit"]) form[key] = {value: canary};},
     attribute: (key: keyof typeof attributes, value: string) => {attributes[key] = value;},
     override: (key: string, value: string) => {overrides[key] = value;},
-    render: () => {rendered = true;}, ready: () => {value = fieldValue = canary;}, remove: () => {rendered = false;}, fail: () => {fail = true;}, calls: () => calls, set: (response:unknown, field="")=>{value=response;fieldValue=field;}, expire:()=>{expired=true;}, visible:()=>{visible=true;}};
+    render: () => {rendered = true;}, ready: () => {value = fieldValue = canary;}, remove: () => {rendered = false;}, fail: () => {fail = true;}, calls: () => calls, set: (response:unknown, field="")=>{value=response;fieldValue=field;}, expire:()=>{expired=true;}, visible:()=>{visible=true;context.options.frameVisibility="visible";}};
 }
 
 test("provider API presence before rendering stays loading without invoking getResponse or isExpired", () => {

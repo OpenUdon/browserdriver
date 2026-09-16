@@ -22,6 +22,7 @@
 | M13.17a | `[+]` | The exact frozen local smoke ran once: ready/API-failure cases passed, zero provider requests or application POSTs, both emitted v7 streams accepted by frozen W8M v3, and all sixteen recorded process identities gone without force. Frozen inputs and prior evidence are preserved. Execution review iteration 1 passes with no open P1/P2; authority consumed. |
 | M13.18 | `[!]` | Publication and exact pins pass. One qualification launch failed at native offline driver_unit because fresh preparation omitted installed node_modules; acceptance-v2/browser stages never started. Canonical failure evidence, 536-process teardown and prior preservation verify. No adoption; authority consumed. Corrected separate preparation passes 94 driver tests/13 browser skips, but complete qualification needs new authority. |
 | M13.19 | `[!]` | Corrected offline prerequisites pass. One acceptance-v2 invocation failed at repeat-one udon_browser_contract cancellation test after four native passes; no W8M journeys or adoption. Canonical native failure, rejected incomplete aggregate, all 1,047 process identities absent and 5,016 preservation hashes verify. Deferred orphan reaping is a hypothesis requiring focused reproduction. Authority consumed; previous runtime stays selected. Failure-evidence review iteration 1 passes. |
+| M13.20 | `[!]` | W8M W16.4i.28a coordinated repair: provider-bound frame visibility, transparent closed SDK lifecycle observations, finite network summaries, versioned v8/v4 consumption and legacy compatibility. Browser-free checks/review precede the owner-authorized .28b smoke and .28c/.28d qualification/adoption. No live provider work. |
 
 The approved September 13 verification release covers Turnstile, reCAPTCHA v2
 and hCaptcha, including invisible widgets activated by an approved Submit.
@@ -1205,3 +1206,40 @@ No official-key fixture, real W8M/provider contact, real account operation or
 production change occurred. New qualification and live operations remain
 separately authorized. Existing evolution direction is retained. Tofu's inherited
 E13/A27 edits remain outside outcome publication.
+
+
+### W16.4i.28a coordinated implementation review — iteration 1
+
+Whole-scope review started after the coordinated source/consumer update; maximum
+ten iterations. Review includes all new source, versioned consumers, tests,
+documentation, inherited diagnostic deliverables and the native stage selector.
+The optional lifecycle sampler initially shared the fatal readiness catch (P2):
+unavailable diagnostic evaluation could change the verification result. It now
+reduces to unavailable without changing readiness. Frame discovery follows the
+response/expiry check, and local navigation listeners are registered before
+synthetic frame creation. Relevant offline controls pass; final W8M gate and
+review closeout remain pending. No browser attempt or publication has run.
+
+
+### W16.4i.28a review iteration 2 passed
+
+No open P1/P2. Full Browserdriver offline suite (107 pass, fourteen opt-in skips),
+32 final focused controls, W8M/OpenUdon fast gates, audit, actual v8 TypeScript-to-Go
+ready/failure wires, JSON/diff and private diagnostic preservation checks pass.
+The optional lifecycle failure regression preserves matching readiness. W8M
+.28a closes; .28b prepares the one authorized registration_driver synthetic
+smoke. Publication, complete qualification and adoption remain pending.
+
+
+### W16.4i.28b consumed failure; publication/integration stopped
+
+The one reviewed registration_driver smoke failed: three of four tests passed,
+zero skipped. The new v8 frame/lifecycle/probe test passed; the existing v4
+registration success case timed out at consent under its 50 ms test budget.
+Typed inputs and shared v6 provider cases passed. Retained evidence does not
+prove why the short deadline elapsed. Exact sources/dependencies, canonical
+failure report and clean unforced teardown verify; all 145 recorded process
+identities are absent. Failure closeout review 1 passes without promoting the
+failed smoke. W8M .28b is blocked; no retry, publication, complete qualification
+or adoption ran. Source changes remain uncommitted; inherited edits are preserved.
+The current user goal explicitly requires stopping on this failed attempt.
