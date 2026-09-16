@@ -1,5 +1,16 @@
 # M13 — Trusted browser verification
 
+W16.4i.34 implements the approved initialization observer repair and bounded
+v9/v5 diagnostics. .34a passed offline review; .34b is failed/consumed and
+.34b1 owns the local fixture correction, coordinated with
+Browserdriver M13.22 and OpenUdon E18. Local implementation, browser-free checks
+and isolated synthetic smoke are authorized. Publication, runtime adoption and
+one fresh supervised W8M probe remain explicit later gates. The adopted .28d
+runtime, consumed .31/.33 probes, prior private evidence and inherited edits
+remain preserved. No successful live verification or provider cause is claimed.
+
+Earlier recorded context:
+
 W16.4i.28 completes the diagnostic repair through reviewed publication,
 fresh qualification and exact retained-byte adoption. The fixture-timing
 successor smoke passes all four tests; the full acceptance-v2 run passes all
@@ -41,6 +52,7 @@ Task records and prior context:
 | M13.19 | `[!]` | Corrected offline prerequisites pass. One acceptance-v2 invocation failed at repeat-one udon_browser_contract cancellation test after four native passes; no W8M journeys or adoption. Canonical native failure, rejected incomplete aggregate, all 1,047 process identities absent and 5,016 preservation hashes verify. Deferred orphan reaping is a hypothesis requiring focused reproduction. Authority consumed; previous runtime stays selected. Failure-evidence review iteration 1 passes. |
 | M13.20 | `[+]` | Reviewed v8/v4 observability and strict consumers are published, pass the repaired four-test smoke and all three native repeats within W8M acceptance-v2 (39 stages plus three journeys), and are independently verified/adopted under W16.4i.28d. Final record review 2 passes. Legacy v7/v3 and registration v6 remain preserved; provider cause unresolved. |
 | M13.21 | `[+]` | Fixture-only ordinary 5 s and intentional 50 ms budgets pass 109 offline tests, a controlled old-budget failure, the renewed four-test smoke and all three fresh native repeats. Runtime deadlines stay fixed. Original failed smoke remains consumed; historical cause unproven. |
+| M13.22 | `[~]` | Initialization repair and v9/v5 offline gates/review pass; .34b smoke failed with four existing cases passing. .34b1 corrects synthetic startup allowance and failure context; runtime source unchanged. |
 
 The approved September 13 verification release covers Turnstile, reCAPTCHA v2
 and hCaptcha, including invisible widgets activated by an approved Submit.
@@ -1338,3 +1350,24 @@ the reusable fixture-timing lesson match the independently adopted bytes.
 Review 2 has no open P1/P2. Runtime/source pins stay at the qualified commits;
 only these reviewed records are published. Inherited Tofu E13/A27 changes remain
 excluded. The diagnostic repair goal is complete; W16 real acceptance is not.
+
+
+### M13.22 / W16.4i.34b2 resource-event follow-up
+
+The fixture-only successor passed both existence-guarded loaders, then failed
+the loaded_no_api script_load counter (zero). Resource load capture belongs on
+Document; the old modeled harness incorrectly sent it to Window. Correct both
+and continue source review at iteration 3 of ten. Both failed smokes remain
+consumed; 187 successor identities are absent and exact inputs preserved.
+No provider cause or adopted runtime change is claimed.
+
+
+### M13.22 local implementation and smoke pass; publication pending
+
+W16.4i.34b2 passes all five native registration_driver tests including ten new
+initialization scenarios; no skips. Independent native proof, recomputed input
+hash, exact frozen inputs and unforced teardown pass (201 execution/seven verifier
+identities absent). The offline driver suite passes 127 tests, 15 opt-in skips.
+Source review 3 and smoke closeout review 2 pass. Two earlier failed scopes stay
+consumed. M13.22 remains coordinated with .34c pending explicit scoped publication;
+adopted .28d and real provider causation remain unchanged/unresolved.

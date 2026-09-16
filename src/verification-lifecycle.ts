@@ -150,19 +150,19 @@ export function installLifecycleObserver(key: string): void {
     } });
     try { Object.defineProperty(api, "render", { ...descriptor, value: render }); renderMethods.add(render); } catch { /* Unsupported SDK surface. */ }
   };
-  const initial = Object.getOwnPropertyDescriptor(window, "turnstile");
-  if (!initial || "value" in initial && initial.configurable && initial.writable) {
-    let api: unknown = initial?.value;
-    try { instrument(api); } catch { /* Unsupported SDK object. */ }
-    Object.defineProperty(window, "turnstile", { configurable: true, enumerable: initial?.enumerable ?? true,
-      get: () => api, set: (value: unknown) => { api = value; try { instrument(value); } catch { /* Preserve assignment behavior. */ } } });
-  }
+  // Never publish or replace the SDK global. Even an undefined accessor changes
+  // existence-guarded loaders. Accessor/early synchronous hooks stay unavailable.
+  const discover = () => {
+    const descriptor = Object.getOwnPropertyDescriptor(window, "turnstile");
+    if (descriptor && "value" in descriptor) instrument(descriptor.value);
+  };
+  try { discover(); } catch { /* Unsupported SDK surface. */ }
   implicit();
-  const observer = new MutationObserver(() => { try { implicit(); instrument(globals.turnstile); } catch { /* No page error output. */ } });
+  const observer = new MutationObserver(() => { try { implicit(); discover(); } catch { /* No page error output. */ } });
   observer.observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: events.map(event => "data-" + names[event]) });
   Object.defineProperty(window, key, { configurable: false, enumerable: false, value: (widget: Element | null): LifecycleObservation => {
     try {
-      implicit(); instrument(globals.turnstile);
+      implicit(); discover();
       if (!widget?.isConnected) return empty();
       const entry = entries.get(widget);
       if (!entry) return empty();

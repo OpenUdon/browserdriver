@@ -26,7 +26,7 @@ function lifecycleHarness(attributes: Record<string, string> = {}, initial: Reco
 test("missing implicit callbacks stay unavailable and no callback/retry setting is created", () => {
   const h = lifecycleHarness();
   assert.equal(h.sample().availability, "unavailable");
-  assert.deepEqual(Object.keys(h.window), ["turnstile"]);
+  assert.deepEqual(Object.keys(h.window), []);
   assert.equal(JSON.stringify(h.sample()).includes(canary), false);
 });
 
@@ -68,6 +68,7 @@ test("explicit render forwards calls and existing callbacks without adding missi
     return "synthetic-widget-id";
   } };
   h.window.turnstile = api;
+  h.wake(); // Discovery is explicit; publication itself remains untouched.
   assert.equal(renderCalls, 0);
   assert.equal(api.render(h.widget, { "error-callback": (code: unknown, token: unknown) => {
     callbackCalls++; assert.equal(code, "200500"); assert.equal(token, canary); return true;
@@ -94,6 +95,7 @@ test("all explicit lifecycle hooks preserve ordering and errors remain separate 
     order.push("render_return"); return 7;
   }};
   h.window.turnstile = api;
+  h.wake(); // Discovery is explicit; publication itself remains untouched.
   const options = Object.fromEntries(names.map(name => [name, () => {order.push(name); return name === "error-callback" ? false : undefined;}]));
   assert.equal(api.render(h.widget, options), 7);
   assert.deepEqual(order, [...names, "render_return"]);
@@ -112,6 +114,7 @@ test("readonly callback properties and render exceptions pass through unchanged"
     assert.equal(received["error-callback"], callback); throw failure;
   }};
   h.window.turnstile = api;
+  h.wake(); // Discovery is explicit; publication itself remains untouched.
   assert.throws(() => api.render(h.widget, options), error => error === failure);
   assert.equal(h.sample().availability, "unavailable");
 });

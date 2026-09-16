@@ -22,7 +22,7 @@ test("driver and both fixture entries require sandboxing and do not fall back af
   const provider = await runProviderFixture("turnstile", "before_approval", () => {});
   assert.equal(attempts.length, 2);
   assert.equal(provider.outcome, "failure");
-  assert.equal(provider.version, "browserdriver.provider-fixture.v5");
+  assert.equal(provider.version, "browserdriver.provider-fixture.v6");
   assert.equal(provider.chromiumSandbox, true);
   assert.deepEqual(provider.teardown, {context: true, browser: true, server: true});
   const local = await runFixturePresentationDiagnostic(() => {});

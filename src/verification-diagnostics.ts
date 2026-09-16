@@ -3,9 +3,10 @@ import { verificationStates, type VerificationState } from "./verification-polic
 import { VerificationNetworkSummary } from "./verification-summary.js";
 import { reduceLifecycle, unavailableLifecycle } from "./verification-lifecycle.js";
 import type { FrameObservation } from "./verification-visibility.js";
+import { emptyInitialization, reduceAPI, reduceInitializationEvents, type InitializationObservation } from "./verification-initialization.js";
 
-// This separately versioned surface is exported only by verification-only v7/v8
-// and local fixtures. V7 keeps v3; v8 selects v4. V6 is unchanged. Never accept URLs, prose or DOM values.
+// This separately versioned surface is exported only by verification-only v7/v8/v9
+// and local fixtures. V7 keeps v3; v8 selects v4; v9 selects v5. V6 is unchanged. Never accept URLs, prose or DOM values.
 export const probeReasons = ["unbound", "form_binding", "widget_binding", "response_binding",
   "api_loading", "response_pending", "enterprise", "expiry_api_missing", "provider_expired",
   "response_type", "response_changed", "response_mismatch", "response_ready", "visible_frame",
@@ -71,6 +72,30 @@ export function reduceNetwork(reason: NetworkReason, endpoint: EndpointClass, me
 }
 
 export class VerificationDiagnostics {
+  private initialization: InitializationObservation = emptyInitialization();
+  initializationNotApplicable(): void { this.initialization = emptyInitialization("not_applicable"); }
+  observeAPI(value: unknown): void {
+    const api = reduceAPI(value);
+    if (!api || this.initialization.coverage === "not_applicable") return;
+    const v = this.initialization, previous = v.changes.at(-1);
+    if (previous?.api === api.api && previous.globalProperty === api.globalProperty) return;
+    if (v.changes.length === 32) {
+      v.changes.shift();
+      if (v.omittedChanges === 1_000_000) v.saturated = true;
+      else v.omittedChanges++;
+    }
+    v.changes.push(api); v.apiEverCallable ||= api.api === "callable_get_response";
+  }
+  observeInitialization(value: unknown): void {
+    try {
+      const next = reduceInitializationEvents(value), previous = this.initialization;
+      if (next && previous.coverage !== "not_applicable" && next.counters.every((row, i) =>
+        Object.entries(row).every(([key, count]) => key === "source" || Number(count) >= Number(previous.counters[i]![key as keyof typeof row])))) {
+        this.initialization = {...previous, ...next, saturated: previous.saturated || next.saturated,
+          coverage: previous.coverage === "partial" ? "partial" : next.coverage};
+      } else if (previous.coverage === "observed") previous.coverage = "partial";
+    } catch { if (this.initialization.coverage === "observed") this.initialization.coverage = "partial"; }
+  }
   private readonly summary = new VerificationNetworkSummary();
   private frame: FrameObservation = { visibility: "unavailable", associatedFrames: 0 };
   private lifecycle = unavailableLifecycle();
@@ -110,5 +135,10 @@ export class VerificationDiagnostics {
   snapshotV4() {
     return { ...this.snapshot(), version: "browserdriver.verification-diagnostics.v4" as const,
       frame: { ...this.frame }, lifecycle: reduceLifecycle(this.lifecycle), summary: this.summary.snapshot() };
+  }
+  snapshotV5() {
+    const v = this.initialization;
+    return {...this.snapshotV4(), version: "browserdriver.verification-diagnostics.v5" as const,
+      initialization: {...v, changes: v.changes.map(row => ({...row})), events: v.events.map(row => ({...row})), counters: v.counters.map(row => ({...row}))}};
   }
 }

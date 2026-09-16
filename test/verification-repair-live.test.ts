@@ -20,7 +20,7 @@ test("synthetic fixture confirmation, checked redirects, nested provider fragmen
       try {await lstat(report); assert.fail("exists");}
       catch (error) {if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;}
       await writeFile(report + ".claim.json", JSON.stringify({version: "browserdriver.synthetic-fixture-claim.v2", selected,
-        reportVersion: "browserdriver.provider-fixture.v5"}) + "\n", {flag: "wx", mode: 0o600});
+        reportVersion: "browserdriver.provider-fixture.v6"}) + "\n", {flag: "wx", mode: 0o600});
     } catch {assert.fail("synthetic_fixture_claim_failed");}
   }
   let provider: keyof typeof officialProviders = "turnstile";
@@ -127,12 +127,12 @@ test("synthetic fixture confirmation, checked redirects, nested provider fragmen
           assert.ok(result.diagnostics!.network.some(event=>event.reason==="provider_redirect_followed"));
           assert.ok(result.diagnostics!.observations.some(event=>event.responseKind==="undefined"&&event.state!=="ready"));
         }
-        assert.equal(result.version,"browserdriver.provider-fixture.v5");
+        assert.equal(result.version,"browserdriver.provider-fixture.v6");
         assert.equal(result.chromiumSandbox, true);
         assert.equal(result.presentation.version, "browserdriver.fixture-window.v1");
         assert.deepEqual(result.presentation.samples.slice(0, 2).map(sample => sample.phase), ["before_foreground", "after_foreground"]);
         assert.equal(result.presentation.samples.at(-1)!.phase, "decision");
-        assert.equal(result.diagnostics!.version,"browserdriver.verification-diagnostics.v4");
+        assert.equal(result.diagnostics!.version,"browserdriver.verification-diagnostics.v5");
         assert.equal(result.lastObservedCallbacks.firstError,null);
         assert.equal(result.diagnostics!.firstFailure,null);
         assert.deepEqual(result.diagnostics!.shutdown,{started:true,contextClosed:true,requestsDisposed:true,callbacksJoined:true});

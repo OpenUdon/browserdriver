@@ -5,7 +5,7 @@ import {
   type ChallengeKind, type ChallengeResponseMessage, DriverFailure, challenge, failure,
   type RegisterMessage, type RegistrationCheckpointKind, type RegistrationCheckpointResponseMessage,
   type RegistrationInput, type RegistrationProtocolVersion, type VerifyMessage,
-  parseInput, protocolVersionV3, protocolVersionV4, protocolVersionV5, protocolVersionV6, protocolVersionV7, protocolVersionV8, registrationCheckpoint, status, success,
+  parseInput, protocolVersionV3, protocolVersionV4, protocolVersionV5, protocolVersionV6, protocolVersionV7, protocolVersionV8, protocolVersionV9, registrationCheckpoint, status, success,
 } from "./protocol.js";
 import { assertAllowedURL, credentialValue, exactOrigin, totp } from "./security.js";
 import type { SessionStateStore } from "./session-store.js";
@@ -313,7 +313,7 @@ export class PersistentBrowserDriver {
     let guard: VerificationGuard | undefined;
     let code: import("./protocol.js").FailureCode | undefined;
     try {
-      if (!this.options.headed || ![protocolVersionV6, protocolVersionV7, protocolVersionV8].includes(request.version) || !Number.isFinite(Date.parse(request.deadline)) || Date.parse(request.deadline) <= Date.now() || !/^sha256:[a-f0-9]{64}$/u.test(request.sourceDigest)) throw new DriverFailure("invalid_response");
+      if (!this.options.headed || ![protocolVersionV6, protocolVersionV7, protocolVersionV8, protocolVersionV9].includes(request.version) || !Number.isFinite(Date.parse(request.deadline)) || Date.parse(request.deadline) <= Date.now() || !/^sha256:[a-f0-9]{64}$/u.test(request.sourceDigest)) throw new DriverFailure("invalid_response");
       const allowed = new Set(request.allowedOrigins);
       validateProfile(request.profile as unknown as Record<string, unknown>, allowed, true, true);
       const flow = request.profile.flows[request.flow];
@@ -322,7 +322,7 @@ export class PersistentBrowserDriver {
       const submission = flow.sequence.find(step => "submit" in step);
       if (!navigation || !("navigate" in navigation) || !submission || !("submit" in submission)) throw new DriverFailure("verification_unsupported");
       context = await this.createContext();
-      guard = new VerificationGuard(context, flow.humanVerification, allowed, new Set([navigation.navigate]), Date.parse(request.deadline), true, request.version === protocolVersionV8);
+      guard = new VerificationGuard(context, flow.humanVerification, allowed, new Set([navigation.navigate]), Date.parse(request.deadline), true, request.version === protocolVersionV8 || request.version === protocolVersionV9, request.version === protocolVersionV9);
       await guard.install();
       const page = await context.newPage();
       await page.bringToFront();
@@ -338,10 +338,11 @@ export class PersistentBrowserDriver {
       code = failureCode(error);
     }
     finally {
+      await guard?.captureInitialization();
       if (context) try { if (guard) await guard.close(); else await context.close(); } catch (error) { code ??= failureCode(error); }
     }
     if (guard) this.verificationProgress(request, guard, guard.submission.state);
-    if (request.version === protocolVersionV7 || request.version === protocolVersionV8) this.emit({ version: request.version, type: "verification_diagnostics",
+    if (request.version === protocolVersionV7 || request.version === protocolVersionV8 || request.version === protocolVersionV9) this.emit({ version: request.version, type: "verification_diagnostics",
       requestId: request.requestId, diagnostics: guard?.diagnostics() ?? null, counts: guard?.counts() ?? null });
     this.emit(code ? failure(request.requestId, code, request.version) : success(request.requestId, { verification: "ready", teardown: "complete", applicationPosts: 0 }, request.version));
   }

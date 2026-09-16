@@ -5,12 +5,13 @@ import { permitsVerificationURL, verificationRedirect, VerificationSubmission, t
 import { endpointClass, reduceNetwork, transportClass, VerificationDiagnostics, type NetworkDiagnostic, type NetworkReason, type ProbeReason, type VerificationObservation } from "./verification-diagnostics.js";
 import { observeProviderFrame, type FrameObservation } from "./verification-visibility.js";
 import { installLifecycleObserver } from "./verification-lifecycle.js";
+import { installInitializationObserver, type APIObservation } from "./verification-initialization.js";
 
 class VerificationShutdown extends Error {}
 
 // This trusted evaluator returns only a closed state. Provider response values
 // are compared within the website realm and never cross the Playwright wire.
-export function browserVerificationProbe(element: HTMLElement | SVGElement, options: Pick<VerificationDescriptor, "provider" | "submissionURL"> & { frameVisibility?: FrameObservation["visibility"] }, binding: {form: HTMLFormElement | null; widget: Element | null; response?: string}): VerificationObservation {
+export function browserVerificationProbe(element: HTMLElement | SVGElement, options: Pick<VerificationDescriptor, "provider" | "submissionURL"> & { frameVisibility?: FrameObservation["visibility"]; observeAPI?: (value: APIObservation) => void }, binding: {form: HTMLFormElement | null; widget: Element | null; response?: string}): VerificationObservation {
     let responseKind: VerificationObservation["responseKind"] = "unobserved";
     const result = (state: VerificationState, reason: ProbeReason): VerificationObservation => ({ state, reason, responseKind });
     const control = element as HTMLButtonElement | HTMLInputElement;
@@ -32,8 +33,21 @@ export function browserVerificationProbe(element: HTMLElement | SVGElement, opti
     if (widgets.length !== 1 || widgets[0] !== binding.widget || widgets.some(widget => !widget.matches(selectors[provider]) || !(Node.prototype.contains.call(form, widget) || widget === control))) return result("unsupported", "widget_binding");
     if (responses.length > 1 || responses.some(response => response.form !== form)) return result("unsupported", "response_binding");
     const globals = window as unknown as Record<string, { getResponse?: () => unknown; isExpired?: () => unknown; enterprise?: unknown }>;
-    const api = globals[provider === "turnstile" ? "turnstile" : provider === "recaptcha_v2" ? "grecaptcha" : "hcaptcha"];
-    if (!api || typeof api.getResponse !== "function") return result("loading", "api_loading");
+    let globalProperty: APIObservation["globalProperty"] = "unavailable";
+    if (options.observeAPI && provider === "turnstile") {
+      try { const d = Object.getOwnPropertyDescriptor(window, "turnstile"); globalProperty = !d ? "absent" : "value" in d ? "data" : "accessor"; } catch { /* Optional evidence. */ }
+    }
+    const observeAPI = (api: APIObservation["api"]) => {
+      if (provider === "turnstile") try { options.observeAPI?.({globalProperty, api}); } catch { /* Optional evidence. */ }
+    };
+    let api: typeof globals[string] | undefined;
+    try {
+      api = globals[provider === "turnstile" ? "turnstile" : provider === "recaptcha_v2" ? "grecaptcha" : "hcaptcha"];
+      if (!api || typeof api.getResponse !== "function") {
+        observeAPI(!api ? "missing" : "incomplete"); return result("loading", "api_loading");
+      }
+      observeAPI("callable_get_response");
+    } catch (error) { observeAPI("access_error"); throw error; }
     if (provider === "recaptcha_v2" && api.enterprise) return result("unsupported", "enterprise");
     // A script can expose its API before it renders the first widget. Calling
     // getResponse/isExpired during that interval can throw. Wait for the bound
@@ -78,7 +92,9 @@ const installSubmissionBoundary = new Function("return " + `(element, options) =
   // neither a window property nor returned as serializable response data.
   const identity = { form, widget: document.querySelector(".cf-turnstile,.g-recaptcha,.h-captcha") };
   let visibility = "unavailable";
-  const current = () => probe(element, {...options, frameVisibility: visibility}, identity);
+  let api = null;
+  const current = () => probe(element, {...options, frameVisibility: visibility,
+    observeAPI: options.initialization ? (value) => { api = value; } : undefined}, identity);
   const nativeSubmit = HTMLFormElement.prototype.submit;
   let pending = false;
   const submit = (submitter) => {
@@ -108,14 +124,16 @@ const installSubmissionBoundary = new Function("return " + `(element, options) =
   });
   return { widget: identity.widget, probe: (observed) => { visibility = observed; return current(); },
     setVisibility: (observed) => { visibility = observed; },
+    api: () => api,
     lifecycle: () => typeof window[options.lifecycle] === "function" ? window[options.lifecycle](identity.widget) : null };
-}`)() as (element: HTMLElement | SVGElement, options: {provider: VerificationDescriptor["provider"]; submissionURL: string; binding: string; lifecycle: string}) => false | {widget: Element | null; probe: (visibility: FrameObservation["visibility"]) => VerificationObservation; setVisibility: (visibility: FrameObservation["visibility"]) => void; lifecycle: () => unknown};
+}`)() as (element: HTMLElement | SVGElement, options: {provider: VerificationDescriptor["provider"]; submissionURL: string; binding: string; lifecycle: string; initialization: boolean}) => false | {widget: Element | null; probe: (visibility: FrameObservation["visibility"]) => VerificationObservation; setVisibility: (visibility: FrameObservation["visibility"]) => void; lifecycle: () => unknown; api: () => unknown};
 
 export class VerificationGuard {
   private blocked: DriverFailure | undefined;
   private main: Frame | undefined;
   private page: Page | undefined;
   private readonly lifecycleKey = "__udon_lifecycle_" + randomUUID().replaceAll("-", "");
+  private readonly initializationKey = "__udon_initialization_" + randomUUID().replaceAll("-", "");
   private providerRequests = 0;
   private providerPosts = 0;
   private responseBytes = 0;
@@ -138,7 +156,7 @@ export class VerificationGuard {
 
   constructor(private readonly context: BrowserContext, private readonly descriptor: VerificationDescriptor,
     private readonly applicationOrigins: ReadonlySet<string>, private readonly navigationURLs: ReadonlySet<string>,
-    deadline: number, private readonly diagnostic = false, private readonly expanded = false) {
+    deadline: number, private readonly diagnostic = false, private readonly expanded = false, private readonly initialization = false) {
     this.submission = new VerificationSubmission(descriptor, deadline, Date.now, false);
   }
 
@@ -173,13 +191,21 @@ export class VerificationGuard {
         throw new Error("verification_stopped");
       }
     })()));
-    const adapter = await control.evaluateHandle(installSubmissionBoundary, { provider: this.descriptor.provider, submissionURL: this.descriptor.submissionURL, binding, lifecycle: this.lifecycleKey });
+    const adapter = await control.evaluateHandle(installSubmissionBoundary, { provider: this.descriptor.provider, submissionURL: this.descriptor.submissionURL, binding, lifecycle: this.lifecycleKey, initialization: this.initialization });
     const widget = await adapter.evaluateHandle(value => value === false ? null : value.widget);
     this.readiness = async () => {
       try {
         // Readiness/expiry is evaluated before optional frame geometry. A usable
         // matched response never waits on frame discovery or SDK activity.
-        let observation = await adapter.evaluate(value => value === false ? { state: "unsupported", reason: "form_binding", responseKind: "unobserved" } as VerificationObservation : value.probe("unavailable"));
+        let observation: VerificationObservation;
+        try {
+          observation = await adapter.evaluate(value => value === false ? { state: "unsupported", reason: "form_binding", responseKind: "unobserved" } as VerificationObservation : value.probe("unavailable"));
+        } finally {
+          if (this.initialization) {
+            try { this.trace.observeAPI(await adapter.evaluate(value => value === false ? null : value.api())); } catch { /* Retain last valid API evidence. */ }
+            await this.captureInitialization();
+          }
+        }
         const frame = observation.reason === "no_visible_frame" && this.page ? await observeProviderFrame(this.page, widget, this.descriptor.provider) : { visibility: "unavailable" as const, associatedFrames: 0 };
         this.trace.observeFrame(frame);
         if (frame.visibility === "visible") {
@@ -209,8 +235,33 @@ export class VerificationGuard {
     return { providerRequests: this.providerRequests, providerPosts: this.providerPosts,
       providerResponseBytes: this.responseBytes, applicationRequests: this.applicationRequests, applicationPosts: this.postCount() };
   }
-  diagnostics() { return {...(this.expanded ? this.trace.snapshotV4() : this.trace.snapshot()), shutdown: {...this.shutdown}}; }
+  private async sampleInitialization(): Promise<void> {
+    if (!this.initialization || this.descriptor.provider !== "turnstile") return;
+    try {
+      const key = this.initializationKey;
+      const value = await this.page?.evaluate(key => {
+        const sample = Object.getOwnPropertyDescriptor(window, key)?.value;
+        return typeof sample === "function" ? sample() : null;
+      }, key);
+      if (!this.closing) this.trace.observeInitialization(value);
+    } catch { if (!this.closing) this.trace.observeInitialization(null); }
+  }
+  async captureInitialization(): Promise<void> {
+    const remaining = this.submission.deadline - Date.now();
+    if (!this.initialization || this.closing || remaining <= 0) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([this.track(this.sampleInitialization()), new Promise<void>(resolve => {
+        timer = setTimeout(resolve, Math.min(100, remaining));
+      })]);
+    } finally { clearTimeout(timer); }
+  }
+  diagnostics() { return {...(this.initialization ? this.trace.snapshotV5() : this.expanded ? this.trace.snapshotV4() : this.trace.snapshot()), shutdown: {...this.shutdown}}; }
   async install(): Promise<void> {
+    if (this.initialization) {
+      if (this.descriptor.provider === "turnstile") await this.context.addInitScript(installInitializationObserver, {key: this.initializationKey, applicationOrigins: [...this.applicationOrigins]});
+      else this.trace.initializationNotApplicable();
+    }
     if (this.expanded && this.descriptor.provider === "turnstile") {
       await this.context.addInitScript(installLifecycleObserver, this.lifecycleKey);
     }

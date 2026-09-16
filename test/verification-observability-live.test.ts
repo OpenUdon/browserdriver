@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { createServer } from "node:http";
+import { createServer, type ServerResponse } from "node:http";
 import test from "node:test";
 import { chromium } from "playwright";
 import { sandboxedChromiumOptions } from "../src/browser-launch.js";
@@ -39,31 +39,33 @@ test("v8 synthetic shadow frames, lifecycle errors, readiness and zero probe sub
     }
   } finally { await context.close(); await browser.close(); }
 
-  let scenario = "error_then_ready", posts = 0;
+  let scenario = "error_then_ready", posts = 0, renderAllowed = false;
+  let permit: ServerResponse | undefined;
   const canary = "synthetic-token-error-prose-canary";
   const server = createServer((request, response) => {
     if (request.method !== "GET") { posts++; request.resume(); response.writeHead(405).end(); return; }
+    if (request.url === "/render-permit") { if (renderAllowed) response.writeHead(200).end(); else permit = response; return; }
     if (request.url !== "/register") { response.writeHead(404).end(); return; }
     response.writeHead(200, {"content-type": "text/html"}).end(`<!doctype html><title>Synthetic diagnostic verification</title>
       <form method="post" action="/register"><div class="cf-turnstile"></div><input type="hidden" name="cf-turnstile-response"><button type="submit">Register</button></form>
       <script>
-      let token; const field=document.querySelector('input');
-      window.turnstile={isExpired:()=>false,getResponse:()=>{if('${scenario}'==='api_exception')throw Error('${canary}');return token;},render:(widget,options)=>{
-        const error=options['error-callback']; error.call(widget,'600123','${canary}');
+      let token, rendered=false; const field=document.querySelector('input');
+      window.turnstile={isExpired:()=>false,getResponse:()=>{if(rendered&&'${scenario}'==='api_exception')throw Error('${canary}');return token;},render:(widget,options)=>{
+        rendered=true; const error=options['error-callback']; error.call(widget,'600123','${canary}');
         const success=options.callback; success('${canary}');
         if('${scenario}'==='error_then_ready')setTimeout(()=>{token='${canary}';field.value=token;},350);
         return 'synthetic-widget';
       }};
-      window.turnstile.render(document.querySelector('.cf-turnstile'),{'error-callback':function(){return false;},callback:()=>{}});
+      fetch('/render-permit').then(()=>window.turnstile.render(document.querySelector('.cf-turnstile'),{'error-callback':function(){return false;},callback:()=>{}}));
       </script>`);
   });
   await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
   const address = server.address(); assert.ok(address && typeof address === "object");
   const origin = `http://127.0.0.1:${address.port}`, messages: Record<string, unknown>[] = [];
-  const driver = new PersistentBrowserDriver({next: async () => ({done: true, value: undefined})}, m => messages.push(m as Record<string, unknown>), {headed: true});
+  const driver = new PersistentBrowserDriver({next: async () => ({done: true, value: undefined})}, m => {messages.push(m as Record<string, unknown>); if ((m as {type?: string}).type === "verification_progress") {renderAllowed = true; permit?.writeHead(200).end(); permit = undefined;}}, {headed: true});
   try {
     for (scenario of ["error_then_ready", "error_empty", "api_exception"]) {
-      messages.length = 0;
+      messages.length = 0; renderAllowed = false; permit = undefined;
       const input = verificationRequest("turnstile", "before_approval", origin);
       input.profile.flows.member!.humanVerification!.dependencies.timeoutMs = 1500;
       const request: VerifyMessage = {version: "udon.browser-driver.v8", type: "verify", requestId: "synthetic_observability", sourceDigest: input.sourceDigest,

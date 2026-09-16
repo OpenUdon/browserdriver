@@ -1,5 +1,46 @@
 # Reviewed verification in driver v6
 
+## Initialization diagnostics candidate — v9/v5
+
+Verification-only driver v9 emits diagnostics v5; v7/v3 and v8/v4 serialization
+remain available, and registration remains v6. This is an unpublished candidate
+under W8M W16.4i.34, not the adopted runtime or proof of a live provider repair.
+
+The lifecycle observer never defines, replaces or deletes window.turnstile.
+It discovers existing own data properties during installation, mutation handling
+and sampling, without calling global getters. Existing callback forwarding stays
+intact. Immediate synchronous rendering before discovery and opaque hooks retain
+unavailable coverage. The provider SDK controls publication and retry behavior.
+
+The required v5 initialization block contains coverage, changes, omittedChanges,
+apiEverCallable, events, omittedEvents, counters and saturated. API changes retain
+only globalProperty (absent/data/accessor/unavailable) and api
+(unobserved/missing/incomplete/callable_get_response/access_error). Missing means
+an absent/falsy API value; incomplete means a truthy API without callable
+getResponse. These observations reuse readiness reads and never export responses.
+
+Passive coverage applies only to the main application document. It is observed,
+partial, unavailable, or not_applicable for other providers. Browser script
+seen/load/error events, enforced/report-only script-policy events and execution
+errors reduce immediately to provider/application/other_external/inline/unknown
+source categories. No URLs, SDK prose, policy text, error objects or tokens cross
+the browser wire. A load event is distinct from API publication or readiness;
+zero errors with unavailable coverage is not evidence of successful execution.
+
+Changes and events each retain their latest 32 entries with omission counts.
+Fixed counters retain evicted categories and apiEverCallable retains observed API
+availability. Counters cap at 1,000,000 with explicit saturation. Script discovery
+caps at 256 elements and 4096 walked nodes; exhausted or failed coverage is partial.
+Collection is clamped to 100 ms and the existing deadline; shutdown joins pending
+collection and ignores late results. Optional diagnostics do not grant readiness.
+
+Provider fixture reports are v6 and embed diagnostics v5; provider claim v3 and
+synthetic claim v2 keep their shapes and bind the selected report version. Older
+launch versions fail before claims/browser creation. Historical reports/helpers
+remain frozen. The maintained registration_driver stage adds a synthetic Chromium
+initialization case, with every provider fetch replaced by loopback transport.
+No provider SDK, real account, network permission or runtime deadline is changed.
+
 Registration/call 1.2 select `udon.browser-driver.v6`. V6 accepts typed
 registration, its private checkpoint responses, `verify` and `close`. The
 trusted caller supplies an absolute operation deadline. The inert
@@ -67,15 +108,15 @@ no dependency installation or host configuration change is performed. A report's
 `chromiumSandbox:true` records the required launch setting, not an independent
 kernel sandbox attestation.
 
-Provider reports are now `browserdriver.provider-fixture.v5`; local presentation
+Provider reports are now `browserdriver.provider-fixture.v6`; local presentation
 reports are `browserdriver.fixture-presentation.v2`. Their independent claim files
 are provider claim v3 and presentation claim v2 and bind the requested report version. Launchers must supply the exact
 `BROWSERDRIVER_PROVIDER_REPORT_VERSION` or
 `BROWSERDRIVER_FIXTURE_VISIBILITY_REPORT_VERSION` respectively. Missing or older
 versions stop before claims and browser launch. Frozen older reports and supervisors remain unchanged. Driver wire v6 remains
-unchanged; new provider reports embed verification diagnostics v4.
+unchanged; new provider reports embed verification diagnostics v5.
 
-Both fixtures share the Ready-page observer. Provider v5 embeds
+Both fixtures share the Ready-page observer. Provider v6 embeds
 `browserdriver.fixture-window.v1` under `presentation`; local v2 retains its
 `samples` and `omittedSamples`. Samples contain only phase, elapsed milliseconds,
 Chromium outer-window bounds and closed page visibility/focus values. They never
@@ -121,7 +162,7 @@ absolute `BROWSERDRIVER_VERIFICATION_REPAIR_REPORT`, then run only
 `dist/test/verification-repair-live.test.js`. This opt-in case consumes an exclusive
 synthetic claim, starts one sandboxed browser, uses the actual provider fixture
 with every provider fetch replaced by loopback transport, automatically clicks
-only the local synthetic Ready control, and produces a v5 report even on failure.
+only the local synthetic Ready control, and produces a v6 report even on failure.
 It creates no real account and contacts no provider. It tests execution, not
 human visibility. Missing selection or an existing report/claim stops before
 browser launch. The selected case skips all other provider/mode rows and the
@@ -136,7 +177,7 @@ activation mode per invocation, with a new absolute private report path:
 BROWSERDRIVER_PROVIDER_NETWORK_TEST=turnstile \
   BROWSERDRIVER_PROVIDER_ACTIVATION=before_approval \
   BROWSERDRIVER_PROVIDER_REPORT=/absolute/private/turnstile-before.json \
-  BROWSERDRIVER_PROVIDER_REPORT_VERSION=browserdriver.provider-fixture.v5 \
+  BROWSERDRIVER_PROVIDER_REPORT_VERSION=browserdriver.provider-fixture.v6 \
   node --test dist/test/verification-provider.test.js
 ```
 
@@ -148,7 +189,7 @@ one nonrenewable two-minute verification phase, including loading, with a visibl
 countdown. Cancel or closing the window stops before provider loading. A queued
 confirmation received after expiry cannot extend it. The overall fixture limit
 is 450 seconds plus teardown; the test runner limit is 480 seconds. A new
-supervisor scope must accommodate these limits and explicitly request and accept v5 reports;
+supervisor scope must accommodate these limits and explicitly request and accept v6 reports;
 the old frozen supervisor/candidate must not be edited or reused for this code.
 This readiness prompt belongs to disposable fixtures; runtime registration
 approval/consent protocols and their existing deadlines remain unchanged.
@@ -170,7 +211,7 @@ human-operated. Turnstile test pages disable its configurable automatic retry
 and expired-response refresh. Other provider-internal requests remain bounded
 by the same guard; the fixture never resets, reloads or repeats a Submit click.
 
-`browserdriver.provider-fixture.v5` records one mode's outcome, failing phase,
+`browserdriver.provider-fixture.v6` records one mode's outcome, failing phase,
 duration, confirmation and verification deadlines, final local POST count, request counts and context/browser/server
 closure on failure as well as success. `lastObservedCallbacks` contains only
 fixed flags, saturated counts, a 32-event lifecycle trace, omitted-event count
@@ -304,8 +345,8 @@ separate explicit authorization and the existing sandbox helper.
 M13.20 adds verification-only `udon.browser-driver.v8`. Its request and message
 sequence are the same as v7; the diagnostic payload selects
 `browserdriver.verification-diagnostics.v4`. V7 continues to emit the exact v3
-shape, and registration remains v6. W8M's matching consumer writes probe v4 and
-requires v8/v4 for new preparation. Historical v3 diagnostics remain verifiable
+shape, and registration remains v6. The retained M13.20 W8M consumer writes
+probe v4 and requires v8/v4 for its preparation. Historical v3 diagnostics remain verifiable
 but cannot satisfy that new prerequisite.
 
 V4 adds three required fields:
@@ -335,7 +376,7 @@ V4 adds three required fields:
   existing meanings. Null firstFailure still excludes neither blocked reads nor
   HTTP errors; status classes do not establish a provider failure's cause.
 
-Provider-fixture v5 embeds v4 and requires claim v3; synthetic fixture claims
+The historical provider-fixture v5 embeds v4 and requires claim v3; synthetic fixture claims
 are v2. Old v4 reports and consumed claims are immutable. No provider fixture is
 armed by a version update. Private enclosing readers must select the new version
 in a freshly reviewed scope before use.

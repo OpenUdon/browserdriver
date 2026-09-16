@@ -144,3 +144,8 @@ process. Success is emitted only after the exact origin/path/accessibility
 proof passes and the context closes. Its complete response is
 `{"status":"success"}`. No identifier, URL, session, output, page value,
 browser state, or driver prose is returned.
+
+
+Verification-only v9 adds the required bounded initialization block in diagnostics
+v5. It accepts only verify requests, retains the v8 request shape, and does not
+change registration v6. See [initialization diagnostics](verification.md).

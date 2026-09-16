@@ -1,5 +1,22 @@
 # Architecture
 
+W16.4i.34 implements the initialization observer repair and bounded v9/v5
+diagnostics. Source review 3 and the .34b2 fresh synthetic smoke/independent
+verification pass: five tests, zero skips, including ten initialization cases.
+The .34b and .34b1 failures remain consumed. W16.4i.34c now prepares exact scoped
+publication with Browserdriver M13.22 and OpenUdon E18; commit/push, adoption and
+real W8M/provider contact remain explicit later gates. The adopted .28d runtime
+and consumed .31/.33 probes are preserved. The live api_loading cause remains
+unresolved; local tests do not establish a live repair.
+
+The candidate preserves SDK global publication semantics and adds a required
+closed initialization block only to verification diagnostics v5. API evidence
+reuses readiness reads; passive browser events are reduced before export and
+bounded independently of history eviction. W8M probe v5 consumes driver v9;
+registration v6, BRP/call 1.2 and native acceptance formats stay unchanged.
+
+Earlier recorded context:
+
 W16.4i.28 completes the diagnostic repair through reviewed publication,
 fresh qualification and exact retained-byte adoption. The fixture-timing
 successor smoke passes all four tests; the full acceptance-v2 run passes all

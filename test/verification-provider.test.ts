@@ -8,9 +8,9 @@ const selected = process.env.BROWSERDRIVER_PROVIDER_NETWORK_TEST;
 const mode = process.env.BROWSERDRIVER_PROVIDER_ACTIVATION;
 const report = process.env.BROWSERDRIVER_PROVIDER_REPORT;
 const reportVersion = process.env.BROWSERDRIVER_PROVIDER_REPORT_VERSION;
-const valid = reportVersion === "browserdriver.provider-fixture.v5" && Object.hasOwn(officialProviders, selected ?? "") && ["before_approval", "approved_submit"].includes(mode ?? "") && report && isAbsolute(report);
+const valid = reportVersion === "browserdriver.provider-fixture.v6" && Object.hasOwn(officialProviders, selected ?? "") && ["before_approval", "approved_submit"].includes(mode ?? "") && report && isAbsolute(report);
 
-test("provider fixture selection requires one provider, one mode, report v5 and an exclusive report path", {skip: [selected, mode, report, reportVersion].every(value => value === undefined)}, () => {
+test("provider fixture selection requires one provider, one mode, report v6 and an exclusive report path", {skip: [selected, mode, report, reportVersion].every(value => value === undefined)}, () => {
   assert.ok(valid, "provider_fixture_selection_invalid");
 });
 

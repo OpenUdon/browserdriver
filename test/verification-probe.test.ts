@@ -10,7 +10,7 @@ test("v7 accepts only complete verification-only requests before browser launch"
   const missing = {...request} as Record<string,unknown>;delete missing[key];
   assert.throws(()=>parseInput(JSON.stringify(missing)),DriverFailure);
  }
- for(const change of [{version:"udon.browser-driver.v9"},{type:"register"},{type:"close"},{credentialBindings:{}},{input:{}},{profile:null},{allowedOrigins:[null]}]) assert.throws(()=>parseInput(JSON.stringify({...request,...change})),DriverFailure);
+ for(const change of [{version:"udon.browser-driver.v10"},{type:"register"},{type:"close"},{credentialBindings:{}},{input:{}},{profile:null},{allowedOrigins:[null]}]) assert.throws(()=>parseInput(JSON.stringify({...request,...change})),DriverFailure);
 });
 
 test("v7 exports closed diagnostics after teardown on readiness, timeout and API failure for every provider", async()=>{
