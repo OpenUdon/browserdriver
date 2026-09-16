@@ -1,12 +1,30 @@
 # Tech Stack
 
+W16.4i.28b1/M13.21 completes the fixture timing correction and its newly
+authorized smoke. All four registration_driver tests pass in 84.542 seconds,
+including the v4 success/intentional-timeout and v8 observability cases.
+Independent report/source/dependency checks and clean unforced teardown pass;
+all 172 execution and five verifier identities are absent. Closeout review 1
+has no open P1/P2. The original .28b failure remains consumed and its exact
+cause unproven. Reviewed publication and one fresh complete qualification now
+proceed under existing authority; .24l remains adopted until .28d passes.
+
+Earlier preparation and failure context:
+
+September 16 renewed authority resumes W16.4i.28b1/M13.21. The fixture candidate
+separates five-second ordinary checkpoint replies from a 50 ms deliberate timeout
+in a separately closed driver. A controlled browser-free decoder test checks
+both and retains precedence of the operation deadline. Production timing and
+120-second verification limits remain unchanged. One fresh reviewed synthetic
+smoke follows the offline gate; the original .28b attempt remains failed/consumed.
+
 W8M W16.4i.28b's single synthetic smoke failed at the existing v4 consent
 checkpoint. The new observability test passed; the whole gate remains failed.
 Failure evidence and clean teardown independently verify. Publication, full
 qualification and adoption are stopped; no automatic retry is authorized.
 The candidate source is preserved and the adopted .24l runtime is unchanged.
 
-M13.20 retains the Node/Playwright/Chromium dependencies and sandbox policy. npm test includes modeled shadow frames, callback transparency, event eviction/saturation, privacy and v7/v8 wire controls. Native registration_driver will select the new opt-in verification-observability-live cases for the authorized affected smoke and complete qualification. No browser attempt has run for this candidate. Source preparation must preserve installed dependencies without fetching or upgrading them.
+M13.20 retains the Node/Playwright/Chromium dependencies and sandbox policy. npm test includes modeled shadow frames, callback transparency, event eviction/saturation, privacy and v7/v8 wire controls. Native registration_driver will select the new opt-in verification-observability-live cases for the authorized affected smoke and complete qualification. The passing .28b1 smoke is development evidence; complete qualification is pending. Source preparation must preserve installed dependencies without fetching or upgrading them.
 
 W16.4i.11 ran the corrected qualification once. All native offline prerequisites
 passed, including driver_unit, then acceptance-v2 stopped at the first repeat's

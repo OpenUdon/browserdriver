@@ -22,7 +22,8 @@
 | M13.17a | `[+]` | The exact frozen local smoke ran once: ready/API-failure cases passed, zero provider requests or application POSTs, both emitted v7 streams accepted by frozen W8M v3, and all sixteen recorded process identities gone without force. Frozen inputs and prior evidence are preserved. Execution review iteration 1 passes with no open P1/P2; authority consumed. |
 | M13.18 | `[!]` | Publication and exact pins pass. One qualification launch failed at native offline driver_unit because fresh preparation omitted installed node_modules; acceptance-v2/browser stages never started. Canonical failure evidence, 536-process teardown and prior preservation verify. No adoption; authority consumed. Corrected separate preparation passes 94 driver tests/13 browser skips, but complete qualification needs new authority. |
 | M13.19 | `[!]` | Corrected offline prerequisites pass. One acceptance-v2 invocation failed at repeat-one udon_browser_contract cancellation test after four native passes; no W8M journeys or adoption. Canonical native failure, rejected incomplete aggregate, all 1,047 process identities absent and 5,016 preservation hashes verify. Deferred orphan reaping is a hypothesis requiring focused reproduction. Authority consumed; previous runtime stays selected. Failure-evidence review iteration 1 passes. |
-| M13.20 | `[!]` | W8M W16.4i.28a coordinated repair: provider-bound frame visibility, transparent closed SDK lifecycle observations, finite network summaries, versioned v8/v4 consumption and legacy compatibility. Browser-free checks/review precede the owner-authorized .28b smoke and .28c/.28d qualification/adoption. No live provider work. |
+| M13.20 | `[~]` | W8M W16.4i.28a coordinated repair: provider-bound frame visibility, transparent closed SDK lifecycle observations, finite network summaries, versioned v8/v4 consumption and legacy compatibility. Browser-free checks/review precede the owner-authorized .28b smoke and .28c/.28d qualification/adoption. No live provider work. |
+| M13.21 | `[+]` | Newly authorized W8M .28b1 fixture-timing follow-up: preserve failed smoke, repair the test-only ordinary response budget while retaining intentional timeout and runtime limits; offline review then one fresh synthetic native smoke. Authority persists until goal completion; no automatic browser retry. |
 
 The approved September 13 verification release covers Turnstile, reCAPTCHA v2
 and hCaptcha, including invisible widgets activated by an approved Submit.
@@ -1243,3 +1244,33 @@ identities are absent. Failure closeout review 1 passes without promoting the
 failed smoke. W8M .28b is blocked; no retry, publication, complete qualification
 or adoption ran. Source changes remain uncommitted; inherited edits are preserved.
 The current user goal explicitly requires stopping on this failed attempt.
+
+
+### W16.4i.28b1 timing implementation review 1 passed
+
+Fixture ordinary replies use five seconds; the deliberate timeout uses a
+separate 50 ms driver closed in finally. The outer fixture bound is 180 seconds.
+No runtime default/operation deadline or verification budget changed. The new
+controlled 75 ms scheduling test fails against an isolated old-budget copy and
+passes with the corrected fixture allowance, while rejecting an earlier operation
+deadline. This confirms sensitivity, not the historical scheduling cause.
+All 109 browser-free tests pass (fourteen opt-in skips); artifact, memory, diff,
+runtime-source and predecessor-evidence preservation checks pass. Review 1 has
+no open P1/P2. The renewed one-shot smoke now proceeds to exact frozen preparation.
+
+
+### W16.4i.28b1 smoke closeout review 1 passed
+
+W16.4i.28b1/M13.21 completes the fixture timing correction and its newly
+authorized smoke. All four registration_driver tests pass in 84.542 seconds,
+including the v4 success/intentional-timeout and v8 observability cases.
+Independent report/source/dependency checks and clean unforced teardown pass;
+all 172 execution and five verifier identities are absent. Closeout review 1
+has no open P1/P2. The original .28b failure remains consumed and its exact
+cause unproven. Reviewed publication and one fresh complete qualification now
+proceed under existing authority; .24l remains adopted until .28d passes.
+
+Report SHA-256: `c4093ce5b2ad89167a9a4133207430a7e18e2226b0900d53de5e9cf4b3a5ef76`.
+Private evidence: `/home/peter/.local/state/w8m-browser/w16-fixture-timing-20260916/smoke`.
+Publication/full qualification remain pending; no live provider or W8M operation
+ran. The renewed scope consumed exactly one invocation with no retry.

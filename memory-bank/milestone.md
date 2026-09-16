@@ -1,5 +1,19 @@
 # Milestones
 
+W16.4i.28b1/M13.21 completes the fixture timing correction and its newly
+authorized smoke. All four registration_driver tests pass in 84.542 seconds,
+including the v4 success/intentional-timeout and v8 observability cases.
+Independent report/source/dependency checks and clean unforced teardown pass;
+all 172 execution and five verifier identities are absent. Closeout review 1
+has no open P1/P2. The original .28b failure remains consumed and its exact
+cause unproven. Reviewed publication and one fresh complete qualification now
+proceed under existing authority; .24l remains adopted until .28d passes.
+
+Earlier preparation and failure context:
+
+M13.21 resumes the owner-authorized fixture-timing repair and one fresh smoke
+under W8M .28b1. M13.20 source is preserved; .28b remains failed/consumed.
+
 M13.20 is blocked after the consumed W8M .28b smoke failure. The new v8
 case passed, but the existing v4 consent case timed out. Source is preserved;
 publication/qualification/adoption stopped under the explicit no-retry boundary.

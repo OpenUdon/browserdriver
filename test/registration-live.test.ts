@@ -3,10 +3,11 @@ import { createServer, type Server } from "node:http";
 import test from "node:test";
 import { PersistentBrowserDriver } from "../src/driver.js";
 import type { RegisterMessage } from "../src/protocol.js";
+import { fixtureReplyTimeoutMs, fixtureExpiryTimeoutMs } from "./registration-timing-fixture.js";
 
 const live = process.env.BROWSERDRIVER_REGISTRATION_LIVE_TEST === "1";
 
-test("headed Chromium registration enforces approval, one POST, uncertainty, retry refusal, and redirect origin", { skip: !live }, async () => {
+test("headed Chromium registration enforces approval, one POST, uncertainty, retry refusal, and redirect origin", { skip: !live, timeout: 180_000 }, async () => {
   const counts = { gets: 0, posts: 0, escaped: 0 };
   const escaped = createServer((_request, response) => {
     counts.escaped += 1;
@@ -76,7 +77,7 @@ test("headed Chromium registration enforces approval, one POST, uncertainty, ret
     },
   };
   const driver = new PersistentBrowserDriver(source, (message) => messages.push(message as Record<string, unknown>), {
-    headed: true, registrationCheckpointTimeoutMs: 50,
+    headed: true, registrationCheckpointTimeoutMs: fixtureReplyTimeoutMs,
   });
   try {
     checkpointMode = "continue";
@@ -93,9 +94,14 @@ test("headed Chromium registration enforces approval, one POST, uncertainty, ret
     assert.equal(counts.posts, 1);
 
     checkpointMode = "timeout";
-    await driver.register(registrationRequest(applicationOrigin, "timeout", `sha256:${"3".repeat(64)}`));
-    assert.equal(result(messages, "timeout").failureCode, "registration_checkpoint_timeout");
-    assert.equal(counts.posts, 1);
+    const timeoutDriver = new PersistentBrowserDriver(source, (message) => messages.push(message as Record<string, unknown>), {
+      headed: true, registrationCheckpointTimeoutMs: fixtureExpiryTimeoutMs,
+    });
+    try {
+      await timeoutDriver.register(registrationRequest(applicationOrigin, "timeout", `sha256:${"3".repeat(64)}`));
+      assert.equal(result(messages, "timeout").failureCode, "registration_checkpoint_timeout");
+      assert.equal(counts.posts, 1);
+    } finally { await timeoutDriver.close(); }
 
     checkpointMode = "continue";
     indeterminate = true;

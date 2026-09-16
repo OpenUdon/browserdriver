@@ -9,9 +9,22 @@ import {
 import { ReadlineMessageSource } from "../src/line-source.js";
 import { DriverFailure, type RegisterMessage } from "../src/protocol.js";
 import { RegistrationGuard, assertRegistrationURL, validateRegistrationMessage } from "../src/registration.js";
+import { fixtureReplyTimeoutMs, fixtureExpiryTimeoutMs } from "./registration-timing-fixture.js";
 
 const origin = "https://registration.example";
 const registrationMainFrame = {};
+
+test("fixture reply scheduling allowance preserves the short expiry and absolute deadline checks", async t => {
+  let now = 10_000;
+  t.mock.method(Date, "now", () => now);
+  const response = {version: "udon.browser-driver.v4", type: "registration_checkpoint_response", requestId: "request", checkpointId: "checkpoint", decision: "continue"};
+  const delayed = {next: async () => { now += 75; return {done: false as const, value: JSON.stringify(response)}; }};
+  const expired = (error: unknown) => error instanceof DriverFailure && error.code === "registration_checkpoint_timeout";
+  await assert.rejects(() => readRegistrationCheckpointResponse(delayed, "request", "checkpoint", fixtureExpiryTimeoutMs, "udon.browser-driver.v4", undefined, now + fixtureExpiryTimeoutMs), expired);
+  assert.deepEqual(await readRegistrationCheckpointResponse(delayed, "request", "checkpoint", fixtureReplyTimeoutMs, "udon.browser-driver.v4", undefined, now + fixtureReplyTimeoutMs), response);
+  // A larger local allowance cannot overrule an earlier operation deadline.
+  await assert.rejects(() => readRegistrationCheckpointResponse(delayed, "request", "checkpoint", fixtureReplyTimeoutMs, "udon.browser-driver.v4", undefined, now + fixtureExpiryTimeoutMs), expired);
+});
 
 function request(): RegisterMessage {
   return {

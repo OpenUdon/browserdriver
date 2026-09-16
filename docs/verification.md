@@ -346,3 +346,12 @@ authorized native registration_driver stage. It checks synthetic shadow frames,
 callback errors with an empty response, matching readiness, API exceptions,
 zero provider requests/zero probe application POSTs and joined teardown. Frame
 responses are locally fulfilled. No real CAPTCHA or account operation occurs.
+
+
+The M13.21 v4 registration fixture uses a five-second allowance for ordinary
+checkpoint replies and a separate driver with 50 ms for the intentional timeout.
+Both drivers close; the test has a 180-second outer bound. The runtime default
+and operation deadlines are unchanged. A browser-free modeled 75 ms delay
+rejects under the short budget, accepts under the ordinary budget, and still
+rejects when the operation deadline is earlier. This demonstrates the fixture's
+scheduling sensitivity without asserting the cause of the consumed .28b failure.
