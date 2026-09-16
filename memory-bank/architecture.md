@@ -1,5 +1,22 @@
 # Architecture
 
+W16.4i.28 completes the diagnostic repair through reviewed publication,
+fresh qualification and exact retained-byte adoption. The fixture-timing
+successor smoke passes all four tests; the full acceptance-v2 run passes all
+39 fresh native stages and three fresh W8M journeys. Independent report,
+source/runtime/dependency and unforced-teardown checks pass. W16.4i.28d selects
+the retained full-run pass-one bytes. The previous .24l runtime, consumed
+.25/.27 probes and failed .28b smoke remain preserved.
+
+Current probes use driver v8, diagnostics v4 and W8M probe v4; registration
+remains v6. The 120-second verification phase, response matching/expiry,
+submission containment, production protection and network permissions are
+unchanged. Provider causation and the first smoke's exact scheduling cause
+remain unresolved. Real verification/registration acceptance is still unmet;
+any live probe needs its own reviewed scope and authorization.
+
+Earlier preparation and integration context:
+
 W16.4i.28b1/M13.21 completes the fixture timing correction and its newly
 authorized smoke. All four registration_driver tests pass in 84.542 seconds,
 including the v4 success/intentional-timeout and v8 observability cases.
