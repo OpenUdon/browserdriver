@@ -1,5 +1,22 @@
 # Tech Stack
 
+W16.4i.38 / M13.23 uses the already installed Node v24.13.0 and TypeScript
+5.9.2 to compile the authoring checkout into a fresh private output directory.
+`initialization-fixture-diagnostic.test.ts` controls the real guard with modeled
+Playwright routes and a deterministic clock, without browsers, sockets or SDKs.
+The build and 15 focused controls pass; the full offline suite passes 142 tests
+with 15 browser/provider opt-in skips. Bounded review 1 passes.
+Focused checks precede the existing offline suite; all browser/provider opt-ins
+and display/session variables are removed. No dependencies are installed.
+
+The private diagnostic bundle is
+`/home/peter/.local/state/w8m-browser/w16-initialization-fixture-diagnostics-20260916-gegl35pc`.
+It retains the proposal, preserved-file hashes, build/focused/offline results and
+bounded review. The next browser scope remains the initialization file on isolated
+Xvfb, preserving its original case prefix; full qualification is a later gate.
+
+Earlier recorded state:
+
 The initialization repair is published: Browserdriver 3522821, OpenUdon
 d4c0a80, scoped Tofu a9b20f0 and W8M 776c20b; qualification freezes W8M d3f7957.
 W16.4i.34d's single full qualification failed/consumed at repetition three's

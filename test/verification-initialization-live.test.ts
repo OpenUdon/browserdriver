@@ -6,6 +6,7 @@ import {PersistentBrowserDriver} from "../src/driver.js";
 import type {VerifyMessage} from "../src/protocol.js";
 import type {VerificationDiagnostics} from "../src/verification-diagnostics.js";
 import {verificationRequest} from "./verification-fixture.js";
+import {initializationFixtureNetwork} from "./initialization-fixture-diagnostic.js";
 
 // Actual Chromium loader and guard. Every provider fetch is redirected to this
 // test's loopback server before invoking the guard; no provider SDK is used.
@@ -71,23 +72,24 @@ test("v9 synthetic initialization guards, browser errors, CSP and invisible read
       await driver.verify(request);
       const diagnostic = messages.at(-2)!, d = diagnostic.diagnostics as ReturnType<VerificationDiagnostics["snapshotV5"]> & {shutdown: object};
       assert.equal(d.version, "browserdriver.verification-diagnostics.v5", scenario);
-      const detail = JSON.stringify({scenario, result: messages.at(-1), initialization: d.initialization, observations: d.observations, counts: diagnostic.counts});
+      const detail = JSON.stringify({scenario, result: messages.at(-1), initialization: d.initialization,
+        observations: d.observations, counts: diagnostic.counts, network: initializationFixtureNetwork(d)});
       assert.equal(d.initialization.coverage, "observed", detail);
       const total = (kind: keyof typeof d.initialization.counters[number]) => d.initialization.counters.reduce((n, row) => n + Number(row[kind]), 0);
       const ready = ["existence", "own_existence", "csp_report"].includes(scenario);
       assert.equal(messages.at(-1)!.result, ready ? "success" : "failure", detail);
-      const api = d.initialization.changes.at(-1)!;
-      if (ready) {assert.equal(api.api, "callable_get_response"); assert.equal(d.observations.at(-1)!.reason, "response_ready"); assert.equal(d.frame.visibility, "unavailable");}
-      if (scenario === "loaded_no_api") {assert.equal(api.api, "missing"); assert.equal(total("script_load"), 1, detail); assert.equal(transported, 1, detail);}
-      if (scenario === "incomplete") assert.equal(api.api, "incomplete");
+      const api = d.initialization.changes.at(-1);
+      if (ready) {assert.equal(api?.api, "callable_get_response", detail); assert.equal(d.observations.at(-1)?.reason, "response_ready", detail); assert.equal(d.frame.visibility, "unavailable", detail);}
+      if (scenario === "loaded_no_api") {assert.equal(api?.api, "missing", detail); assert.equal(total("script_load"), 1, detail); assert.equal(transported, 1, detail);}
+      if (scenario === "incomplete") assert.equal(api?.api, "incomplete", detail);
       if (scenario === "script_error") assert.equal(total("script_error"), 1, detail);
       if (scenario === "execution_error") assert.equal(total("execution_error"), 1, detail);
-      if (scenario === "csp_enforce") {assert.ok(total("script_policy_enforced") > 0, detail); assert.equal(transported, 0);}
-      if (scenario === "csp_report") {assert.ok(total("script_policy_report") > 0, detail); assert.equal(total("script_policy_enforced"), 0);}
-      if (scenario === "access_error") {assert.equal(api.api, "access_error"); assert.equal(api.globalProperty, "accessor");}
-      if (scenario === "api_exception") {assert.equal(api.api, "callable_get_response"); assert.equal(d.observations.at(-1)!.reason, "api_exception");}
-      assert.equal(posts, 0); assert.equal((diagnostic.counts as {applicationPosts: number}).applicationPosts, 0);
-      assert.deepEqual(d.shutdown, {started: true, contextClosed: true, requestsDisposed: true, callbacksJoined: true});
+      if (scenario === "csp_enforce") {assert.ok(total("script_policy_enforced") > 0, detail); assert.equal(transported, 0, detail);}
+      if (scenario === "csp_report") {assert.ok(total("script_policy_report") > 0, detail); assert.equal(total("script_policy_enforced"), 0, detail);}
+      if (scenario === "access_error") {assert.equal(api?.api, "access_error", detail); assert.equal(api?.globalProperty, "accessor", detail);}
+      if (scenario === "api_exception") {assert.equal(api?.api, "callable_get_response", detail); assert.equal(d.observations.at(-1)?.reason, "api_exception", detail);}
+      assert.equal(posts, 0, detail); assert.equal((diagnostic.counts as {applicationPosts: number}).applicationPosts, 0, detail);
+      assert.deepEqual(d.shutdown, {started: true, contextClosed: true, requestsDisposed: true, callbacksJoined: true}, detail);
       assert.equal(JSON.stringify(messages).includes(canary), false);
     }
   } finally {await driver.close(); server.closeAllConnections(); await new Promise<void>(resolve => server.close(() => resolve()));}

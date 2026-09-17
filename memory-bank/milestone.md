@@ -894,3 +894,15 @@ and exact-byte adoption, then separately authorized English iCoT authoring and
 verification-only probing before fresh identity/readiness and one separately
 authorized registration. M13 and W16 remain active; W16.4i still awaits those
 remaining gates, W16.4e stays failed/consumed and W16.5 incomplete.
+
+
+### M13.23 / W16.4i.38: initialization fixture diagnostic follow-up
+
+Implement only the diagnostic and browser-free control portion of .37e's
+focused proposal. Retain closed network reason/transport, first failure, bounded
+history and eviction-surviving summary in fixture assertions. A private version
+and strict reader must reject malformed or expanded detail without raw prose.
+Acceptance requires success/rejection/expiry and operation-deadline controls,
+privacy/eviction checks, unchanged live inventory/order/budgets and bounded review.
+Browser reproduction and wider qualification are subsequent work; historical
+failures, runtime selection and consumed-attempt semantics remain unchanged.

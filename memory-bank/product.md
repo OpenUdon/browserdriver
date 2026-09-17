@@ -1,5 +1,16 @@
 # Product
 
+W16.4i.38 / Browserdriver M13.23 adds test-only diagnostics for the consumed
+.37e initialization-fixture failure. Assertion details retain the guard's closed
+network reason/transport, first failure, bounded history and fixed summary.
+The original failure cause remains unresolved; this is diagnostic preparation,
+not a transport or runtime repair. The earlier .37 authoring repair remains
+published at OpenUdon 91cf8c7; .37e failed after six native stages, with four
+driver tests passing and the execution_error initialization case failing.
+The .28d runtime stays adopted; .34e stays unconsumed behind its prerequisites.
+
+Earlier recorded state:
+
 The initialization repair is published: Browserdriver 3522821, OpenUdon
 d4c0a80, scoped Tofu a9b20f0 and W8M 776c20b; qualification freezes W8M d3f7957.
 W16.4i.34d's single full qualification failed/consumed at repetition three's

@@ -1,5 +1,24 @@
 # Architecture
 
+W16.4i.38 / M13.23 introduces the test-only private
+`browserdriver.initialization-fixture-network.v1` block beside existing
+initialization/counts assertion details. It projects existing guard observations;
+it adds no request instrumentation. Its strict reader accepts compact canonical
+JSON up to 64 KiB, exact fields and closed enums, a maximum 32-event history,
+fixed ordered summary rows and bounded counts. Unknown versions/fields, duplicate
+keys and invalid shapes fail with constant prose. Summary units are diagnostic
+events; null firstFailure does not exclude blocked reads or provider HTTP errors.
+
+Browserdriver owns the fixture and reader. OpenUdon's five registration_driver
+test identities and W8M's public readers, source pins and runtime are unchanged.
+Any future W8M private failure collector must explicitly select the new private
+block/reader; consumed receipts and their original readers remain immutable.
+Driver v9, verification diagnostics v5, native qualification and acceptance
+versions are unchanged. Original ten-case order, five-second synthetic phase,
+fifteen-second request bound, transport policy and zero-submission boundary remain.
+
+Earlier recorded state:
+
 The initialization repair is published: Browserdriver 3522821, OpenUdon
 d4c0a80, scoped Tofu a9b20f0 and W8M 776c20b; qualification freezes W8M d3f7957.
 W16.4i.34d's single full qualification failed/consumed at repetition three's

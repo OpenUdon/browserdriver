@@ -1430,3 +1430,54 @@ new qualification, adoption, live probe or real registration is implied. The
 final metadata mode/artifact checks and scoped record publication retain all
 private evidence and exclude inherited Tofu E13/A27 edits. The broader milestone
 and real acceptance remain unfinished.
+
+
+### M13.23 / W16.4i.38 initialization fixture diagnostics
+
+| Task | Status | Notes |
+| --- | --- | --- |
+| M13.23 | `[+]` | W8M .38 diagnostic scope complete locally: private network v1 fixture detail/strict reader; 15 focused controls, 142 offline passes and 15 opt-in skips; bounded review 1 passes. No browser, production change or publication. Consumed .37e cause unresolved; focused browser reproduction is next. |
+
+
+### Initialization fixture diagnostic review 1 started
+
+Implementation builds with installed dependencies. All 15 focused browser-free
+controls pass: successful fetch, five closed transport categories, phase/operation
+deadline boundaries, nonfatal blocked-read/4xx evidence, zero-POST containment,
+eviction retention, strict rejection/privacy and detached snapshots. Existing
+offline regression verification follows. Bounded review checks the complete
+change, fixture inventory/order/budgets, consumers/versioning and preservation.
+No browser run, runtime change, source pin change or publication occurs here.
+
+
+### Initialization fixture diagnostic review 1 passed
+
+All 15 focused controls and the full browser-free suite pass: 142 tests passed,
+15 browser/provider tests skipped, zero failures. Supervision reports no timeout,
+observation failure, forced cleanup or survivors; all 58 observed PID/start
+identities are independently absent. W8M's offline artifact gate and both diff
+checks pass. Exact fixture setup, original ten-case order, budgets and cleanup
+match the prior source. Public sources, packages, source pins, consumed evidence,
+adopted-runtime selection and inherited Tofu files remain unchanged.
+
+Whole-scope bounded review 1 has no open findings. W16.4i.38 / M13.23 completes
+only the requested diagnostic and browser-free verification portion. The original
+.37e failure remains consumed and unexplained; no runtime correction is claimed.
+The new private collector version/reader is documented for subsequent consumers.
+At diagnostic closeout these changes were local and uncommitted.
+The next focused browser scope retains the
+initialization file's case prefix on isolated Xvfb before any wider concurrency
+check; publication, fresh qualification, adoption and the unconsumed real probe
+remain later gates. The broader W16/M13 milestones remain unfinished.
+
+Private review and receipts: `/home/peter/.local/state/w8m-browser/w16-initialization-fixture-diagnostics-20260916-gegl35pc`.
+
+
+### W16.4i.38 / M13.23 split local commits
+
+The owner subsequently authorized split Git commits. Browserdriver's fixture,
+reader, browser-free controls and matching memory-bank facts form one commit;
+W8M's coordination and verification records form the second. Reviewed source
+bytes still match the passing 142-test offline run, so no browser or test-suite
+rerun is needed for this record-only follow-up. Private receipts stay outside
+Git. This records local commits only; remote publication remains pending.
