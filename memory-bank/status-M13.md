@@ -1488,3 +1488,27 @@ Git. This records local commits only; remote publication remains pending.
 | Item | State | Notes |
 | --- | --- | --- |
 | M13.24 | `[+]` | Three fresh isolated ten-case initialization runs and original five-file concurrent native stage pass; 106/220 observed execution identities absent without force. Canonical stage proof and bounded closeout review 1 pass. Diagnostic source 8b63833 is selected for reviewed publication. No cause or runtime repair claimed; full qualification/adoption remain W8M .39d gates. |
+
+
+### M13.24 / W16.4i.39d full qualification and adoption
+
+W16.4i.39d passes one fresh acceptance-v2 qualification: all 39 native stages
+and three W8M synthetic journeys. Independent canonical report, source/runtime,
+fixture, preservation and cleanup checks pass, followed by bounded reviews 3–5.
+All 5,958 execution, five verifier and four adoption-check identities are absent
+without force. Exact retained pass-one bytes are adopted; no rebuild occurs.
+
+The selected closure is W8M c512075, OpenUdon 19e5d9c, Browserdriver 8b63833
+and coordination Tofu afb8fba. Driver v9 and verification diagnostics/probe v5
+are adopted; registration remains v6. The .28d runtime and every consumed
+failure stay preserved. Historical initialization/authoring causes remain
+unresolved; the passing run does not establish them.
+
+The existing .34e probe is unconsumed. Disabled preparation and bounded review
+2 pass; current human desktop readiness is pending. The 120-second provider phase,
+response matching/expiry, submission containment and network permissions remain
+unchanged. Real Turnstile readiness and registration acceptance are not claimed.
+
+The original M13.22/.34d and .37e failures remain preserved; integration
+progress is established by the fresh .39d report, not by rewriting those attempts.
+W8M remains the execution owner for the existing .34e probe.

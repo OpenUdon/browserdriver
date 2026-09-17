@@ -1,5 +1,24 @@
 # Milestones
 
+W16.4i.39d passes one fresh acceptance-v2 qualification: all 39 native stages
+and three W8M synthetic journeys. Independent canonical report, source/runtime,
+fixture, preservation and cleanup checks pass, followed by bounded reviews 3–5.
+All 5,958 execution, five verifier and four adoption-check identities are absent
+without force. Exact retained pass-one bytes are adopted; no rebuild occurs.
+
+The selected closure is W8M c512075, OpenUdon 19e5d9c, Browserdriver 8b63833
+and coordination Tofu afb8fba. Driver v9 and verification diagnostics/probe v5
+are adopted; registration remains v6. The .28d runtime and every consumed
+failure stay preserved. Historical initialization/authoring causes remain
+unresolved; the passing run does not establish them.
+
+The existing .34e probe is unconsumed. Disabled preparation and bounded review
+2 pass; current human desktop readiness is pending. The 120-second provider phase,
+response matching/expiry, submission containment and network permissions remain
+unchanged. Real Turnstile readiness and registration acceptance are not claimed.
+
+Earlier recorded state:
+
 The initialization repair is published: Browserdriver 3522821, OpenUdon
 d4c0a80, scoped Tofu a9b20f0 and W8M 776c20b; qualification freezes W8M d3f7957.
 W16.4i.34d's single full qualification failed/consumed at repetition three's
