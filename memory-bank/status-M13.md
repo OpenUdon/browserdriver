@@ -1504,11 +1504,24 @@ are adopted; registration remains v6. The .28d runtime and every consumed
 failure stay preserved. Historical initialization/authoring causes remain
 unresolved; the passing run does not establish them.
 
-The existing .34e probe is unconsumed. Disabled preparation and bounded review
-2 pass; current human desktop readiness is pending. The 120-second provider phase,
-response matching/expiry, submission containment and network permissions remain
-unchanged. Real Turnstile readiness and registration acceptance are not claimed.
+The authorized .34e probe subsequently failed with verification_timeout and
+is consumed. Native evidence observes a callable Turnstile API and an associated
+visible frame, beyond the earlier missing-API symptom, but no usable response.
+Independent verification rejects readiness and confirms zero application POSTs
+and complete unforced cleanup. The provider failure cause remains unresolved.
+The qualified .39d runtime stays adopted; no retry or registration follows.
 
 The original M13.22/.34d and .37e failures remain preserved; integration
 progress is established by the fresh .39d report, not by rewriting those attempts.
 W8M remains the execution owner for the existing .34e probe.
+
+
+### W16.4i.34e post-adoption live result
+
+The already-authorized probe is failed/consumed with verification_timeout.
+The adopted v9/v5 runtime observes callable Turnstile API and an associated
+visible frame, but readiness remains unmet. Canonical failure verification and
+unforced cleanup pass, with zero application POSTs. The exact provider cause
+is unresolved. W8M owns the preserved native evidence and corrected owner
+observation. The passing qualification/adoption stays valid; no retry, runtime
+change, network-policy expansion or registration follows from this result.
