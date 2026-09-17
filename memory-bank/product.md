@@ -1,5 +1,17 @@
 # Product
 
+W16.4i.39 completes three fresh isolated initialization-file runs and one
+original concurrent registration_driver stage using diagnostic candidate
+Browserdriver 8b63833. All ten initialization cases pass in each focused run;
+all five native stage tests pass with zero skips. Canonical proof and unforced
+cleanup verify: 106 focused and 220 stage execution identities are absent.
+The historical .37e failure did not reproduce and its cause remains unresolved;
+no runtime behavior correction is claimed. Reviewed publication and exact pin
+reconciliation prepare one new full qualification. The .28d runtime remains
+adopted and .34e remains unconsumed behind qualification/adoption and readiness.
+
+Earlier recorded state:
+
 W16.4i.38 / Browserdriver M13.23 adds test-only diagnostics for the consumed
 .37e initialization-fixture failure. Assertion details retain the guard's closed
 network reason/transport, first failure, bounded history and fixed summary.

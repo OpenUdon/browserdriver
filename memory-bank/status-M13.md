@@ -1481,3 +1481,10 @@ W8M's coordination and verification records form the second. Reviewed source
 bytes still match the passing 142-test offline run, so no browser or test-suite
 rerun is needed for this record-only follow-up. Private receipts stay outside
 Git. This records local commits only; remote publication remains pending.
+
+
+### M13.24 / W16.4i.39 focused integration follow-through
+
+| Item | State | Notes |
+| --- | --- | --- |
+| M13.24 | `[+]` | Three fresh isolated ten-case initialization runs and original five-file concurrent native stage pass; 106/220 observed execution identities absent without force. Canonical stage proof and bounded closeout review 1 pass. Diagnostic source 8b63833 is selected for reviewed publication. No cause or runtime repair claimed; full qualification/adoption remain W8M .39d gates. |

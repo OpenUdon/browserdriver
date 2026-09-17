@@ -906,3 +906,12 @@ Acceptance requires success/rejection/expiry and operation-deadline controls,
 privacy/eviction checks, unchanged live inventory/order/budgets and bounded review.
 Browser reproduction and wider qualification are subsequent work; historical
 failures, runtime selection and consumed-attempt semantics remain unchanged.
+
+
+### M13.24: focused diagnostic integration
+
+W8M .39 owns focused initialization and original concurrent stage verification
+of the M13.23 diagnostic-only candidate. Three file runs and five native tests
+pass with clean teardown and bounded review. Publish exact diagnostic source
+8b63833; no production behavior change or historical cause is inferred.
+Full qualification/adoption and the existing human-ready probe remain later gates.
