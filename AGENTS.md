@@ -11,11 +11,11 @@ workflow lowering, approval, challenge brokering, and persistence remain in
 
 ## Start Here
 
-Read `memory-bank/product.md`, `memory-bank/architecture.md`,
-`memory-bank/tech-stack.md`, `memory-bank/milestone.md`, and the active status
+Read `tabilet/memory-bank/product.md`, `tabilet/memory-bank/architecture.md`,
+`tabilet/memory-bank/tech-stack.md`, `tabilet/memory-bank/milestone.md`, and the active status
 file before substantial changes.
 
-This repository tracks [GOAL.md](GOAL.md) as an optional multi-milestone
+This repository tracks [tabilet/GOAL.md](tabilet/GOAL.md) as an optional multi-milestone
 execution protocol. Follow it only when a request explicitly names that
 protocol; its presence does not replace the memory-bank source of truth or
 grant commit, publication, browser, target, or runtime authority.
