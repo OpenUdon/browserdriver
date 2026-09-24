@@ -117,8 +117,11 @@ export class PersistentBrowserDriver {
 
   async action(request: ActionMessage): Promise<void> {
     try {
-      const expectedActionVersion = request.version === protocolVersionV10 ? "udon.browser-driver.v3" : request.version === protocolVersionV3 ? "udon.browser-driver.v2" : "udon.browser-driver.v1";
-      if (!request.session || !request.action || request.action.version !== expectedActionVersion) {
+      const expectedActionVersion = request.version === protocolVersionV3 ? "udon.browser-driver.v2" : "udon.browser-driver.v1";
+      if (!request.session || !request.action ||
+          (request.version === protocolVersionV10
+            ? request.action.version !== "udon.browser-driver.v2" && request.action.version !== "udon.browser-driver.v3"
+            : request.action.version !== expectedActionVersion)) {
         throw new DriverFailure("invalid_response");
       }
       validateActionProfile(request);
@@ -128,7 +131,8 @@ export class PersistentBrowserDriver {
       const session = this.sessions.get(request.session);
       if (!session) throw new DriverFailure("session_expired");
       const allowed = new Set(request.action.allowedOrigins.map(exactOrigin));
-      const sequence = request.version === protocolVersionV10 ? prepareModernAction(request.action) : request.action.action.sequence;
+      const sequence = request.version === protocolVersionV10 && request.action.version === "udon.browser-driver.v3"
+        ? prepareModernAction(request.action) : request.action.action.sequence;
       const visitedStart = session.visited.length;
       let outputs: Record<string, unknown>;
       let visitedUrls: string[];
@@ -613,7 +617,10 @@ function validateAuthenticationMessage(request: AuthenticateMessage): void {
 function validateActionProfile(request: ActionMessage): void {
   const profile = request.action.profile;
   if (request.version === protocolVersionV10) {
-    if ((profile !== "uws.browser.1.8" && profile !== "uws.browser.1.9") ||
+    const modern = request.action.version === "udon.browser-driver.v3";
+    if ((modern
+      ? profile !== "uws.browser.1.8" && profile !== "uws.browser.1.9"
+      : profile !== undefined && profile !== "uws.browser.1.5" && profile !== "uws.browser.1.6" && profile !== "uws.browser.1.7") ||
         !Array.isArray(request.action.allowedOrigins) || request.action.allowedOrigins.length === 0 ||
         request.action.allowedOrigins.some(origin => typeof origin !== "string") ||
         !isObject(request.action.parameters) || !isObject(request.action.action)) throw new DriverFailure("invalid_response");

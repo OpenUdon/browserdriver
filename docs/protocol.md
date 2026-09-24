@@ -158,8 +158,10 @@ uses the v3 authentication 1.1 shape, context behavior, and closed MFA replies.
 Registration remains v6 and verification-only diagnostics remain v9.
 
 V10 action requests carry an inner `udon.browser-driver.v3` action with the
-explicit `uws.browser.1.8` or `uws.browser.1.9` discriminator. The existing
-fields remain: selected operation, source digest, action name, exact origins,
+explicit `uws.browser.1.8` or `uws.browser.1.9` discriminator, or an inner
+`udon.browser-driver.v2` action for Browser 1.5–1.7 using the existing v3
+execution behavior. The two action/profile pairings cannot be crossed. The
+existing fields remain: selected operation, source digest, action name, exact origins,
 supplied parameter values, optional contexts, and the selected portable action.
 The portable action's optional `parameters` field is the sole parameter-schema
 source; omission permits no named parameters.

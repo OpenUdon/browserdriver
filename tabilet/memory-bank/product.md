@@ -168,6 +168,9 @@ browser execution. Browser 1.9 also resolves literal-brace escapes and rejects
 unsafe control or bidirectional text in typed input and confirmation prompts.
 Earlier action, registration v6 and verification v9 paths remain versioned.
 Udon lowering and cross-repository qualification are separate downstream work.
+One v10 session also accepts prepared Browser 1.5–1.7 inner action v2 requests
+through unchanged v3 action behavior, so a mixed-profile workflow can keep a
+single persistent session.
 
 Protocol v4 adds trusted execution for the published UWS browser-registration
 1.0 contract. It uses a new headed, unnamed context per attempt, reads

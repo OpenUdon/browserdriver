@@ -202,6 +202,8 @@ offline synthetic coverage, current-truth updates, and bounded whole-diff review
 Udon consumes the new wire in its own milestone; no provider-network or live
 target operation is part of M14. The existing v2/v3 action contracts,
 registration v6 and verification v9 retain their acceptance and behavior.
+M14.2 extends outer v10 to carry prepared Browser 1.5–1.7 inner action v2
+within the same named session, required by mixed-profile workflows.
 
 M01 establishes the isolated v2 NDJSON process, closed authentication and
 browser macro execution, all planned MFA variants, exact-origin and ambiguity

@@ -207,6 +207,9 @@ preserves wide Browser 1.8 integer tokens, and resolves only approved text/URL
 sinks before status `executing` or any macro. It checks exact origins and dot
 segments after component encoding. Udon retains approval and full JSON Schema
 validation; registration v6 and verification v9 are separate paths.
+The same v10 session admits inner action v2 only with Browser 1.5–1.7,
+dispatching it through the existing v3 context/action path without modern
+template preflight; inner action v3 stays exclusive to Browser 1.8/1.9.
 After unique accessibility matching, the driver trims Unicode edge whitespace
 and performs the UWS locale-free string/safe-integer/finite-number/lowercase-
 Boolean conversion. Literal `presence: true` keeps the prior Boolean match path

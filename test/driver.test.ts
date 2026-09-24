@@ -334,6 +334,24 @@ test("v10 action expands a reviewed template before any browser macro", async ()
   await driver.action(request);
   assert.deepEqual(navigated, ["https://members.example/record/a%2Fb"]);
   assert.equal(messages.at(-1)?.result, "success");
+  const legacy: ActionMessage = {
+    ...request, requestId: "legacy",
+    action: { ...request.action, version: "udon.browser-driver.v2", profile: "uws.browser.1.7",
+      parameters: {}, action: { sequence: [{ navigate: "https://members.example/legacy" }], outputs: {} } },
+  };
+  await driver.action(legacy);
+  assert.deepEqual(navigated, ["https://members.example/record/a%2Fb", "https://members.example/legacy"]);
+  assert.equal(messages.at(-1)?.result, "success");
+  for (const mismatched of [
+    { ...legacy, action: { ...legacy.action, profile: "uws.browser.1.9" as const } },
+    { ...request, action: { ...request.action, profile: "uws.browser.1.7" as const } },
+  ]) {
+    navigated.length = 0;
+    messages.length = 0;
+    await driver.action(mismatched);
+    assert.deepEqual(navigated, []);
+    assert.equal(messages.at(-1)?.failureCode, "invalid_response");
+  }
   navigated.length = 0;
   messages.length = 0;
   request.action.action.sequence = [{ navigate: "/record/{{missing}}" }];

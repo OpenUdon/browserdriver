@@ -13,3 +13,9 @@ and resolved control/bidi-text restrictions. Neither version permits template
 placement outside its specified sinks. Browser 1.5–1.7 action wires remain v2/v3;
 registration remains v6, verification diagnostics v9. Udon integration and
 cross-repository qualification are separately owned.
+
+The downstream mixed-session integration found that one workflow can contain
+both old and new browser profiles. M14.2 therefore admits inner action v2 for
+Browser 1.5–1.7 within outer v10, preserving the existing v3 execution path.
+Inner action v3 remains exclusive to Browser 1.8/1.9. Crossed pairs fail before
+a browser step.
