@@ -9,8 +9,10 @@ export const protocolVersionV6 = "udon.browser-driver.v6";
 export const protocolVersionV7 = "udon.browser-driver.v7";
 export const protocolVersionV8 = "udon.browser-driver.v8";
 export const protocolVersionV9 = "udon.browser-driver.v9";
+// V10 is the additive Browser 1.8/1.9 persistent action contract.
+export const protocolVersionV10 = "udon.browser-driver.v10";
 export type RegistrationProtocolVersion = typeof protocolVersionV4 | typeof protocolVersionV5 | typeof protocolVersionV6;
-export type LegacyProtocolVersion = typeof protocolVersion | typeof protocolVersionV3;
+export type LegacyProtocolVersion = typeof protocolVersion | typeof protocolVersionV3 | typeof protocolVersionV10;
 export type ProtocolVersion = LegacyProtocolVersion | RegistrationProtocolVersion | typeof protocolVersionV7 | typeof protocolVersionV8 | typeof protocolVersionV9;
 export const maxMessageBytes = 1 << 20;
 
@@ -166,8 +168,8 @@ export type AuthenticationStep =
   | { wait_for: ContextualLocator };
 
 export interface ActionRequest {
-  version: "udon.browser-driver.v1" | "udon.browser-driver.v2";
-  profile?: "uws.browser.1.5" | "uws.browser.1.6" | "uws.browser.1.7";
+  version: "udon.browser-driver.v1" | "udon.browser-driver.v2" | "udon.browser-driver.v3";
+  profile?: "uws.browser.1.5" | "uws.browser.1.6" | "uws.browser.1.7" | "uws.browser.1.8" | "uws.browser.1.9";
   operationId: string;
   sourceDigest: string;
   actionName: string;
@@ -178,8 +180,10 @@ export interface ActionRequest {
 }
 
 export interface BrowserAction {
+  parameters?: Record<string, unknown>;
   sequence: BrowserStep[];
   outputs?: Record<string, BrowserOutput>;
+  confirmationPolicy?: { required: boolean; prompt?: string };
 }
 
 export type BrowserStep =
@@ -292,11 +296,26 @@ export type InputMessage = VerifyMessage | AuthenticateMessage | ActionMessage |
 export function parseInput(line: string): InputMessage {
   if (Buffer.byteLength(line) > maxMessageBytes) throw new DriverFailure("invalid_response");
   let value: unknown;
-  try { value = JSON.parse(line); } catch { throw new DriverFailure("invalid_response"); }
-  if (!isRecord(value) || (value.version !== protocolVersion && value.version !== protocolVersionV3 && value.version !== protocolVersionV4 && value.version !== protocolVersionV5 && value.version !== protocolVersionV6 && value.version !== protocolVersionV7 && value.version !== protocolVersionV8 && value.version !== protocolVersionV9) || typeof value.type !== "string" || typeof value.requestId !== "string") {
+  try {
+    value = JSON.parse(line);
+    // Node 24 exposes the original numeric token to the reviver. V10 alone
+    // preserves wide Browser 1.8 integers before binary64 rounding.
+    if (isRecord(value) && value.version === protocolVersionV10) {
+      value = JSON.parse(line, (_key: string, parsed: unknown, context?: { source?: string }) => {
+        const source = context?.source;
+        if (typeof parsed === "number" && source && /^-?(?:0|[1-9][0-9]*)$/u.test(source) && !Number.isSafeInteger(parsed)) {
+          if (source.length > 20) throw new DriverFailure("invalid_response");
+          return BigInt(source);
+        }
+        return parsed;
+      });
+    }
+  } catch { throw new DriverFailure("invalid_response"); }
+  if (!isRecord(value) || (value.version !== protocolVersion && value.version !== protocolVersionV3 && value.version !== protocolVersionV4 && value.version !== protocolVersionV5 && value.version !== protocolVersionV6 && value.version !== protocolVersionV7 && value.version !== protocolVersionV8 && value.version !== protocolVersionV9 && value.version !== protocolVersionV10) || typeof value.type !== "string" || typeof value.requestId !== "string") {
     throw new DriverFailure("invalid_response");
   }
   if (value.version === protocolVersionV3) validateV3Envelope(value);
+  if (value.version === protocolVersionV10) validateV3Envelope(value);
   if (value.version === protocolVersionV4) validateV4Envelope(value);
   if (value.version === protocolVersionV5 || value.version === protocolVersionV6) validateV5Envelope(value);
   if (value.version === protocolVersionV7 || value.version === protocolVersionV8 || value.version === protocolVersionV9) {

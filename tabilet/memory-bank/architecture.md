@@ -164,7 +164,7 @@ revision/digest; neither values nor this digest appear in reduced results.
 V5 denies WebSocket connections and preserves the exact-origin, single-POST,
 indeterminate-outcome and joined-teardown rules. V2–v4 retain their contracts.
 
-Udon starts one `udon.browser-driver.v2` or `udon.browser-driver.v3` NDJSON subprocess per workflow
+Udon starts one versioned NDJSON subprocess per workflow
 execution. The driver owns one Playwright browser and a map of named,
 execution-local contexts. Authentication creates or refreshes a context;
 protected browser actions use that exact name. Udon owns approval and human
@@ -200,6 +200,13 @@ is resolved at authentication/action completion; a stale handle never remains
 authority after origin, identity, parentage, attachment, or uniqueness changes.
 
 Browser 1.7 action requests carry their exact portable profile discriminator.
+The M14 v10 persistent envelope keeps v3 authentication/MFA and context
+runtime behavior while admitting only inner action v3 with explicit Browser
+1.8/1.9. Its private preflight reads the selected action's parameter schema,
+preserves wide Browser 1.8 integer tokens, and resolves only approved text/URL
+sinks before status `executing` or any macro. It checks exact origins and dot
+segments after component encoding. Udon retains approval and full JSON Schema
+validation; registration v6 and verification v9 are separate paths.
 After unique accessibility matching, the driver trims Unicode edge whitespace
 and performs the UWS locale-free string/safe-integer/finite-number/lowercase-
 Boolean conversion. Literal `presence: true` keeps the prior Boolean match path

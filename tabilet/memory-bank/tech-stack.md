@@ -162,6 +162,12 @@ no installation or source mutation.
 - Playwright 1.62.1, Chromium
 - Node's built-in test runner
 
+M14 uses the same Node 24, TypeScript and Playwright pins. V10's Node 24
+`JSON.parse` source context preserves Browser 1.8 signed 64-bit integer tokens
+without a new dependency. Offline action-template and simulated Playwright
+boundary tests cover preflight and old-version isolation; they launch no
+browser or provider fixture.
+
 Default verification is offline and does not install or launch a browser:
 
 ```bash
@@ -171,7 +177,8 @@ npm audit --omit=dev
 git diff --check
 ```
 
-The single TypeScript implementation serves protocols v2 through v5. V2 keeps
+The single TypeScript implementation serves the versioned persistent,
+registration and verification paths through v10. V2 keeps
 the UWS 1.7 main-page contract; v3 accepts UWS 1.8 authentication 1.1 followed
 by browser 1.5/1.6 or UWS 1.9 browser 1.7, adds portable context qualification,
 cached-target revalidation, and normative scalar conversion, and does not add

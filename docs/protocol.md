@@ -1,4 +1,4 @@
-# Udon browser-driver v2, v3, and v4 protocols
+# Udon browser-driver persistent action protocols
 
 The process reads and writes one JSON object per line. Every envelope carries
 `version: "udon.browser-driver.v2"` and a `requestId`. The maximum line size is
@@ -149,3 +149,31 @@ browser state, or driver prose is returned.
 Verification-only v9 adds the required bounded initialization block in diagnostics
 v5. It accepts only verify requests, retains the v8 request shape, and does not
 change registration v6. See [initialization diagnostics](verification.md).
+
+## V10 Browser 1.8 and 1.9 actions
+
+The additive `udon.browser-driver.v10` persistent envelope accepts
+`authenticate`, `challenge_response`, `action`, and `close`. Authentication
+uses the v3 authentication 1.1 shape, context behavior, and closed MFA replies.
+Registration remains v6 and verification-only diagnostics remain v9.
+
+V10 action requests carry an inner `udon.browser-driver.v3` action with the
+explicit `uws.browser.1.8` or `uws.browser.1.9` discriminator. The existing
+fields remain: selected operation, source digest, action name, exact origins,
+supplied parameter values, optional contexts, and the selected portable action.
+The portable action's optional `parameters` field is the sole parameter-schema
+source; omission permits no named parameters.
+Its sequence and confirmation prompt arrive unresolved; Udon retains the
+preceding approval and full JSON Schema checks. The driver resolves all
+approved template sinks and validates placement, scalar types, defaults,
+unsafe text, dot segments, URL encoding, and exact origins before any macro.
+Invalid input returns only `invalid_response` or `origin_rejected` as
+appropriate. Inserted parameter values are never rescanned.
+
+Browser 1.8 permits signed 64-bit integer parameters. V10 preserves their
+original JSON numeric tokens with Node 24's lossless parse context, rejecting
+out-of-range values. Browser 1.9 uses the safe-integer range, accepts its
+four-brace literal escapes, and rejects controls and bidirectional controls in
+resolved `type_text.value` and confirmation prompts. Browser 1.8 and 1.9
+retain v3 context replay and typed accessibility outputs. V2/v3 action versions
+and their profile admission remain unchanged.

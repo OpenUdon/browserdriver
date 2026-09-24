@@ -161,6 +161,14 @@ not accept authoring sessions or Playwright-Go handles.
 For every accepted browser profile, only literal `presence: true` selects
 Boolean match mode; `presence: false` retains the declared extraction type.
 
+M14 adds an opt-in persistent v10 action contract for UWS Browser 1.8 and
+1.9. It reuses v3 authentication and context replay, takes the selected action
+with its parameter schema and supplied values, and resolves templates before
+browser execution. Browser 1.9 also resolves literal-brace escapes and rejects
+unsafe control or bidirectional text in typed input and confirmation prompts.
+Earlier action, registration v6 and verification v9 paths remain versioned.
+Udon lowering and cross-repository qualification are separate downstream work.
+
 Protocol v4 adds trusted execution for the published UWS browser-registration
 1.0 contract. It uses a new headed, unnamed context per attempt, reads
 credentials only from inherited environment variables, brokers human and

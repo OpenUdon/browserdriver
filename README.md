@@ -15,6 +15,11 @@ v2 continues to execute the unchanged UWS 1.7 contracts. V4 consumes the
 published UWS browser-registration 1.0 profile and call controls in one fresh
 headed context; it never creates a named session.
 
+The additive persistent v10 path accepts UWS Browser 1.8/1.9 actions with
+typed parameters, safe URL components, and Browser 1.9 literal-brace escapes.
+It keeps v3 authentication/context behavior and uses an inner action v3.
+See the [protocol contract](docs/protocol.md#v10-browser-18-and-19-actions).
+
 Registration 1.1 uses protocol v5 and Udon's separate private input form. Explicit
 Start accepts the initial snapshot before browser creation; later Apply/Stop
 checkpoints retain the running deadline. The accepted snapshot supplies both
@@ -58,6 +63,10 @@ Use `--browser-driver-protocol v3` with Udon's UWS 1.8/1.9 lowering. V3
 requires authentication 1.1 and the internal action v2 envelope, which may
 carry browser 1.5, 1.6, or 1.7; browser 1.7 adds locale-free scalar conversion
 and is rejected by the v2 session path.
+
+Use `--browser-driver-protocol v10` for Browser 1.8/1.9 actions once Udon's
+v10 lowering is installed. V10 keeps authentication 1.1 and carries an inner
+action v3 with unresolved reviewed templates and supplied scalar parameters.
 
 Use `--headed` as a trusted driver argument when WebAuthn or operator-visible
 browser interaction requires a window.

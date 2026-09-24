@@ -301,6 +301,47 @@ test("v3 action resolves context-qualified waits and outputs while v2 stays acce
   assert.deepEqual((result.response as Record<string, unknown>).outputs, { present: true });
 });
 
+test("v10 action expands a reviewed template before any browser macro", async () => {
+  let currentURL = "https://members.example/start";
+  const navigated: string[] = [];
+  const page = {
+    url: () => currentURL,
+    isClosed: () => false,
+    mainFrame: () => ({ childFrames: () => [] }),
+    goto: async (url: string) => { navigated.push(url); currentURL = url; },
+    locator: () => ({ count: async () => 0 }),
+  } as unknown as Page;
+  const context = { pages: () => [page], close: async () => undefined } as unknown as BrowserContext;
+  const runtime = new RuntimeContexts(context, page, undefined, new Set(["https://members.example"]));
+  const messages: Array<Record<string, unknown>> = [];
+  const driver = new PersistentBrowserDriver(
+    { next: async () => ({ done: true, value: undefined }) },
+    message => messages.push(message as Record<string, unknown>),
+  );
+  (driver as unknown as { sessions: Map<string, unknown> }).sessions.set("member", {
+    context, page, visited: [], runtime,
+    navigation: { setAllowed: () => undefined, assertSafe: () => undefined },
+  });
+  const request: ActionMessage = {
+    version: "udon.browser-driver.v10", type: "action", requestId: "modern", operationId: "read", session: "member",
+    action: {
+      version: "udon.browser-driver.v3", profile: "uws.browser.1.9", operationId: "read", sourceDigest: "sha256:test",
+      actionName: "read", allowedOrigins: ["https://members.example"], parameters: { id: "a/b" },
+      action: { parameters: { type: "object", required: ["id"], properties: { id: { type: "string" } } },
+        sequence: [{ navigate: "/record/{{id}}" }], outputs: {} },
+    },
+  };
+  await driver.action(request);
+  assert.deepEqual(navigated, ["https://members.example/record/a%2Fb"]);
+  assert.equal(messages.at(-1)?.result, "success");
+  navigated.length = 0;
+  messages.length = 0;
+  request.action.action.sequence = [{ navigate: "/record/{{missing}}" }];
+  await driver.action(request);
+  assert.deepEqual(navigated, []);
+  assert.deepEqual(messages, [{ version: "udon.browser-driver.v10", type: "result", requestId: "modern", result: "failure", failureCode: "invalid_response" }]);
+});
+
 test("exact accessibility locators honor explicit empty constraints", async () => {
   let roleOptions: unknown;
   let filterOptions: unknown;

@@ -193,6 +193,15 @@ See [status-M11.md](status-M11.md). Existing v2-v4 contracts remain unchanged.
 | M11 | `status-M11.md` | Private registration 1.1 execution |
 | M12 | `status-M12.md` | Registration foreground and checkpoint deadlines |
 | M13 | [status-M13.md](status-M13.md) | Verification and provider repairs qualified/adopted through W16.4i.2; consumed history preserved; evolution v12 |
+| M14 | [status-M14.md](status-M14.md) | Browser 1.8/1.9 action execution through additive persistent driver v10; Udon integration follows |
+
+M14 is the September 24 downstream adoption owner for Browser 1.8/1.9.
+It is independent of M13's separately authorized verification and provider work.
+One row owns the closed v10 persistent wire, safe parameter/template resolution,
+offline synthetic coverage, current-truth updates, and bounded whole-diff review.
+Udon consumes the new wire in its own milestone; no provider-network or live
+target operation is part of M14. The existing v2/v3 action contracts,
+registration v6 and verification v9 retain their acceptance and behavior.
 
 M01 establishes the isolated v2 NDJSON process, closed authentication and
 browser macro execution, all planned MFA variants, exact-origin and ambiguity
