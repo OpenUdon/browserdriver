@@ -179,3 +179,34 @@ four-brace literal escapes, and rejects controls and bidirectional controls in
 resolved `type_text.value` and confirmation prompts. Browser 1.8 and 1.9
 retain v3 context replay and typed accessibility outputs. V2/v3 action versions
 and their profile admission remain unchanged.
+
+## V11 Browser 1.10 count actions
+
+The additive `udon.browser-driver.v11` persistent envelope keeps the v3
+authentication, challenge, and context behavior. It accepts inner
+`udon.browser-driver.v4` actions with the exact `uws.browser.1.10` profile.
+The v11/v4 pairing is exclusive: v10 continues to admit only inner v2/v3, and
+v11 rejects inner v2/v3 before any browser step.
+
+V11 is a count-only action contract. Each declared output must use
+`matchCount: true`, `source: css`, `type: integer`, a non-empty selector, and
+`visibility: all` or `rendered`. An optional `within` selector scopes the count
+to the descendants of one unique element; that root is not counted. The
+`validation` object declares a nonnegative integer minimum and optional maximum
+no greater than the JavaScript safe-integer limit. Zero, one, and multiple
+matches are ordinary exact results. The response uses the outer v11 version and
+returns count outputs as JSON integers; page text and element attributes are not
+returned by this action contract.
+
+An action success retains the closed persistent result keys `version`, `type`,
+`requestId`, `result`, and `response`; the response contains `status`, `outputs`,
+`visitedUrls`, and `ambiguities`. A failure contains only `version`, `type`,
+`requestId`, `result: "failure"`, and the fixed `failureCode`. During M15.1,
+output-bearing v11 actions fail before browser macros until M15.2 installs count
+extraction.
+
+Malformed selectors, a missing or ambiguous scope root, invalid or unsafe
+counts, and values outside declared bounds fail with the closed
+`invalid_response` code. The existing `origin_rejected`, `invalid_context`, and
+`session_expired` failures keep their meanings. The portable rendered-count
+rules are owned by [UWS Browser 1.10](../../uws/versions/browser.1.10.md).

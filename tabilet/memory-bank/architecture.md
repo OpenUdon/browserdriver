@@ -217,6 +217,14 @@ and never reads text; `presence: false` follows the declared typed-text path.
 Conversion failures collapse to `invalid_response` without page text; browser
 1.5/1.6 keep their existing extraction path.
 
+The M15 persistent v11 envelope pairs only with inner action v4 and UWS Browser
+1.10. It uses the same isolated session and context registry, but its action
+outputs are restricted to CSS match counts. Scope roots must resolve uniquely;
+`all` counts connected selector matches and `rendered` follows the portable
+UWS rendered-count rule. Values are nonnegative safe integers checked against
+declared bounds. V11 returns no page text or attributes; v10 and all older
+action/profile pairings remain unchanged.
+
 V4 is a separate registration branch rather than a session mode. It closes and
 revalidates one registration 1.0 profile, exact origin set, symbolic binding
 map, environment-name map, and fixed call controls before launching a fresh

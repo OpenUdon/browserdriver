@@ -1,11 +1,11 @@
 import { chromium, type Browser, type BrowserContext, type Locator, type Page, type Route } from "playwright";
 import { sandboxedChromiumOptions } from "./browser-launch.js";
 import {
-  type ActionMessage, type AuthenticateMessage, type AuthenticationStep, type BrowserOutput, type BrowserWait,
+  actionProtocolVersionV4, type ActionMessage, type AuthenticateMessage, type AuthenticationStep, type BrowserOutput, type BrowserWait,
   type ChallengeKind, type ChallengeResponseMessage, DriverFailure, challenge, failure,
   type RegisterMessage, type RegistrationCheckpointKind, type RegistrationCheckpointResponseMessage,
   type RegistrationInput, type RegistrationProtocolVersion, type VerifyMessage,
-  parseInput, protocolVersionV3, protocolVersionV4, protocolVersionV5, protocolVersionV6, protocolVersionV7, protocolVersionV8, protocolVersionV9, protocolVersionV10, registrationCheckpoint, status, success,
+  parseInput, protocolVersionV3, protocolVersionV4, protocolVersionV5, protocolVersionV6, protocolVersionV7, protocolVersionV8, protocolVersionV9, protocolVersionV10, protocolVersionV11, registrationCheckpoint, status, success,
 } from "./protocol.js";
 import { prepareModernAction } from "./action-templates.js";
 import { assertAllowedURL, credentialValue, exactOrigin, totp } from "./security.js";
@@ -72,10 +72,10 @@ export class PersistentBrowserDriver {
       const flow = request.profile.flows[request.flow]!;
       context = await this.createContext(request.sessionBinding);
       const visited: string[] = [];
-      const navigation = new NavigationGuard(context, visited, allowed, request.version === protocolVersionV3 || request.version === protocolVersionV10);
+      const navigation = new NavigationGuard(context, visited, allowed, request.version === protocolVersionV3 || request.version === protocolVersionV10 || request.version === protocolVersionV11);
       await navigation.install();
       const page = await context.newPage();
-      const runtime = request.version === protocolVersionV3 || request.version === protocolVersionV10
+      const runtime = request.version === protocolVersionV3 || request.version === protocolVersionV10 || request.version === protocolVersionV11
         ? new RuntimeContexts(context, page, request.profile.contexts, allowed)
         : undefined;
       this.emit(status(request.requestId, request.sessionBinding ? "refreshing" : "logging_in", request.version));
@@ -121,24 +121,27 @@ export class PersistentBrowserDriver {
       if (!request.session || !request.action ||
           (request.version === protocolVersionV10
             ? request.action.version !== "udon.browser-driver.v2" && request.action.version !== "udon.browser-driver.v3"
-            : request.action.version !== expectedActionVersion)) {
+            : request.version === protocolVersionV11
+              ? request.action.version !== actionProtocolVersionV4
+              : request.action.version !== expectedActionVersion)) {
         throw new DriverFailure("invalid_response");
       }
       validateActionProfile(request);
-      if ((request.version === protocolVersionV3 || request.version === protocolVersionV10) && request.action.allowedOrigins.some((origin) => exactOrigin(origin) !== origin)) {
+      if ((request.version === protocolVersionV3 || request.version === protocolVersionV10 || request.version === protocolVersionV11) && request.action.allowedOrigins.some((origin) => exactOrigin(origin) !== origin)) {
         throw new DriverFailure("origin_rejected");
       }
       const session = this.sessions.get(request.session);
       if (!session) throw new DriverFailure("session_expired");
       const allowed = new Set(request.action.allowedOrigins.map(exactOrigin));
-      const sequence = request.version === protocolVersionV10 && request.action.version === "udon.browser-driver.v3"
+      const sequence = request.version === protocolVersionV10 && request.action.version === "udon.browser-driver.v3" ||
+        request.version === protocolVersionV11 && request.action.version === actionProtocolVersionV4
         ? prepareModernAction(request.action) : request.action.action.sequence;
       const visitedStart = session.visited.length;
       let outputs: Record<string, unknown>;
       let visitedUrls: string[];
       try {
         session.navigation.setAllowed(allowed);
-        if (request.version === protocolVersionV3 || request.version === protocolVersionV10) {
+        if (request.version === protocolVersionV3 || request.version === protocolVersionV10 || request.version === protocolVersionV11) {
           if (!session.runtime) throw new DriverFailure("invalid_context");
           session.runtime.mergeForAction(request.action.contexts, allowed);
           await session.runtime.revalidateResolved();
@@ -601,12 +604,12 @@ async function applyRegistrationInput(page: Page, request: RegisterMessage, inpu
 function validateAuthenticationMessage(request: AuthenticateMessage): void {
   if (!request.operationId || !request.requestId || !request.sourceDigest || !request.session ||
       !request.profile?.flows[request.flow] ||
-      (request.version === protocolVersionV3 || request.version === protocolVersionV10
+      (request.version === protocolVersionV3 || request.version === protocolVersionV10 || request.version === protocolVersionV11
         ? request.profile.profile !== "uws.browser-authentication.1.1"
         : request.profile.profile !== "uws.browser-authentication.1.0" || request.profile.contexts !== undefined)) {
     throw new DriverFailure("invalid_response");
   }
-  if (request.version === protocolVersionV3 || request.version === protocolVersionV10) {
+  if (request.version === protocolVersionV3 || request.version === protocolVersionV10 || request.version === protocolVersionV11) {
     const profileOrigins = [...request.profile.info.applicationOrigins, ...request.profile.info.authenticationOrigins];
     if ([...request.allowedOrigins, ...profileOrigins].some((origin) => exactOrigin(origin) !== origin)) throw new DriverFailure("origin_rejected");
     const allowed = new Set(request.allowedOrigins);
@@ -616,6 +619,17 @@ function validateAuthenticationMessage(request: AuthenticateMessage): void {
 
 function validateActionProfile(request: ActionMessage): void {
   const profile = request.action.profile;
+  if (request.version === protocolVersionV11) {
+    if (request.action.version !== actionProtocolVersionV4 || profile !== "uws.browser.1.10" ||
+        !Array.isArray(request.action.allowedOrigins) || request.action.allowedOrigins.length === 0 ||
+        request.action.allowedOrigins.some(origin => typeof origin !== "string") ||
+        !isObject(request.action.parameters) || !isObject(request.action.action)) throw new DriverFailure("invalid_response");
+    validateCountOutputDeclarations(request.action.action.outputs ?? {});
+    // Count extraction lands in M15.2. Until then, fail before the first macro
+    // rather than allowing the older CSS text extractor to handle this output.
+    if (Object.keys(request.action.action.outputs ?? {}).length > 0) throw new DriverFailure("invalid_response");
+    return;
+  }
   if (request.version === protocolVersionV10) {
     const modern = request.action.version === "udon.browser-driver.v3";
     if ((modern
@@ -633,6 +647,27 @@ function validateActionProfile(request: ActionMessage): void {
     return;
   }
   if (profile !== undefined && profile !== "uws.browser.1.5") throw new DriverFailure("invalid_response");
+}
+
+function validateCountOutputDeclarations(outputs: unknown): void {
+  if (!isObject(outputs)) throw new DriverFailure("invalid_response");
+  for (const output of Object.values(outputs)) {
+    if (!isObject(output) || Object.keys(output).some((key) => ![
+          "type", "source", "selector", "matchCount", "within", "visibility", "fallbackReason", "validation", "context",
+        ].includes(key)) ||
+        output.matchCount !== true || output.type !== "integer" || output.source !== "css" ||
+        typeof output.selector !== "string" || output.selector.length === 0 ||
+        !["no_a11y_region", "no_structured_data", "ambiguous_a11y", "other"].includes(output.fallbackReason as string) ||
+        !isObject(output.validation) || output.validation.type !== "integer" ||
+        typeof output.validation.minimum !== "number" || !Number.isFinite(output.validation.minimum) || output.validation.minimum < 0 || output.validation.minimum > Number.MAX_SAFE_INTEGER ||
+        (output.validation.maximum !== undefined && (typeof output.validation.maximum !== "number" || !Number.isFinite(output.validation.maximum) || output.validation.maximum < output.validation.minimum || output.validation.maximum > Number.MAX_SAFE_INTEGER)) ||
+        (output.within !== undefined && (typeof output.within !== "string" || output.within.length === 0)) ||
+        (output.context !== undefined && (typeof output.context !== "string" || output.context.length === 0)) ||
+        output.visibility !== "all" && output.visibility !== "rendered" ||
+        output.attribute !== undefined || output.property !== undefined || output.locator !== undefined || output.presence !== undefined) {
+      throw new DriverFailure("invalid_response");
+    }
+  }
 }
 
 async function browserStep(page: Page, step: Record<string, unknown>, allowed: Set<string>): Promise<void> {
@@ -872,21 +907,21 @@ export function attestedVisitedURLs(currentURL: string, visited: string[]): stri
 export async function extractOutputs(
   page: BrowserTarget,
   outputs: Record<string, BrowserOutput>,
-  profile?: "uws.browser.1.5" | "uws.browser.1.6" | "uws.browser.1.7" | "uws.browser.1.8" | "uws.browser.1.9",
+  profile?: "uws.browser.1.5" | "uws.browser.1.6" | "uws.browser.1.7" | "uws.browser.1.8" | "uws.browser.1.9" | "uws.browser.1.10",
 ): Promise<Record<string, unknown>> {
   const result: Record<string, unknown> = {};
   for (const [name, output] of Object.entries(outputs)) {
     if (output.source === "a11y") {
       if (!output.locator) throw new DriverFailure("invalid_response");
       if (output.presence === true) {
-        if ((profile === "uws.browser.1.7" || profile === "uws.browser.1.8" || profile === "uws.browser.1.9") && output.type !== "boolean") throw new DriverFailure("invalid_response");
+        if ((profile === "uws.browser.1.7" || profile === "uws.browser.1.8" || profile === "uws.browser.1.9" || profile === "uws.browser.1.10") && output.type !== "boolean") throw new DriverFailure("invalid_response");
         const locator = locatorFor(page, output.locator);
         const count = await locator.count();
         if (count > 1) throw new DriverFailure("ambiguous_locator");
         result[name] = count === 1;
       } else {
         const locator = await exactOutputLocator(page, output.locator);
-        result[name] = profile === "uws.browser.1.7" || profile === "uws.browser.1.8" || profile === "uws.browser.1.9"
+        result[name] = profile === "uws.browser.1.7" || profile === "uws.browser.1.8" || profile === "uws.browser.1.9" || profile === "uws.browser.1.10"
           ? convertBrowser17AccessibilityText(await locator.textContent(), output.type)
           : await locatorOutput(locator, output);
       }
@@ -922,7 +957,7 @@ async function exactOutputLocator(page: BrowserTarget, locator: import("./protoc
 export async function extractOutputsV3(
   runtime: RuntimeContexts,
   outputs: Record<string, BrowserOutput>,
-  profile?: "uws.browser.1.5" | "uws.browser.1.6" | "uws.browser.1.7" | "uws.browser.1.8" | "uws.browser.1.9",
+  profile?: "uws.browser.1.5" | "uws.browser.1.6" | "uws.browser.1.7" | "uws.browser.1.8" | "uws.browser.1.9" | "uws.browser.1.10",
 ): Promise<Record<string, unknown>> {
   const result: Record<string, unknown> = {};
   for (const [name, output] of Object.entries(outputs)) {

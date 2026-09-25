@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { prepareModernAction } from "../src/action-templates.js";
-import { DriverFailure, parseInput, protocolVersionV10, type ActionRequest } from "../src/protocol.js";
+import { actionProtocolVersionV4, DriverFailure, parseInput, protocolVersionV10, protocolVersionV11, type ActionRequest } from "../src/protocol.js";
 
 function action(profile: "uws.browser.1.8" | "uws.browser.1.9" = "uws.browser.1.9"): ActionRequest {
   return {
@@ -104,4 +104,34 @@ test("v10 preserves Browser 1.8 signed 64-bit integers and rejects them in Brows
   parsed.action.profile = "uws.browser.1.9";
   rejected(parsed.action);
   rejected({ ...request, parameters: { id: -(1n << 63n) - 1n } });
+});
+
+test("Browser 1.10 keeps Browser 1.9 template semantics in persistent v11", () => {
+  const request: ActionRequest = {
+    ...action("uws.browser.1.9"), version: actionProtocolVersionV4, profile: "uws.browser.1.10",
+  };
+  request.parameters.id = "{{other}}";
+  request.action.sequence[0] = { navigate: "/{{{{id}}}}/{{id}}" };
+  request.action.sequence[1] = { type_text: { locator: { role: "textbox" }, value: "{{{{id}}}} {{id}}" } };
+  assert.deepEqual(prepareModernAction(request)[0], {
+    navigate: "https://example.test/%7B%7Bid%7D%7D/%7B%7Bother%7D%7D",
+  });
+  assert.deepEqual(prepareModernAction(request)[1], {
+    type_text: { locator: { role: "textbox" }, value: "{{id}} {{other}}" },
+  });
+
+  const raw = JSON.stringify({
+    version: protocolVersionV11, type: "action", requestId: "wide", operationId: "read", session: "member",
+    action: {
+      version: actionProtocolVersionV4, profile: "uws.browser.1.10", operationId: "read", sourceDigest: "sha256:test",
+      actionName: "read", allowedOrigins: ["https://example.test"], parameters: { count: 0 },
+      action: { parameters: { type: "object", properties: { count: { type: "integer" } } }, sequence: [{ navigate: "/{{count}}" }] },
+    },
+  }).replace('"parameters":{"count":0}', '"parameters":{"count":9007199254740992}');
+  const parsed = parseInput(raw);
+  assert.equal(parsed.version, protocolVersionV11);
+  assert.equal(parsed.type, "action");
+  if (parsed.type !== "action") throw new Error("v11 action did not parse");
+  assert.equal(parsed.action.parameters.count, 9007199254740992n);
+  rejected(parsed.action);
 });

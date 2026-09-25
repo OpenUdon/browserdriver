@@ -168,6 +168,11 @@ without a new dependency. Offline action-template and simulated Playwright
 boundary tests cover preflight and old-version isolation; they launch no
 browser or provider fixture.
 
+M15 uses the same runtime and dependencies. M15.1 defines persistent v11 with
+inner action v4 for Browser 1.10 and reuses Node 24's lossless integer-token
+parser. M15.2 adds the Playwright CSS count implementation before count actions
+are accepted for execution.
+
 Default verification is offline and does not install or launch a browser:
 
 ```bash

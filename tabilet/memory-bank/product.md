@@ -172,6 +172,12 @@ One v10 session also accepts prepared Browser 1.5–1.7 inner action v2 requests
 through unchanged v3 action behavior, so a mixed-profile workflow can keep a
 single persistent session.
 
+M15 adds a separate persistent v11 envelope and inner action v4 for UWS Browser
+1.10 count outputs. The count path returns only validated nonnegative integer
+values and never page text or element attributes. Outer v10 and its inner v2/v3
+action pairs retain their existing behavior; Udon M43 owns lowering and
+downstream integration.
+
 Protocol v4 adds trusted execution for the published UWS browser-registration
 1.0 contract. It uses a new headed, unnamed context per attempt, reads
 credentials only from inherited environment variables, brokers human and

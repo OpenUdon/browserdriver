@@ -8,7 +8,7 @@ import {
   extractOutputs, maxVisitedURLsPerWindow, readChallengeResponse, uniqueNumberMatch,
 } from "../src/driver.js";
 import { ReadlineMessageSource } from "../src/line-source.js";
-import { DriverFailure } from "../src/protocol.js";
+import { actionProtocolVersionV4, DriverFailure, protocolVersionV10, protocolVersionV11 } from "../src/protocol.js";
 import type { ActionMessage, AuthenticateMessage } from "../src/protocol.js";
 import { RuntimeContexts } from "../src/contexts.js";
 
@@ -345,7 +345,7 @@ test("v10 action expands a reviewed template before any browser macro", async ()
   for (const mismatched of [
     { ...legacy, action: { ...legacy.action, profile: "uws.browser.1.9" as const } },
     { ...request, action: { ...request.action, profile: "uws.browser.1.7" as const } },
-  ]) {
+  ] as unknown as ActionMessage[]) {
     navigated.length = 0;
     messages.length = 0;
     await driver.action(mismatched);
@@ -358,6 +358,98 @@ test("v10 action expands a reviewed template before any browser macro", async ()
   await driver.action(request);
   assert.deepEqual(navigated, []);
   assert.deepEqual(messages, [{ version: "udon.browser-driver.v10", type: "result", requestId: "modern", result: "failure", failureCode: "invalid_response" }]);
+});
+
+test("v11 selects only the Browser 1.10 inner action and emits the v11 result", async () => {
+  let currentURL = "https://members.example/start";
+  const navigated: string[] = [];
+  const page = {
+    url: () => currentURL,
+    isClosed: () => false,
+    mainFrame: () => ({ childFrames: () => [] }),
+    goto: async (url: string) => { navigated.push(url); currentURL = url; },
+    locator: () => ({ count: async () => 0 }),
+  } as unknown as Page;
+  const context = { pages: () => [page], close: async () => undefined } as unknown as BrowserContext;
+  const runtime = new RuntimeContexts(context, page, undefined, new Set(["https://members.example"]));
+  const messages: Array<Record<string, unknown>> = [];
+  const driver = new PersistentBrowserDriver(
+    { next: async () => ({ done: true, value: undefined }) },
+    message => messages.push(message as Record<string, unknown>),
+  );
+  (driver as unknown as { sessions: Map<string, unknown> }).sessions.set("member", {
+    context, page, visited: [], runtime,
+    navigation: { setAllowed: () => undefined, assertSafe: () => undefined },
+  });
+  const action: ActionMessage["action"] = {
+    version: actionProtocolVersionV4, profile: "uws.browser.1.10", operationId: "read", sourceDigest: "sha256:test",
+    actionName: "read", allowedOrigins: ["https://members.example"], parameters: {},
+    action: { sequence: [{ navigate: "/count" }], outputs: {} },
+  };
+  await driver.action({
+    version: protocolVersionV11, type: "action", requestId: "eleven", operationId: "read", session: "member", action,
+  });
+  assert.deepEqual(navigated, ["https://members.example/count"]);
+  assert.deepEqual(messages.at(-1), {
+    version: protocolVersionV11, type: "result", requestId: "eleven", result: "success",
+    response: { status: "success", outputs: {}, visitedUrls: ["https://members.example/count"], ambiguities: [] },
+  });
+
+  for (const mismatched of [
+    { version: protocolVersionV10, action },
+    { version: protocolVersionV11, action: { ...action, version: "udon.browser-driver.v3", profile: "uws.browser.1.9" } },
+    { version: protocolVersionV11, action: { ...action, profile: "uws.browser.1.9" } },
+  ] as unknown as ActionMessage[]) {
+    navigated.length = 0;
+    messages.length = 0;
+    const rejectedMessage = {
+      version: mismatched.version, type: "action", requestId: "crossed", operationId: "read", session: "member",
+      action: mismatched.action,
+    } as unknown as ActionMessage;
+    await driver.action(rejectedMessage);
+    assert.deepEqual(navigated, []);
+    assert.deepEqual(messages, [{
+      version: mismatched.version, type: "result", requestId: "crossed", result: "failure", failureCode: "invalid_response",
+    }]);
+  }
+
+  const countAction: ActionMessage["action"] = {
+    ...action,
+    action: {
+      ...action.action,
+      outputs: {
+        count: {
+          type: "integer", source: "css", selector: ".result", matchCount: true,
+          visibility: "all", fallbackReason: "no_a11y_region",
+          validation: { type: "integer", minimum: 0, maximum: 20 },
+        },
+      },
+    },
+  };
+  messages.length = 0;
+  await driver.action({
+    version: protocolVersionV11, type: "action", requestId: "count-pending", operationId: "read", session: "member", action: countAction,
+  });
+  assert.deepEqual(navigated, []);
+  assert.deepEqual(messages, [{
+    version: protocolVersionV11, type: "result", requestId: "count-pending", result: "failure", failureCode: "invalid_response",
+  }]);
+
+  messages.length = 0;
+  const textAction: ActionMessage["action"] = {
+    ...action,
+    action: {
+      ...action.action,
+      outputs: { text: { type: "string", source: "css", selector: ".result", fallbackReason: "other", validation: { type: "string" } } },
+    },
+  };
+  await driver.action({
+    version: protocolVersionV11, type: "action", requestId: "text-forbidden", operationId: "read", session: "member", action: textAction,
+  });
+  assert.deepEqual(navigated, []);
+  assert.deepEqual(messages, [{
+    version: protocolVersionV11, type: "result", requestId: "text-forbidden", result: "failure", failureCode: "invalid_response",
+  }]);
 });
 
 test("exact accessibility locators honor explicit empty constraints", async () => {

@@ -1,18 +1,20 @@
 import { DriverFailure, isRecord, type ActionRequest, type BrowserStep } from "./protocol.js";
 import { assertAllowedURL } from "./security.js";
 
-type ModernProfile = "uws.browser.1.8" | "uws.browser.1.9";
+type ModernProfile = "uws.browser.1.8" | "uws.browser.1.9" | "uws.browser.1.10";
 type ScalarType = "string" | "boolean" | "integer" | "number";
 const namePattern = /^[A-Za-z][A-Za-z0-9_-]*$/u;
 const unsafeText = /[\u0000-\u001f\u007f-\u009f\u061c\u200e\u200f\u2028\u2029\u202a-\u202e\u2066-\u2069]/u;
 
 function invalid(): never { throw new DriverFailure("invalid_response"); }
 
+function hasBrowser19Semantics(profile: ModernProfile): boolean { return profile !== "uws.browser.1.8"; }
+
 function scalarText(value: unknown, type: ScalarType, profile: ModernProfile): string {
   if (type === "string") return typeof value === "string" ? value : invalid();
   if (type === "boolean") return typeof value === "boolean" ? String(value) : invalid();
   if (type === "integer" && typeof value === "bigint") {
-    if (profile === "uws.browser.1.9" || value < -(1n << 63n) || value > (1n << 63n) - 1n) invalid();
+    if (hasBrowser19Semantics(profile) || value < -(1n << 63n) || value > (1n << 63n) - 1n) invalid();
     return value.toString();
   }
   if (typeof value !== "number" || !Number.isFinite(value)) invalid();
@@ -52,10 +54,10 @@ interface TemplateToken { start: number; end: number; text: string }
 function tokens(input: string, values: Record<string, string>, profile: ModernProfile): TemplateToken[] {
   const found: TemplateToken[] = [];
   for (let index = 0; index < input.length;) {
-    if (profile === "uws.browser.1.9" && input.startsWith("{{{{", index)) {
+    if (hasBrowser19Semantics(profile) && input.startsWith("{{{{", index)) {
       found.push({ start: index, end: index + 4, text: "{{" }); index += 4; continue;
     }
-    if (profile === "uws.browser.1.9" && input.startsWith("}}}}", index)) {
+    if (hasBrowser19Semantics(profile) && input.startsWith("}}}}", index)) {
       found.push({ start: index, end: index + 4, text: "}}" }); index += 4; continue;
     }
     if (input.startsWith("{{", index)) {
@@ -123,7 +125,7 @@ function navigation(raw: string, values: Record<string, string>, profile: Modern
 /** Resolve every approved sink before the first browser macro executes. */
 export function prepareModernAction(request: ActionRequest): BrowserStep[] {
   const profile = request.profile;
-  if (profile !== "uws.browser.1.8" && profile !== "uws.browser.1.9" || !Array.isArray(request.action.sequence)) invalid();
+  if (profile !== "uws.browser.1.8" && profile !== "uws.browser.1.9" && profile !== "uws.browser.1.10" || !Array.isArray(request.action.sequence)) invalid();
   const values = parameterTexts(request, profile);
   noTemplate([request.operationId, request.sourceDigest, request.actionName, request.allowedOrigins]);
   noTemplate(request.contexts);
@@ -136,7 +138,7 @@ export function prepareModernAction(request: ActionRequest): BrowserStep[] {
   }
   if (request.action.confirmationPolicy?.prompt !== undefined) {
     const prompt = interpolate(request.action.confirmationPolicy.prompt, values, profile, false);
-    if (profile === "uws.browser.1.9" && unsafeText.test(prompt)) invalid();
+    if (hasBrowser19Semantics(profile) && unsafeText.test(prompt)) invalid();
   }
   return request.action.sequence.map(step => {
     const names = Object.keys(step);
@@ -154,7 +156,7 @@ export function prepareModernAction(request: ActionRequest): BrowserStep[] {
       const { value: _value, ...other } = part;
       noTemplate(other);
       const value = interpolate(part.value, values, profile, false);
-      if (key === "type_text" && profile === "uws.browser.1.9" && unsafeText.test(value)) invalid();
+      if (key === "type_text" && hasBrowser19Semantics(profile) && unsafeText.test(value)) invalid();
       return { [key]: { ...part, value } } as BrowserStep;
     }
     if (!"click check_radio uncheck wait_for".split(" ").includes(names[0]!)) invalid();

@@ -18,7 +18,9 @@ headed context; it never creates a named session.
 The additive persistent v10 path accepts UWS Browser 1.8/1.9 actions with
 typed parameters, safe URL components, and Browser 1.9 literal-brace escapes.
 It keeps v3 authentication/context behavior and uses an inner action v3.
-See the [protocol contract](docs/protocol.md#v10-browser-18-and-19-actions).
+Browser 1.10 count actions use a separate persistent v11 envelope and inner
+action v4; v10 remains unchanged. See the
+[protocol contract](docs/protocol.md#v11-browser-110-count-actions).
 
 Registration 1.1 uses protocol v5 and Udon's separate private input form. Explicit
 Start accepts the initial snapshot before browser creation; later Apply/Stop
@@ -69,6 +71,10 @@ v10 lowering is installed. V10 keeps authentication 1.1 and carries an inner
 action v3 with unresolved reviewed templates and supplied scalar parameters.
 The same persistent v10 session also accepts prepared Browser 1.5–1.7 inner
 action v2 requests using their existing v3 execution behavior.
+
+Use `--browser-driver-protocol v11` for Browser 1.10 count actions once Udon's
+v11 lowering is installed. V11 requires the inner action v4 and accepts only
+Browser 1.10 count outputs; returned output values are nonnegative integers.
 
 Use `--headed` as a trusted driver argument when WebAuthn or operator-visible
 browser interaction requires a window.

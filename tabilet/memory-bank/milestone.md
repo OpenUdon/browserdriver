@@ -194,6 +194,7 @@ See [status-M11.md](status-M11.md). Existing v2-v4 contracts remain unchanged.
 | M12 | `status-M12.md` | Registration foreground and checkpoint deadlines |
 | M13 | [status-M13.md](status-M13.md) | Verification and provider repairs qualified/adopted through W16.4i.2; consumed history preserved; evolution v12 |
 | M14 | [status-M14.md](status-M14.md) | Browser 1.8/1.9 action execution through additive persistent driver v10; Udon integration follows |
+| M15 | [status-M15.md](status-M15.md) | M15.1 outer v11/inner v4 count protocol complete; M15.2 execution pending; Browsertools M32 is published |
 
 M14 is the September 24 downstream adoption owner for Browser 1.8/1.9.
 It is independent of M13's separately authorized verification and provider work.
@@ -204,6 +205,14 @@ target operation is part of M14. The existing v2/v3 action contracts,
 registration v6 and verification v9 retain their acceptance and behavior.
 M14.2 extends outer v10 to carry prepared Browser 1.5–1.7 inner action v2
 within the same named session, required by mixed-profile workflows.
+
+M15 adds persistent driver v11 with inner action v4 for Browser 1.10 CSS-selector
+match counting. It returns only a validated nonnegative integer, including zero
+and multiple matches; it does not return text or element attributes. Existing
+outer v10 and earlier action contracts retain their behavior. The focused
+synthetic matrix covers exact counts, missing/ambiguous selectors, invalid
+responses and bounds. Udon M43 is downstream; no live target action is included.
+See [status-M15.md](status-M15.md).
 
 M01 establishes the isolated v2 NDJSON process, closed authentication and
 browser macro execution, all planned MFA variants, exact-origin and ambiguity

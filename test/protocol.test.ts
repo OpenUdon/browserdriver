@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
-  DriverFailure, failure, parseInput, protocolVersion, protocolVersionV3, protocolVersionV4, success,
+  DriverFailure, failure, parseInput, protocolVersion, protocolVersionV3, protocolVersionV4, protocolVersionV10, protocolVersionV11, success,
 } from "../src/protocol.js";
 
 test("protocol accepts one versioned close envelope", () => {
@@ -27,6 +27,15 @@ test("v3 protocol rejects unknown envelope fields while v2 remains compatible", 
   assert.equal(parseInput(JSON.stringify({
     version: protocolVersion, type: "close", requestId: "two", legacyIgnored: true,
   })).type, "close");
+});
+
+test("v11 is a separate persistent envelope and preserves v10's closed shape", () => {
+  assert.equal(parseInput(JSON.stringify({ version: protocolVersionV11, type: "close", requestId: "eleven" })).version, protocolVersionV11);
+  assert.throws(() => parseInput(JSON.stringify({
+    version: protocolVersionV11, type: "close", requestId: "eleven", storageState: {},
+  })), DriverFailure);
+  assert.throws(() => parseInput(JSON.stringify({ version: protocolVersionV11, type: "verify", requestId: "eleven" })), DriverFailure);
+  assert.equal(parseInput(JSON.stringify({ version: protocolVersionV10, type: "close", requestId: "ten" })).version, protocolVersionV10);
 });
 
 test("v4 accepts only registration, checkpoint response, and close envelopes", () => {
