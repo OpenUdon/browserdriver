@@ -625,9 +625,6 @@ function validateActionProfile(request: ActionMessage): void {
         request.action.allowedOrigins.some(origin => typeof origin !== "string") ||
         !isObject(request.action.parameters) || !isObject(request.action.action)) throw new DriverFailure("invalid_response");
     validateCountOutputDeclarations(request.action.action.outputs ?? {});
-    // Count extraction lands in M15.2. Until then, fail before the first macro
-    // rather than allowing the older CSS text extractor to handle this output.
-    if (Object.keys(request.action.action.outputs ?? {}).length > 0) throw new DriverFailure("invalid_response");
     return;
   }
   if (request.version === protocolVersionV10) {
@@ -666,6 +663,47 @@ function validateCountOutputDeclarations(outputs: unknown): void {
         output.visibility !== "all" && output.visibility !== "rendered" ||
         output.attribute !== undefined || output.property !== undefined || output.locator !== undefined || output.presence !== undefined) {
       throw new DriverFailure("invalid_response");
+    }
+    validateIntegerCountSchema(output.validation);
+  }
+}
+
+function validateIntegerCountSchema(schema: Record<string, unknown>, depth = 0): void {
+  if (depth > 16 || schema.type !== "integer" ||
+      typeof schema.minimum !== "number" || !Number.isFinite(schema.minimum) || schema.minimum < 0 ||
+      (schema.maximum !== undefined && (typeof schema.maximum !== "number" || !Number.isFinite(schema.maximum) || schema.maximum > Number.MAX_SAFE_INTEGER))) {
+    throw new DriverFailure("invalid_response");
+  }
+  validateNumericSchema(schema, depth);
+}
+
+function validateNumericSchema(schema: Record<string, unknown>, depth: number): void {
+  if (depth > 16 || schema.$ref !== undefined || schema.$dynamicRef !== undefined || schema.$recursiveRef !== undefined) {
+    throw new DriverFailure("invalid_response");
+  }
+  for (const key of ["minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum"]) {
+    const value = schema[key];
+    if (value !== undefined && (typeof value !== "number" || !Number.isFinite(value))) throw new DriverFailure("invalid_response");
+  }
+  if (schema.multipleOf !== undefined &&
+      (typeof schema.multipleOf !== "number" || !Number.isFinite(schema.multipleOf) || schema.multipleOf <= 0)) {
+    throw new DriverFailure("invalid_response");
+  }
+  if (schema.enum !== undefined && (!Array.isArray(schema.enum) || schema.enum.length === 0)) throw new DriverFailure("invalid_response");
+  for (const key of ["allOf", "anyOf", "oneOf"]) {
+    const value = schema[key];
+    if (value !== undefined) {
+      if (!Array.isArray(value) || (key !== "allOf" && value.length === 0) || value.some(item => !isObject(item))) {
+        throw new DriverFailure("invalid_response");
+      }
+      for (const child of value) validateNumericSchema(child, depth + 1);
+    }
+  }
+  for (const key of ["not", "if", "then", "else"]) {
+    const value = schema[key];
+    if (value !== undefined) {
+      if (!isObject(value)) throw new DriverFailure("invalid_response");
+      validateNumericSchema(value, depth + 1);
     }
   }
 }
@@ -911,17 +949,24 @@ export async function extractOutputs(
 ): Promise<Record<string, unknown>> {
   const result: Record<string, unknown> = {};
   for (const [name, output] of Object.entries(outputs)) {
+    if (profile === "uws.browser.1.10") {
+      validateCountOutputDeclarations({ [name]: output });
+      Object.defineProperty(result, name, {
+        value: await countCSSOutput(page, output), enumerable: true, configurable: true, writable: true,
+      });
+      continue;
+    }
     if (output.source === "a11y") {
       if (!output.locator) throw new DriverFailure("invalid_response");
       if (output.presence === true) {
-        if ((profile === "uws.browser.1.7" || profile === "uws.browser.1.8" || profile === "uws.browser.1.9" || profile === "uws.browser.1.10") && output.type !== "boolean") throw new DriverFailure("invalid_response");
+        if ((profile === "uws.browser.1.7" || profile === "uws.browser.1.8" || profile === "uws.browser.1.9") && output.type !== "boolean") throw new DriverFailure("invalid_response");
         const locator = locatorFor(page, output.locator);
         const count = await locator.count();
         if (count > 1) throw new DriverFailure("ambiguous_locator");
         result[name] = count === 1;
       } else {
         const locator = await exactOutputLocator(page, output.locator);
-        result[name] = profile === "uws.browser.1.7" || profile === "uws.browser.1.8" || profile === "uws.browser.1.9" || profile === "uws.browser.1.10"
+        result[name] = profile === "uws.browser.1.7" || profile === "uws.browser.1.8" || profile === "uws.browser.1.9"
           ? convertBrowser17AccessibilityText(await locator.textContent(), output.type)
           : await locatorOutput(locator, output);
       }
@@ -945,6 +990,87 @@ export async function extractOutputs(
   return result;
 }
 
+async function countCSSOutput(page: BrowserTarget, output: BrowserOutput): Promise<number> {
+  try {
+    if (output.source !== "css" || output.matchCount !== true || !output.selector || !output.validation) {
+      throw new DriverFailure("invalid_response");
+    }
+    let locator = page.locator(`css=${output.selector}`);
+    if (output.within !== undefined) {
+      const roots = page.locator(`css=${output.within}`);
+      if (await roots.count() !== 1) throw new DriverFailure("invalid_response");
+      locator = roots.locator(`css=${output.selector}`);
+    }
+    const count = await locator.evaluateAll((elements, visibility) => elements.filter((element) => {
+      if (!element.isConnected) return false;
+      if (visibility === "all") return true;
+      if (!Array.from(element.getClientRects()).some(rect => rect.width > 0 && rect.height > 0)) return false;
+      for (let ancestor: Element | null = element; ancestor; ancestor = ancestor.parentElement) {
+        const style = getComputedStyle(ancestor);
+        if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse" ||
+            style.contentVisibility === "hidden") return false;
+      }
+      return true;
+    }).length, output.visibility);
+    if (typeof count !== "number" || !Number.isSafeInteger(count) || count < 0 || count > Number.MAX_SAFE_INTEGER) {
+      throw new DriverFailure("invalid_response");
+    }
+    if (!matchesIntegerSchema(output.validation, count)) throw new DriverFailure("invalid_response");
+    return count;
+  } catch (error) {
+    if (error instanceof DriverFailure) throw error;
+    throw new DriverFailure("invalid_response");
+  }
+}
+
+function matchesIntegerSchema(schema: Record<string, unknown>, count: number): boolean {
+  return schema.type === "integer" && Number.isInteger(count) && matchesIntegerConstraints(schema, count);
+}
+
+function matchesNumericSchema(schema: Record<string, unknown>, count: number): boolean {
+  if (schema.type !== undefined) {
+    const types = Array.isArray(schema.type) ? schema.type : [schema.type];
+    if (!types.includes("integer") && !types.includes("number")) return false;
+  }
+  return matchesIntegerConstraints(schema, count);
+}
+
+function matchesIntegerConstraints(schema: Record<string, unknown>, count: number): boolean {
+  if (typeof schema.minimum === "number" && count < schema.minimum) return false;
+  if (typeof schema.maximum === "number" && count > schema.maximum) return false;
+  if (typeof schema.exclusiveMinimum === "number" && count <= schema.exclusiveMinimum) return false;
+  if (typeof schema.exclusiveMaximum === "number" && count >= schema.exclusiveMaximum) return false;
+  if (typeof schema.multipleOf === "number" && !isMultipleOf(count, schema.multipleOf)) return false;
+  if (Array.isArray(schema.enum) && !schema.enum.some(value => value === count)) return false;
+  if (schema.const !== undefined && schema.const !== count) return false;
+  if (Array.isArray(schema.allOf) && !schema.allOf.every(child => isObject(child) && matchesNumericSchema(child, count))) return false;
+  if (Array.isArray(schema.anyOf) && !schema.anyOf.some(child => isObject(child) && matchesNumericSchema(child, count))) return false;
+  if (Array.isArray(schema.oneOf) && schema.oneOf.filter(child => isObject(child) && matchesNumericSchema(child, count)).length !== 1) return false;
+  if (isObject(schema.not) && matchesNumericSchema(schema.not, count)) return false;
+  if (isObject(schema.if)) {
+    const branch = matchesNumericSchema(schema.if, count) ? schema.then : schema.else;
+    if (branch !== undefined && (!isObject(branch) || !matchesNumericSchema(branch, count))) return false;
+  }
+  return true;
+}
+
+function isMultipleOf(count: number, divisor: number): boolean {
+  const rational = decimalRational(divisor);
+  return BigInt(count) * rational.denominator % rational.numerator === 0n;
+}
+
+function decimalRational(value: number): { numerator: bigint; denominator: bigint } {
+  const match = /^(-?)(\d+)(?:\.(\d+))?(?:e([+-]?\d+))?$/iu.exec(value.toString());
+  if (!match) throw new DriverFailure("invalid_response");
+  const fraction = match[3] ?? "";
+  let numerator = BigInt(`${match[1]}${match[2]}${fraction}`);
+  let denominator = 10n ** BigInt(fraction.length);
+  const exponent = Number(match[4] ?? "0");
+  if (exponent > 0) numerator *= 10n ** BigInt(exponent);
+  else if (exponent < 0) denominator *= 10n ** BigInt(-exponent);
+  return { numerator, denominator };
+}
+
 async function exactOutputLocator(page: BrowserTarget, locator: import("./protocol.js").LocatorSpec): Promise<Locator> {
   try {
     return await exactLocator(page, locator);
@@ -963,7 +1089,10 @@ export async function extractOutputsV3(
   for (const [name, output] of Object.entries(outputs)) {
     const target = await runtime.target(output.context);
     const { context: _context, ...portable } = output;
-    Object.assign(result, await extractOutputs(target, { [name]: portable }, profile));
+    const extracted = await extractOutputs(target, { [name]: portable }, profile);
+    for (const [key, value] of Object.entries(extracted)) {
+      Object.defineProperty(result, key, { value, enumerable: true, configurable: true, writable: true });
+    }
   }
   return result;
 }

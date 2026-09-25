@@ -192,18 +192,22 @@ V11 is a count-only action contract. Each declared output must use
 `matchCount: true`, `source: css`, `type: integer`, a non-empty selector, and
 `visibility: all` or `rendered`. An optional `within` selector scopes the count
 to the descendants of one unique element; that root is not counted. The
-`validation` object declares a nonnegative integer minimum and optional maximum
+`validation` object declares a minimum of at least zero and an optional maximum
 no greater than the JavaScript safe-integer limit. Zero, one, and multiple
 matches are ordinary exact results. The response uses the outer v11 version and
 returns count outputs as JSON integers; page text and element attributes are not
 returned by this action contract.
+Count validation schemas must be self-contained; `$ref`, `$dynamicRef`, and
+`$recursiveRef` are rejected with `invalid_response` because the driver receives
+only the selected action and does not resolve references against the full
+profile.
 
 An action success retains the closed persistent result keys `version`, `type`,
 `requestId`, `result`, and `response`; the response contains `status`, `outputs`,
 `visitedUrls`, and `ambiguities`. A failure contains only `version`, `type`,
-`requestId`, `result: "failure"`, and the fixed `failureCode`. During M15.1,
-output-bearing v11 actions fail before browser macros until M15.2 installs count
-extraction.
+`requestId`, `result: "failure"`, and the fixed `failureCode`. M15.1 temporarily
+rejected output-bearing v11 actions before macros; M15.2 replaces that staging
+check with count extraction.
 
 Malformed selectors, a missing or ambiguous scope root, invalid or unsafe
 counts, and values outside declared bounds fail with the closed

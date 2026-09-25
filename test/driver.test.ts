@@ -9,7 +9,7 @@ import {
 } from "../src/driver.js";
 import { ReadlineMessageSource } from "../src/line-source.js";
 import { actionProtocolVersionV4, DriverFailure, protocolVersionV10, protocolVersionV11 } from "../src/protocol.js";
-import type { ActionMessage, AuthenticateMessage } from "../src/protocol.js";
+import type { ActionMessage, AuthenticateMessage, BrowserOutput } from "../src/protocol.js";
 import { RuntimeContexts } from "../src/contexts.js";
 
 test("navigation guard blocks a redirect origin before continuing its request", async () => {
@@ -368,7 +368,11 @@ test("v11 selects only the Browser 1.10 inner action and emits the v11 result", 
     isClosed: () => false,
     mainFrame: () => ({ childFrames: () => [] }),
     goto: async (url: string) => { navigated.push(url); currentURL = url; },
-    locator: () => ({ count: async () => 0 }),
+    locator: () => ({
+      count: async () => 0,
+      evaluateAll: async (callback: (elements: Element[], visibility: "all" | "rendered" | undefined) => number, visibility: "all" | "rendered" | undefined) =>
+        callback([{ isConnected: true } as Element], visibility),
+    }),
   } as unknown as Page;
   const context = { pages: () => [page], close: async () => undefined } as unknown as BrowserContext;
   const runtime = new RuntimeContexts(context, page, undefined, new Set(["https://members.example"]));
@@ -428,13 +432,15 @@ test("v11 selects only the Browser 1.10 inner action and emits the v11 result", 
   };
   messages.length = 0;
   await driver.action({
-    version: protocolVersionV11, type: "action", requestId: "count-pending", operationId: "read", session: "member", action: countAction,
+    version: protocolVersionV11, type: "action", requestId: "count-result", operationId: "read", session: "member", action: countAction,
   });
-  assert.deepEqual(navigated, []);
-  assert.deepEqual(messages, [{
-    version: protocolVersionV11, type: "result", requestId: "count-pending", result: "failure", failureCode: "invalid_response",
-  }]);
+  assert.deepEqual(navigated, ["https://members.example/count"]);
+  assert.deepEqual(messages.at(-1), {
+    version: protocolVersionV11, type: "result", requestId: "count-result", result: "success",
+    response: { status: "success", outputs: { count: 1 }, visitedUrls: ["https://members.example/count"], ambiguities: [] },
+  });
 
+  navigated.length = 0;
   messages.length = 0;
   const textAction: ActionMessage["action"] = {
     ...action,
@@ -450,7 +456,192 @@ test("v11 selects only the Browser 1.10 inner action and emits the v11 result", 
   assert.deepEqual(messages, [{
     version: protocolVersionV11, type: "result", requestId: "text-forbidden", result: "failure", failureCode: "invalid_response",
   }]);
+
+  messages.length = 0;
+  const unsafeBoundsAction: ActionMessage["action"] = {
+    ...action,
+    action: {
+      ...action.action,
+      outputs: {
+        count: {
+          type: "integer", source: "css", selector: ".result", matchCount: true,
+          visibility: "all", fallbackReason: "other",
+          validation: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER + 1 },
+        },
+      },
+    },
+  };
+  await driver.action({
+    version: protocolVersionV11, type: "action", requestId: "unsafe-bounds", operationId: "read", session: "member", action: unsafeBoundsAction,
+  });
+  assert.deepEqual(navigated, []);
+  assert.deepEqual(messages, [{
+    version: protocolVersionV11, type: "result", requestId: "unsafe-bounds", result: "failure", failureCode: "invalid_response",
+  }]);
 });
+
+test("Browser 1.10 counts exact connected matches, including scoped descendants", async () => {
+  const groupRoot = fakeCountElement();
+  const page = countPage({
+    elements: {
+      ".zero": [],
+      ".one": [fakeCountElement()],
+      ".many": [fakeCountElement({ style: { display: "none" } }), fakeCountElement(), fakeCountElement({ connected: false })],
+      ".group": [groupRoot],
+      ".result": [groupRoot],
+      "scope:.group:.result": [],
+    },
+  });
+  assert.deepEqual(await extractOutputs(page, { zero: countOutput(".zero"), one: countOutput(".one"), many: countOutput(".many") }, "uws.browser.1.10"), {
+    zero: 0, one: 1, many: 2,
+  });
+  assert.deepEqual(await extractOutputs(page, {
+    scoped: countOutput(".result", "all", { within: ".group" }),
+  }, "uws.browser.1.10"), { scoped: 0 });
+
+  const descendantPage = countPage({
+    elements: {
+      ".group": [fakeCountElement()],
+      "scope:.group:.result": [fakeCountElement()],
+    },
+  });
+  assert.deepEqual(await extractOutputs(descendantPage, {
+    scoped: countOutput(".result", "all", { within: ".group" }),
+  }, "uws.browser.1.10"), { scoped: 1 });
+});
+
+test("Browser 1.10 rendered counts follow box and ancestor visibility rules", async () => {
+  const originalGetComputedStyle = Object.getOwnPropertyDescriptor(globalThis, "getComputedStyle");
+  Object.defineProperty(globalThis, "getComputedStyle", {
+    configurable: true,
+    value: (element: Element) => (element as unknown as FakeCountElement).style,
+  });
+  try {
+    const displayNoneParent = fakeCountElement({ style: { display: "none" } });
+    const hiddenVisibilityParent = fakeCountElement({ style: { visibility: "hidden" } });
+    const collapsedParent = fakeCountElement({ style: { visibility: "collapse" } });
+    const contentHiddenParent = fakeCountElement({ style: { contentVisibility: "hidden" } });
+    const elements = [
+      fakeCountElement(),
+      fakeCountElement(), // Below-viewport elements remain eligible.
+      fakeCountElement({ style: { opacity: "0" } }),
+      fakeCountElement({ style: { overflow: "clip" } }),
+      fakeCountElement({ rects: [{ width: 0, height: 12 }] }),
+      fakeCountElement({ style: { display: "none" } }),
+      fakeCountElement({ style: { visibility: "hidden" } }),
+      fakeCountElement({ style: { visibility: "collapse" } }),
+      fakeCountElement({ style: { contentVisibility: "hidden" } }),
+      fakeCountElement({ parent: displayNoneParent }),
+      fakeCountElement({ parent: hiddenVisibilityParent }),
+      fakeCountElement({ parent: collapsedParent }),
+      fakeCountElement({ parent: contentHiddenParent }),
+      fakeCountElement({ connected: false }),
+    ];
+    const page = countPage({ elements: { ".result": elements } });
+    assert.deepEqual(await extractOutputs(page, { count: countOutput(".result", "rendered") }, "uws.browser.1.10"), { count: 4 });
+  } finally {
+    if (originalGetComputedStyle) Object.defineProperty(globalThis, "getComputedStyle", originalGetComputedStyle);
+    else Reflect.deleteProperty(globalThis, "getComputedStyle");
+  }
+});
+
+test("Browser 1.10 rejects missing and ambiguous roots, malformed selectors, and invalid counts", async () => {
+  const page = countPage({
+    elements: { ".result": [fakeCountElement()] },
+    counts: { ".missing": 0, ".ambiguous": 2 },
+    results: { ".negative": -1, ".fractional": 1.5, ".unsafe": Number.MAX_SAFE_INTEGER + 1, ".too-many": 3 },
+    invalidSelectors: [".[", "xpath=//body"],
+  });
+  for (const output of [
+    countOutput(".result", "all", { within: ".missing" }),
+    countOutput(".result", "all", { within: ".ambiguous" }),
+    countOutput(".["), countOutput("xpath=//body"), countOutput(".negative"), countOutput(".fractional"), countOutput(".unsafe"),
+    countOutput(".too-many", "all", { validation: { type: "integer", minimum: 0, maximum: 2 } }),
+    countOutput(".too-many", "all", { validation: { type: "integer", minimum: 0, enum: [0, 1, 2] } }),
+    countOutput(".result", "all", { validation: { type: "integer", minimum: 0, $ref: "#/$defs/count" } }),
+  ]) {
+    await assert.rejects(extractOutputs(page, { count: output }, "uws.browser.1.10"), (error: unknown) =>
+      error instanceof DriverFailure && error.code === "invalid_response" && !error.message.includes("secret"));
+  }
+  assert.deepEqual(page.reads, { text: 0, attributes: 0 });
+});
+
+test("Browser 1.10 applies integer JSON Schema constraints and never reads text or attributes", async () => {
+  const page = countPage({ elements: { ".three": [fakeCountElement(), fakeCountElement(), fakeCountElement()] } });
+  assert.deepEqual(await extractOutputs(page, {
+    count: countOutput(".three", "all", { validation: { type: "integer", minimum: 1, maximum: 4, multipleOf: 0.1 } }),
+  }, "uws.browser.1.10"), { count: 3 });
+  await assert.rejects(extractOutputs(page, {
+    count: countOutput(".three", "all", { validation: { type: "integer", minimum: 0, allOf: [{ maximum: 2 }] } }),
+  }, "uws.browser.1.10"), DriverFailure);
+  const prototypeNamedOutput = JSON.parse('{"__proto__":{"type":"integer","source":"css","selector":".three","matchCount":true,"visibility":"all","fallbackReason":"other","validation":{"type":"integer","minimum":0}}}') as Record<string, BrowserOutput>;
+  const safeResult = await extractOutputs(page, prototypeNamedOutput, "uws.browser.1.10");
+  assert.equal(Object.hasOwn(safeResult, "__proto__"), true);
+  assert.equal(JSON.stringify(safeResult), '{"__proto__":3}');
+  assert.deepEqual(page.reads, { text: 0, attributes: 0 });
+});
+
+interface FakeCountElement {
+  isConnected: boolean;
+  parentElement: FakeCountElement | null;
+  style: { display: string; visibility: string; contentVisibility: string; opacity: string; overflow: string };
+  getClientRects(): Array<{ width: number; height: number }>;
+}
+
+function fakeCountElement(options: {
+  connected?: boolean;
+  rects?: Array<{ width: number; height: number }>;
+  style?: Partial<FakeCountElement["style"]>;
+  parent?: FakeCountElement;
+} = {}): FakeCountElement {
+  return {
+    isConnected: options.connected ?? true,
+    parentElement: options.parent ?? null,
+    style: {
+      display: "block", visibility: "visible", contentVisibility: "visible", opacity: "1", overflow: "visible",
+      ...options.style,
+    },
+    getClientRects: () => options.rects ?? [{ width: 10, height: 10 }],
+  } as unknown as FakeCountElement;
+}
+
+function countOutput(selector: string, visibility: "all" | "rendered" = "all", extra: Partial<BrowserOutput> = {}): BrowserOutput {
+  return {
+    type: "integer", source: "css", selector, matchCount: true, visibility,
+    fallbackReason: "no_a11y_region", validation: { type: "integer", minimum: 0 }, ...extra,
+  };
+}
+
+function countPage(fixture: {
+  elements: Record<string, FakeCountElement[]>;
+  counts?: Record<string, number>;
+  results?: Record<string, number>;
+  invalidSelectors?: string[];
+}): Page & { reads: { text: number; attributes: number } } {
+  const reads = { text: 0, attributes: 0 };
+  const canonicalSelector = (selector: string) => selector.startsWith("css=") ? selector.slice("css=".length) : undefined;
+  const makeLocator = (key: string) => ({
+    count: async () => fixture.counts && Object.hasOwn(fixture.counts, key) ? fixture.counts[key] : fixture.elements[key]?.length ?? 0,
+    locator: (selector: string) => {
+      const css = canonicalSelector(selector);
+      if (!css) throw new Error("non-CSS locator engine");
+      return makeLocator(`scope:${key}:${css}`);
+    },
+    evaluateAll: async (callback: (elements: Element[], arg: "all" | "rendered" | undefined) => number, arg: "all" | "rendered" | undefined) =>
+      fixture.results && Object.hasOwn(fixture.results, key) ? fixture.results[key] : callback((fixture.elements[key] ?? []) as unknown as Element[], arg),
+    textContent: async () => { reads.text += 1; return "secret page text"; },
+    getAttribute: async () => { reads.attributes += 1; return "secret attribute"; },
+  });
+  return {
+    reads,
+    locator: (selector: string) => {
+      const css = canonicalSelector(selector);
+      if (!css) throw new Error("non-CSS locator engine");
+      if (fixture.invalidSelectors?.includes(css)) throw new Error("secret selector detail");
+      return makeLocator(css);
+    },
+  } as unknown as Page & { reads: { text: number; attributes: number } };
+}
 
 test("exact accessibility locators honor explicit empty constraints", async () => {
   let roleOptions: unknown;

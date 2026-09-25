@@ -1,6 +1,6 @@
 # Status M15 — Browser 1.10 count action protocol
 
-**State:** Active. M15.1 is complete; M15.2 is pending.
+**State:** Active. M15.2 is complete; M15.3 is pending.
 
 **Goal.** Add an additive persistent driver action protocol for Browser 1.10
 CSS-selector match counting, returning only a typed nonnegative integer.
@@ -15,8 +15,8 @@ or element attributes. No live target action is included.
 
 | Item | State | Notes |
 | --- | --- | --- |
-| M15.1 Define additive count protocol | `[+]` | Define outer persistent v11 and inner action v4 for exactly Browser 1.10; leave outer v10 and earlier action pairs unchanged. Specify count output and closed result/failure shapes. Output-bearing v11 actions fail before macros until M15.2 provides count extraction. |
-| M15.2 Implement and cover synthetic count execution | `[ ]` | Test exact count output plus missing, ambiguous, invalid and over-bound behavior; verify no page text or attributes escape. |
+| M15.1 Define additive count protocol | `[+]` | Define outer persistent v11 and inner action v4 for exactly Browser 1.10; leave outer v10 and earlier action pairs unchanged. Specify count output and closed result/failure shapes. During M15.1, output-bearing v11 actions failed before macros; M15.2 replaces that staging check with count extraction. |
+| M15.2 Implement and cover synthetic count execution | `[+]` | Test exact count output plus missing, ambiguous, invalid and over-bound behavior; verify no page text or attributes escape. |
 | M15.3 Verify, review and publish | `[ ]` | Run focused and full checks, vet and bounded review; publish for Udon M43. |
 
 ## M15.1 outcome
@@ -25,11 +25,11 @@ The additive `udon.browser-driver.v11` persistent envelope accepts the existing
 closed v3 authentication, challenge and context behavior. Its action pairing is
 exclusive: only inner `udon.browser-driver.v4` with `uws.browser.1.10` is
 admitted. Count declarations require `matchCount: true`, CSS integer output,
-selector, fallback reason, integer validation bounds and `all` or `rendered`
+selector, fallback reason, a nonnegative minimum, optional safe maximum, and `all` or `rendered`
 visibility; optional scope and context must be non-empty. Non-count fields and
-extra declaration fields are rejected. Until M15.2 installs the count executor,
-any output-bearing v11 action stops with `invalid_response` before browser
-macros, preventing the older CSS text path from being used.
+extra declaration fields are rejected. In M15.1, output-bearing v11 actions
+stopped before browser macros; M15.2 replaces that staging rejection with the
+count executor, so the older CSS text path cannot be used.
 
 The v11 success result keeps the existing persistent response fields
 `status`, `outputs`, `visitedUrls`, and `ambiguities`, with integer count values.
@@ -41,3 +41,22 @@ Verification: `npm run build` passed. The focused protocol, driver and template
 suite passed 37/37 tests using the installed Node 24 dependencies. An initial
 focused run exposed a test message-buffer reset omission; the test was corrected
 and the same suite passed. `git diff --check` passed.
+
+## M15.2 implementation
+
+Count outputs now use a fixed Playwright CSS locator path. `all` counts connected
+matches; `rendered` also checks positive-area client rectangles and computed
+visibility on the element and its ancestors. `within` must resolve to exactly
+one root and counts only its descendants. Counts must be nonnegative safe
+integers and satisfy the declared integer validation constraints. Selector,
+scope and count errors collapse to `invalid_response`; the count path never
+calls text or attribute extraction. Integer validation applies standard
+numeric bounds and combinators supported on the selected action; unresolved
+JSON Schema references fail closed because the full profile is not sent to the
+driver.
+
+Verification: `npm run build` passed. The focused driver suite passed 26/26
+tests, covering zero/one/multiple results, hidden and detached elements,
+rendered visibility, scope-root exclusion and ambiguity, CSS-only selectors,
+invalid and unsafe counts, schema bounds/combinators, and text/attribute
+non-disclosure. `git diff --check` passed.
