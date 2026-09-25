@@ -194,7 +194,7 @@ See [status-M11.md](status-M11.md). Existing v2-v4 contracts remain unchanged.
 | M12 | `status-M12.md` | Registration foreground and checkpoint deadlines |
 | M13 | [status-M13.md](status-M13.md) | Verification and provider repairs qualified/adopted through W16.4i.2; consumed history preserved; evolution v12 |
 | M14 | [status-M14.md](status-M14.md) | Browser 1.8/1.9 action execution through additive persistent driver v10; Udon integration follows |
-| M15 | [status-M15.md](status-M15.md) | M15.1 protocol, M15.2 execution and M15.3 verification/review complete; Browserdriver publication pending; Browsertools M32 is published |
+| M15 | [status-M15.md](status-M15.md) | Complete: Browser 1.10 v11 count protocol and execution published at source commit `1f0e0d8`; verification/review closeout `fb084d2`; Udon M43 is next |
 
 M14 is the September 24 downstream adoption owner for Browser 1.8/1.9.
 It is independent of M13's separately authorized verification and provider work.
