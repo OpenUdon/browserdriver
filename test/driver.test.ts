@@ -368,11 +368,8 @@ test("v11 selects only the Browser 1.10 inner action and emits the v11 result", 
     isClosed: () => false,
     mainFrame: () => ({ childFrames: () => [] }),
     goto: async (url: string) => { navigated.push(url); currentURL = url; },
-    locator: () => ({
-      count: async () => 0,
-      evaluateAll: async (callback: (elements: Element[], visibility: "all" | "rendered" | undefined) => number, visibility: "all" | "rendered" | undefined) =>
-        callback([{ isConnected: true } as Element], visibility),
-    }),
+    locator: () => ({ count: async () => 0 }),
+    evaluate: async () => 1,
   } as unknown as Page;
   const context = { pages: () => [page], close: async () => undefined } as unknown as BrowserContext;
   const runtime = new RuntimeContexts(context, page, undefined, new Set(["https://members.example"]));
@@ -619,27 +616,35 @@ function countPage(fixture: {
   invalidSelectors?: string[];
 }): Page & { reads: { text: number; attributes: number } } {
   const reads = { text: 0, attributes: 0 };
-  const canonicalSelector = (selector: string) => selector.startsWith("css=") ? selector.slice("css=".length) : undefined;
-  const makeLocator = (key: string) => ({
-    count: async () => fixture.counts && Object.hasOwn(fixture.counts, key) ? fixture.counts[key] : fixture.elements[key]?.length ?? 0,
-    locator: (selector: string) => {
-      const css = canonicalSelector(selector);
-      if (!css) throw new Error("non-CSS locator engine");
-      return makeLocator(`scope:${key}:${css}`);
-    },
-    evaluateAll: async (callback: (elements: Element[], arg: "all" | "rendered" | undefined) => number, arg: "all" | "rendered" | undefined) =>
-      fixture.results && Object.hasOwn(fixture.results, key) ? fixture.results[key] : callback((fixture.elements[key] ?? []) as unknown as Element[], arg),
-    textContent: async () => { reads.text += 1; return "secret page text"; },
-    getAttribute: async () => { reads.attributes += 1; return "secret attribute"; },
-  });
+  const select = (selector: string): FakeCountElement[] => {
+    if (fixture.invalidSelectors?.includes(selector)) throw new Error("secret selector detail");
+    const found = fixture.elements[selector] ?? [];
+    const override = fixture.counts && Object.hasOwn(fixture.counts, selector) ? fixture.counts[selector] : undefined;
+    if (override === undefined) return found;
+    return Array.from({ length: Math.max(0, override) }, (_, index) => found[index] ?? fakeCountElement());
+  };
+  const evaluate = async (
+    callback: (input: { selector: string; within?: string; visibility: "all" | "rendered" | undefined }) => number,
+    input: { selector: string; within?: string; visibility: "all" | "rendered" | undefined },
+  ): Promise<number> => {
+    if (fixture.results && input.within === undefined && Object.hasOwn(fixture.results, input.selector)) return fixture.results[input.selector]!;
+    const originalDocument = Object.getOwnPropertyDescriptor(globalThis, "document");
+    const fakeDocument = {
+      querySelectorAll: (selector: string) => select(selector).map(element => ({
+        ...element,
+        querySelectorAll: (childSelector: string) => select(`scope:${selector}:${childSelector}`),
+      })),
+    };
+    Object.defineProperty(globalThis, "document", { configurable: true, value: fakeDocument });
+    try { return callback(input); }
+    finally {
+      if (originalDocument) Object.defineProperty(globalThis, "document", originalDocument);
+      else Reflect.deleteProperty(globalThis, "document");
+    }
+  };
   return {
     reads,
-    locator: (selector: string) => {
-      const css = canonicalSelector(selector);
-      if (!css) throw new Error("non-CSS locator engine");
-      if (fixture.invalidSelectors?.includes(css)) throw new Error("secret selector detail");
-      return makeLocator(css);
-    },
+    evaluate,
   } as unknown as Page & { reads: { text: number; attributes: number } };
 }
 

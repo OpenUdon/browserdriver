@@ -170,8 +170,9 @@ browser or provider fixture.
 
 M15 uses the same runtime and dependencies. Persistent v11 pairs with inner
 action v4 for Browser 1.10 and reuses Node 24's lossless integer-token parser.
-The count path uses Playwright CSS locators and a fixed visibility evaluator;
-it returns only validated integer counts and adds no provider SDK or arbitrary
+The count path uses native `querySelectorAll` through a fixed Playwright page
+evaluator and applies the portable visibility rules in that same context. It
+returns only validated integer counts and adds no provider SDK or arbitrary
 profile script.
 
 Default verification is offline and does not install or launch a browser:

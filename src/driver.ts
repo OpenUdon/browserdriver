@@ -995,23 +995,31 @@ async function countCSSOutput(page: BrowserTarget, output: BrowserOutput): Promi
     if (output.source !== "css" || output.matchCount !== true || !output.selector || !output.validation) {
       throw new DriverFailure("invalid_response");
     }
-    let locator = page.locator(`css=${output.selector}`);
-    if (output.within !== undefined) {
-      const roots = page.locator(`css=${output.within}`);
-      if (await roots.count() !== 1) throw new DriverFailure("invalid_response");
-      locator = roots.locator(`css=${output.selector}`);
-    }
-    const count = await locator.evaluateAll((elements, visibility) => elements.filter((element) => {
-      if (!element.isConnected) return false;
-      if (visibility === "all") return true;
-      if (!Array.from(element.getClientRects()).some(rect => rect.width > 0 && rect.height > 0)) return false;
-      for (let ancestor: Element | null = element; ancestor; ancestor = ancestor.parentElement) {
-        const style = getComputedStyle(ancestor);
-        if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse" ||
-            style.contentVisibility === "hidden") return false;
+    // Use the browser's native CSS engine; Playwright extends locator selectors
+    // with pseudo-classes outside the portable UWS CSS contract.
+    const count = await page.evaluate(({ selector, within, visibility }) => {
+      let scope: Document | Element = document;
+      if (within !== undefined) {
+        const roots = document.querySelectorAll(within);
+        if (roots.length !== 1 || !roots[0]!.isConnected) return -1;
+        scope = roots[0]!;
       }
-      return true;
-    }).length, output.visibility);
+      return Array.from(scope.querySelectorAll(selector)).filter((element) => {
+        if (!element.isConnected) return false;
+        if (visibility === "all") return true;
+        if (!Array.from(element.getClientRects()).some(rect => rect.width > 0 && rect.height > 0)) return false;
+        for (let ancestor: Element | null = element; ancestor; ancestor = ancestor.parentElement) {
+          const style = getComputedStyle(ancestor);
+          if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse" ||
+              style.contentVisibility === "hidden") return false;
+        }
+        return true;
+      }).length;
+    }, {
+      selector: output.selector,
+      ...(output.within !== undefined ? { within: output.within } : {}),
+      visibility: output.visibility,
+    });
     if (typeof count !== "number" || !Number.isSafeInteger(count) || count < 0 || count > Number.MAX_SAFE_INTEGER) {
       throw new DriverFailure("invalid_response");
     }
