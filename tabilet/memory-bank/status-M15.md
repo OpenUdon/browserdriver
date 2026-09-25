@@ -1,6 +1,6 @@
 # Status M15 — Browser 1.10 count action protocol
 
-**State:** Active. M15.3 is in progress.
+**State:** Active. Implementation, verification and review are complete; M15.3 publication is pending.
 
 **Goal.** Add an additive persistent driver action protocol for Browser 1.10
 CSS-selector match counting, returning only a typed nonnegative integer.
@@ -17,7 +17,7 @@ or element attributes. No live target action is included.
 | --- | --- | --- |
 | M15.1 Define additive count protocol | `[+]` | Define outer persistent v11 and inner action v4 for exactly Browser 1.10; leave outer v10 and earlier action pairs unchanged. Specify count output and closed result/failure shapes. During M15.1, output-bearing v11 actions failed before macros; M15.2 replaces that staging check with count extraction. |
 | M15.2 Implement and cover synthetic count execution | `[+]` | Test exact count output plus missing, ambiguous, invalid and over-bound behavior; verify no page text or attributes escape. |
-| M15.3 Verify, review and publish | `[~]` | Run focused and full checks, vet and bounded review; publish for Udon M43. |
+| M15.3 Verify, review and publish | `[~]` | Full checks and bounded review pass; publish the clean source for Udon M43. |
 
 ## M15.1 outcome
 
@@ -62,11 +62,20 @@ Review iteration 1 identified that Playwright's CSS locator parser accepts
 Playwright-only selector extensions outside UWS's CSS contract. The count
 implementation now passes selectors only to the browser's native
 `querySelectorAll` through fixed code, and checks a unique scope root and its
-descendants in one evaluation. The affected driver suite passes 26/26 tests;
-the complete gate is being rerun against this review fix.
+descendants in one evaluation. The affected driver suite passes 26/26 tests.
+The full gate passes on the reviewed source with no open P1/P2 findings.
 
 Verification: `npm run build` passed. The focused driver suite passed 26/26
 tests, covering zero/one/multiple results, hidden and detached elements,
 rendered visibility, scope-root exclusion and ambiguity, CSS-only selectors,
 invalid and unsafe counts, schema bounds/combinators, and text/attribute
 non-disclosure. `git diff --check` passed.
+
+## M15.3 final verification and review
+
+`npm test` passed: 172 tests, 157 passed, 15 optional browser/provider tests
+skipped, zero failures. The command rebuilt the TypeScript source before running
+the suite. `npm audit --omit=dev` found zero vulnerabilities. `git diff --check`
+passed. Review iteration 1 is closed with no remaining P1/P2 findings. The
+reviewed source commits are `1545256`, `dbb330e`, and `1f0e0d8`; publication is
+the remaining M15.3 step.
