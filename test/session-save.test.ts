@@ -10,6 +10,8 @@ import {
   assertSessionSaveCurrent, defaultSessionMaxAgeSeconds, maxSessionCandidateBytes, maxSessionSavePlanBytes,
   parseSessionSavePlan, sessionCandidateFileName, sessionCandidateStore, sessionSaveConfiguration, sessionSavePlan,
 } from "../src/session-save.js";
+import { DriverFailure } from "../src/protocol.js";
+import { FileSessionStateStore, sessionStateFileName } from "../src/session-store.js";
 
 function input(now = Date.now()) {
   return { version: "browserdriver.session-save-plan.v1", launchNonce: "fixture-launch",
@@ -249,4 +251,41 @@ test("cleanup failure invalidates remaining bytes and makes Join close fail obse
       else assert.equal(JSON.parse(await readFile(candidate, "utf8")).version, "browserdriver.session-candidate.v1");
     } finally { t.mock.restoreAll(); syncBuiltinESMExports(); await rm(root, { recursive: true, force: true }); }
   }
+});
+
+test("raw legacy reuse remains separate from candidate envelopes and retains original lifetime", async () => {
+  const base = await mkdtemp(join(tmpdir(), "browserdriver-m16-reuse-"));
+  const candidateRoot = join(base, "candidate"), loadRoot = join(base, "load");
+  await mkdir(candidateRoot, { mode: 0o700 }); await mkdir(loadRoot, { mode: 0o700 });
+  const value = input(), original = value.permissions[0]!;
+  original.createdAt = new Date(Date.now() - 3 * 86_400_000).toISOString();
+  original.expiresAt = new Date(Date.parse(original.createdAt) + 604_800_000).toISOString();
+  const plan = parse(value), permission = plan.permissions[0]!, store = await sessionCandidateStore(candidateRoot, plan, loadRoot);
+  try {
+    const state = { cookies: [], origins: [{ origin: "https://fixture.invalid", localStorage: [{ name: "private", value: "canary" }] }] };
+    await store.write(permission, "d".repeat(64), new Date().toISOString(), state); await store.close();
+    const candidate = JSON.parse(await readFile(join(candidateRoot, sessionCandidateFileName(permission.saveBinding)), "utf8"));
+    assert.equal(candidate.createdAt, original.createdAt); assert.equal(candidate.expiresAt, original.expiresAt);
+    assert.equal(candidate.generation, original.generation);
+    // Merely directing the old loader at candidate staging cannot load its
+    // envelope; only independently revalidated raw state may be staged by host.
+    const wrongStore = new FileSessionStateStore(candidateRoot, () => undefined);
+    await assert.rejects(() => wrongStore.load(permission.saveBinding), (error: unknown) => error instanceof DriverFailure && error.code === "session_expired");
+    await writeFile(join(loadRoot, sessionStateFileName(permission.saveBinding)), JSON.stringify(candidate.storageState), { mode: 0o600 });
+    assert.deepEqual(await new FileSessionStateStore(loadRoot, () => undefined).load(permission.saveBinding), state);
+    assert.deepEqual(await readdir(candidateRoot), [sessionCandidateFileName(permission.saveBinding)]);
+    assert.deepEqual(await readdir(loadRoot), [sessionStateFileName(permission.saveBinding)]);
+  } finally { await store.close(); await rm(base, { recursive: true, force: true }); }
+});
+
+test("original deadline and expiry refuse equality without renewing old creation", () => {
+  const now = Date.now(), value = input(now), permission = value.permissions[0]!;
+  Object.assign(permission, { maxAgeSeconds: 10, expiresAt: new Date(Date.parse(permission.createdAt) + 10_000).toISOString() });
+  const plan = parseSessionSavePlan(bytes(value), now);
+  assertSessionSaveCurrent(plan, plan.permissions[0]!, Date.parse(permission.expiresAt) - 1);
+  assert.throws(() => assertSessionSaveCurrent(plan, plan.permissions[0]!, Date.parse(permission.expiresAt)));
+  assert.throws(() => parseSessionSavePlan(bytes(value), Date.parse(permission.expiresAt)));
+  assert.throws(() => assertSessionSaveCurrent(plan, plan.permissions[0]!, Date.parse(permission.createdAt) - 1));
+  assert.throws(() => assertSessionSaveCurrent(plan, plan.permissions[0]!, Date.parse(value.admittedDeadline)));
+  assert.equal(plan.permissions[0]!.createdAt, permission.createdAt);
 });

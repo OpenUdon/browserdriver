@@ -195,3 +195,31 @@ test("authentication request digest excludes only requestId and sorts complete n
   assert.throws(() => authenticationRequestSHA256({ ...auth, session: "\ud800" }));
   assert.throws(() => authenticationRequestSHA256({ ...auth, profile: { ...auth.profile, invalid: NaN } } as AuthenticateMessage));
 });
+
+test("expiry after admission never snapshots or renews a successfully authenticated session", async (t) => {
+  const auth = request(), diagnostic: string[] = [];
+  const options = saveOptions(auth, { write: async () => assert.fail("expired save must not write"), close: async () => undefined });
+  const modeled = modeledDriver(options);
+  t.mock.method(Date, "now", () => Date.parse(options.plan.permissions[0]!.expiresAt));
+  t.mock.method(process.stderr, "write", (value: string | Uint8Array) => { diagnostic.push(String(value)); return true; });
+  await modeled.driver.authenticate(auth);
+  assert.equal(modeled.snapshots(), 0);
+  assert.equal((modeled.messages.at(-1) as { result: string }).result, "success");
+  assert.deepEqual(diagnostic, ["browserdriver session save failed\n"]);
+  await modeled.driver.close();
+});
+
+test("legacy session_expired load failure never opens a fresh fallback context", async () => {
+  const messages: object[] = [];
+  let contextCalls = 0, loadCalls = 0;
+  const driver = new PersistentBrowserDriver({ next: async () => ({ done: true, value: undefined }) }, message => messages.push(message), {
+    sessionStore: { load: async () => { loadCalls += 1; throw new DriverFailure("session_expired"); } },
+  });
+  (driver as unknown as { browser: object }).browser = {
+    newContext: async () => { contextCalls += 1; throw new Error("unexpected fallback"); }, close: async () => undefined,
+  };
+  await driver.authenticate({ ...request(), sessionBinding: "expired-private-binding" });
+  assert.equal(loadCalls, 1); assert.equal(contextCalls, 0);
+  assert.deepEqual(messages.at(-1), { version: "udon.browser-driver.v2", type: "result", requestId: "fixture-request", result: "failure", failureCode: "session_expired" });
+  await driver.close();
+});

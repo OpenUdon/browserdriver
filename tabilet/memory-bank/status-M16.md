@@ -1,6 +1,6 @@
 # Status M16 — Private saved-session write
 
-**State:** In progress in isolated lease `goal/M16`; M16.1 locally verified, M16.2 active. Bounded review 0/10.
+**State:** In progress in isolated lease `goal/M16`; M16.1/M16.2 locally verified, M16.3 active. Bounded review 0/10.
 
 **Stage.** Kinet STG-12, Phase A. The [Stage 12 contract](../../../kinet/docs/stage12.md)
 coordinates the work; this milestone and status own acceptance. Planning was
@@ -76,8 +76,8 @@ disposable stores/caches/browser profiles and unique output directories.
 | Item | State | Notes |
 | --- | --- | --- |
 | M16.1 — Define and implement the private save path | `[+]` | Behind an explicit driver option, save state after a successful authenticated named session to host-provided disposable plaintext staging, keyed by opaque binding digest. Atomic temp/rename, mode 0600, at most 1 MiB, bounded access, no symlinks/root escapes or partial writes. Kinet alone owns encryption, keys and durable acceptance; the driver never writes its durable store. Host controls staging lifetime and cleanup after joining workers. |
-| M16.2 — Record lifetime and fail closed | `[~]` | Record creation time and host-supplied maximum age; bind load/save to the current opaque host binding for owner/agent, exact profile/authentication identity, credential revision, origins and expiry. Invalid, expired or oversize state returns `session_expired` and is never loaded. Report no state values. The host decides any fresh-context fallback before dispatch only; no workflow restart or late save after revocation/archive/deletion becomes durable. |
-| M16.3 Preserve protocol compatibility | `[ ]` | Preserve v2–v11 request/result bytes and absent-option behavior. Implement the exact M51-reviewed immutable host-private launch-side save plan and candidate envelope; no v12 is required. Save permission is one-use and matched to complete existing authentication identity; registration/actions never save. Independently qualify old-wire/default compatibility and the bounded candidate lifecycle. |
+| M16.2 — Record lifetime and fail closed | `[+]` | Record creation time and host-supplied maximum age; bind load/save to the current opaque host binding for owner/agent, exact profile/authentication identity, credential revision, origins and expiry. Invalid, expired or oversize state returns `session_expired` and is never loaded. Report no state values. The host decides any fresh-context fallback before dispatch only; no workflow restart or late save after revocation/archive/deletion becomes durable. |
+| M16.3 Preserve protocol compatibility | `[~]` | Preserve v2–v11 request/result bytes and absent-option behavior. Implement the exact M51-reviewed immutable host-private launch-side save plan and candidate envelope; no v12 is required. Save permission is one-use and matched to complete existing authentication identity; registration/actions never save. Independently qualify old-wire/default compatibility and the bounded candidate lifecycle. |
 | M16.4 — Verify, review and publish | `[ ]` | `npm ci --ignore-scripts`, `npm test`, `npm audit --omit=dev`; synthetic save/load/expiry, wrong binding/tampering/denial, abandoned-staging and cleanup handoff tests, plus opt-in xvfb loopback checks. Qualify that writes reach staging only, enabling Kinet revoke/save-race and restart/backup-exclusion proof. Lock reviewed, bounded review, exact publication handoff under named authority. |
 
 ## Review Gate
@@ -143,3 +143,21 @@ context/browser teardown. Pending M52/Udon handoff must refuse candidate
 eligibility on abnormal driver exit/closed cleanup-gap diagnostics even when
 Join proves every process absent; withhold PrivateCandidateHandle or return
 existing save_refused. Public JoinWitness and frozen inputs stay unchanged.
+
+## M16.2 lifetime and legacy handoff — 2026-10-09
+
+Original creation/expiry, default7d/max30d and positive safe generation are
+validated without renewal; equality at expiry/deadline refuses. Host opaque
+binding/hash remains the custody identity for owner/agent/profile/authentication/
+credential/origin state; driver receives no such private host facts. An expired
+permission after admission never snapshots or writes but preserves normal auth
+success and a fixed save diagnostic. Legacy session_expired load failure never
+opens a fresh fallback context. Candidate `.candidate.json` cannot be discovered
+by the old `.json` loader; a disposable fixture stages only raw storageState
+with original permission creation/expiry intact. Invalid/missing/oversize legacy
+load controls refuse value-free.
+
+Build and34 focused save/driver/legacy-store controls pass; diff check passes.
+No new browser, network or external action. Native driver tests do not claim
+M52 encryption, current-generation race, restart cleanup or backup exclusion;
+those exact host responsibilities remain downstream.

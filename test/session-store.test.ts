@@ -88,3 +88,18 @@ test("session state metadata rejects a file owned by another user", () => {
     uid: 1002,
   }, 1003), "state file owner does not match the driver user");
 });
+
+test("invalid, missing, and oversize legacy state refuses without exposing content or binding", async () => {
+  const root = await mkdtemp(join(tmpdir(), "browserdriver-session-denial-"));
+  const reference = "private-binding-canary", path = join(root, sessionStateFileName(reference));
+  let diagnostic = "";
+  const store = new FileSessionStateStore(root, value => { diagnostic += value; });
+  try {
+    for (const data of ["private-state-canary", "[]", "null", "x".repeat((1 << 20) + 1)]) {
+      await writeFile(path, data, { mode: 0o600 });
+      await assert.rejects(() => store.load(reference), (error: unknown) => error instanceof DriverFailure && error.code === "session_expired");
+    }
+    await assert.rejects(() => store.load("unknown-private-binding"), (error: unknown) => error instanceof DriverFailure && error.code === "session_expired");
+    assert.ok(!diagnostic.includes("canary")); assert.ok(!diagnostic.includes(reference)); assert.ok(!diagnostic.includes(root));
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
