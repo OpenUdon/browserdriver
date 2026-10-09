@@ -1,0 +1,62 @@
+{
+  "version": "browserdriver.m16-authentication-request-golden.v1",
+  "fixtureOnly": true,
+  "algorithm": "remove only requestId; recursive UTF8-key order; JSON.stringify escaping; array order; UTF8/SHA256",
+  "independentProducer": "Python stdlib json/hashlib, scalar-key ordering equal to UTF8 ordering; no input numbers",
+  "request": {
+    "version": "udon.browser-driver.v3",
+    "type": "authenticate",
+    "requestId": "fixture-request",
+    "operationId": "fixture-operation",
+    "sourceDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "session": "member",
+    "flow": "login",
+    "allowedOrigins": [
+      "https://fixture.invalid"
+    ],
+    "credentialBindings": {
+      "": "BMP_ENV",
+      "𐀀": "ASTRAL_ENV"
+    },
+    "credentialEnvironment": {
+      "BMP_ENV": "FIXTURE_BMP",
+      "ASTRAL_ENV": "FIXTURE_ASTRAL"
+    },
+    "profile": {
+      "profile": "uws.browser-authentication.1.1",
+      "info": {
+        "title": "fixture <>&  ",
+        "applicationOrigins": [
+          "https://fixture.invalid"
+        ],
+        "authenticationOrigins": []
+      },
+      "credentialSlots": {
+        "": {
+          "kind": "identifier"
+        },
+        "𐀀": {
+          "kind": "identifier"
+        }
+      },
+      "flows": {
+        "login": {
+          "sequence": [],
+          "effects": [
+            "establishes_session"
+          ],
+          "success": {
+            "origin": "https://fixture.invalid",
+            "path": "/member",
+            "locator": {
+              "role": "heading",
+              "name": "Member"
+            }
+          }
+        }
+      }
+    }
+  },
+  "canonicalHex": "7b22616c6c6f7765644f726967696e73223a5b2268747470733a2f2f666978747572652e696e76616c6964225d2c2263726564656e7469616c42696e64696e6773223a7b22ee8080223a22424d505f454e56222c22f0908080223a2241535452414c5f454e56227d2c2263726564656e7469616c456e7669726f6e6d656e74223a7b2241535452414c5f454e56223a22464958545552455f41535452414c222c22424d505f454e56223a22464958545552455f424d50227d2c22666c6f77223a226c6f67696e222c226f7065726174696f6e4964223a22666978747572652d6f7065726174696f6e222c2270726f66696c65223a7b2263726564656e7469616c536c6f7473223a7b22ee8080223a7b226b696e64223a226964656e746966696572227d2c22f0908080223a7b226b696e64223a226964656e746966696572227d7d2c22666c6f7773223a7b226c6f67696e223a7b2265666665637473223a5b2265737461626c69736865735f73657373696f6e225d2c2273657175656e6365223a5b5d2c2273756363657373223a7b226c6f6361746f72223a7b226e616d65223a224d656d626572222c22726f6c65223a2268656164696e67227d2c226f726967696e223a2268747470733a2f2f666978747572652e696e76616c6964222c2270617468223a222f6d656d626572227d7d7d2c22696e666f223a7b226170706c69636174696f6e4f726967696e73223a5b2268747470733a2f2f666978747572652e696e76616c6964225d2c2261757468656e7469636174696f6e4f726967696e73223a5b5d2c227469746c65223a2266697874757265203c3e2620e280a8227d2c2270726f66696c65223a227577732e62726f777365722d61757468656e7469636174696f6e2e312e31227d2c2273657373696f6e223a226d656d626572222c22736f75726365446967657374223a227368613235363a61616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161222c2274797065223a2261757468656e746963617465222c2276657273696f6e223a2275646f6e2e62726f777365722d6472697665722e7633227d",
+  "sha256": "6d866f4703c4848cb1bf8e3fbcb46250f7eed5bbd2a3da8cb30367c165fea07b"
+}

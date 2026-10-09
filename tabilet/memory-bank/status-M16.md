@@ -1,6 +1,6 @@
 # Status M16 — Private saved-session write
 
-**State:** In progress in isolated lease `goal/M16`; M16.1/M16.2 locally verified, M16.3 active. Bounded review 0/10.
+**State:** In progress in isolated lease `goal/M16`; M16.1–M16.3 locally verified, M16.4 active; qualification authority missing. Bounded review 0/10.
 
 **Stage.** Kinet STG-12, Phase A. The [Stage 12 contract](../../../kinet/docs/stage12.md)
 coordinates the work; this milestone and status own acceptance. Planning was
@@ -77,8 +77,8 @@ disposable stores/caches/browser profiles and unique output directories.
 | --- | --- | --- |
 | M16.1 — Define and implement the private save path | `[+]` | Behind an explicit driver option, save state after a successful authenticated named session to host-provided disposable plaintext staging, keyed by opaque binding digest. Atomic temp/rename, mode 0600, at most 1 MiB, bounded access, no symlinks/root escapes or partial writes. Kinet alone owns encryption, keys and durable acceptance; the driver never writes its durable store. Host controls staging lifetime and cleanup after joining workers. |
 | M16.2 — Record lifetime and fail closed | `[+]` | Record creation time and host-supplied maximum age; bind load/save to the current opaque host binding for owner/agent, exact profile/authentication identity, credential revision, origins and expiry. Invalid, expired or oversize state returns `session_expired` and is never loaded. Report no state values. The host decides any fresh-context fallback before dispatch only; no workflow restart or late save after revocation/archive/deletion becomes durable. |
-| M16.3 Preserve protocol compatibility | `[~]` | Preserve v2–v11 request/result bytes and absent-option behavior. Implement the exact M51-reviewed immutable host-private launch-side save plan and candidate envelope; no v12 is required. Save permission is one-use and matched to complete existing authentication identity; registration/actions never save. Independently qualify old-wire/default compatibility and the bounded candidate lifecycle. |
-| M16.4 — Verify, review and publish | `[ ]` | `npm ci --ignore-scripts`, `npm test`, `npm audit --omit=dev`; synthetic save/load/expiry, wrong binding/tampering/denial, abandoned-staging and cleanup handoff tests, plus opt-in xvfb loopback checks. Qualify that writes reach staging only, enabling Kinet revoke/save-race and restart/backup-exclusion proof. Lock reviewed, bounded review, exact publication handoff under named authority. |
+| M16.3 Preserve protocol compatibility | `[+]` | Preserve v2–v11 request/result bytes and absent-option behavior. Implement the exact M51-reviewed immutable host-private launch-side save plan and candidate envelope; no v12 is required. Save permission is one-use and matched to complete existing authentication identity; registration/actions never save. Independently qualify old-wire/default compatibility and the bounded candidate lifecycle. |
+| M16.4 — Verify, review and publish | `[~]` | `npm ci --ignore-scripts`, `npm test`, `npm audit --omit=dev`; synthetic save/load/expiry, wrong binding/tampering/denial, abandoned-staging and cleanup handoff tests, plus opt-in xvfb loopback checks. Qualify that writes reach staging only, enabling Kinet revoke/save-race and restart/backup-exclusion proof. Lock reviewed, bounded review, exact publication handoff under named authority. |
 
 ## Review Gate
 
@@ -161,3 +161,22 @@ Build and34 focused save/driver/legacy-store controls pass; diff check passes.
 No new browser, network or external action. Native driver tests do not claim
 M52 encryption, current-generation race, restart cleanup or backup exclusion;
 those exact host responsibilities remain downstream.
+
+## M16.3 retained-wire and immutable contract proof — 2026-10-09
+
+The complete frozen M51 private-save contract is retained byte-for-byte in
+`fixtures/m16-session-save-v1/session-save-contract.json` at SHA2567f829101….
+The independent Python-stdlib full-authentication golden includes nested Unicode
+keys that distinguish UTF8 ordering from UTF16 ordering and JSON.stringify
+U+2028/HTML escaping. Actual parsed request digests match; only requestId is
+excluded. Changes to credentials map/profile/allowlist or native tuple do not
+save; later exact auth can consume the same permission. Failed auth consumes
+once, exhausted auth never snapshots, actions/registration never consume.
+
+All four persistent versions v2/v3/v10/v11 emit exact old status/success bytes
+with save absent or successful; save failure has one unchanged success and
+fixed private stderr. CLI no-options EOF has empty stdout/stderr and exit0;
+partial options fail before browser launch with empty stdout/fixed private error.
+The protocol implementation and all existing registration/verification envelopes
+remain untouched. Build and36 focused protocol/save controls pass; diff check
+passes. M16.1's full suite covers retained v4–v9 behavior. No new external action.
