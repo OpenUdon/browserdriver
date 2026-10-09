@@ -1,5 +1,26 @@
 # Milestones
 
+## Stage 12 approved planning — 2026-10-09
+
+**Approved reconciliation.** Stage 12 planning review, 2026-10-09; source priority
+not supplied. Review baseline/current revalidation `27f9edb63b01d2b0ec52b702ad8b42ca00d600cb`,
+including uncommitted Stage 12 planning files. F01/F02 are locally P1; F03–F09
+are P2 (F03 partially confirmed, all others confirmed). F03 (P2, partially confirmed; durable owner Kinet:M52) strengthens M16 disposable staging/binding/cleanup; F01 containment remains Kinet-owned.
+Owner status notes retain evidence and lineage. Intake starts no review iteration.
+The coordinator now has 19 milestones / 84 pending rows (13/62 required, 6/22
+conditional). Accepted local Kinet commits satisfy Kinet prerequisites; siblings
+require exact acceptance and independently verified publication. Publication
+grants remain ungranted launch prerequisites; no implementation is authorized.
+
+Kinet R65 approved STG-12, browser profiles and legacy cleanup, as planning on
+2026-10-09. Browserdriver owns one required unit, [M16](status-M16.md), the
+private saved-session write. It depends on accepted M51 and can run beside
+C10/A16; Udon:M53 consumes its exact accepted/published result. Protocols v2–v11 stay
+unchanged, and no row has started.
+
+The shared contract is the [Stage 12 coordinator](../../../kinet/docs/stage12.md).
+Planning grants no implementation, commit, publication or live authority.
+
 W16.4i.39d passes one fresh acceptance-v2 qualification: all 39 native stages
 and three W8M synthetic journeys. Independent canonical report, source/runtime,
 fixture, preservation and cleanup checks pass, followed by bounded reviews 3–5.
@@ -111,6 +132,44 @@ All 39 native stages and three W8M journeys pass; bounded integration review
 iteration 2 closes. Earlier consumed fixture failures and the unexplained
 historical window visibility remain preserved. See [status-M13.md](status-M13.md).
 
+## Stage 12 parallel dispatch policy
+
+Approved Stage 12 parallel execution review, 2026-10-09; source priorities and
+separate review baseline not supplied. Revalidation uses this package's unchanged
+full baseline recorded above and includes uncommitted planning files. F01/F04
+are local P2 workflow prerequisites; F02/F03/F05 are Lower scheduling findings
+required by the owner-selected optimization. F03 is partially confirmed and
+resolved by the selected early contract freeze; other findings are confirmed
+(F05 conditional on existing operational authority). Intake starts no review.
+
+One coordinator controls the integrated ledgers and serialized integration/closure.
+The approved future launch uses `STATUS_PRIORITY`, `PARALLELISM: 3`,
+`INTEGRATION: local-rebase-ff` and `COMMIT_POLICY: task`; these planning records
+launch nothing. At most one live milestone per package and one in-progress row
+per isolated lease. The nine eligible milestones are Kinet:A16, UWS:C10,
+Browserdriver:M16, Browsertools:M33, OpenUdon:P10, Udon:M53, OpenUdon:A32,
+Kinet:M54 and Udon:M54. All others remain sequential. Every dispatch checks
+actual closure, publication where required, triggers and bidirectional contract/
+write conflicts; priority positions and different repositories alone prove no
+safety. Child scopes exclude shared memory, other statuses and launch input.
+
+M51 freezes native-owner-reviewed report/host interfaces and conformance fixtures
+before producers begin. P10 and Udon:M53 then implement independently; Udon
+has no OpenUdon import. Their former sequencing/impact edge is replaced by
+sibling compatibility verification at M56/M52, with both true producer inputs
+retained. A32 and authorized Kinet:M54/Udon:M54 may overlap; C11 still joins
+accepted/published A32 and Udon:M54 after clean authorized inventory.
+
+Consumer checks read immutable exact snapshots, never another live checkout.
+Shared-memory updates and combined integration checks are coordinator-only and
+serialized. Leases rebase and re-verify the captured integration ref; affected
+contracts require re-review without counter reset. A blocked lease retains its
+branch/status and blocks dependents only; contract drift pauses affected leases.
+Source publication remains separately named and ungranted. Audit stays disabled.
+Kinet's adopted goal governs this cross-package run; sibling standalone protocols
+and the serial Python API controller remain unchanged.
+
+
 ## Approved verification successor — M13
 
 The approved September 13 verification release covers Turnstile, reCAPTCHA v2
@@ -195,6 +254,7 @@ See [status-M11.md](status-M11.md). Existing v2-v4 contracts remain unchanged.
 | M13 | [status-M13.md](status-M13.md) | Verification and provider repairs qualified/adopted through W16.4i.2; consumed history preserved; evolution v12 |
 | M14 | [status-M14.md](status-M14.md) | Browser 1.8/1.9 action execution through additive persistent driver v10; Udon integration follows |
 | M15 | [status-M15.md](status-M15.md) | Complete: Browser 1.10 v11 count protocol and execution published at source commit `1f0e0d8`; verification/review closeout `fb084d2`; Udon M43 is next |
+| M16 | [status-M16.md](status-M16.md) | Pending (Kinet STG-12 R65): private, bounded saved-session write; v2–v11 unchanged |
 
 M14 is the September 24 downstream adoption owner for Browser 1.8/1.9.
 It is independent of M13's separately authorized verification and provider work.
@@ -213,6 +273,54 @@ outer v10 and earlier action contracts retain their behavior. The focused
 synthetic matrix covers exact counts, missing/ambiguous selectors, invalid
 responses and bounds. Udon M43 is downstream; no live target action is included.
 See [status-M15.md](status-M15.md).
+
+M16 adds a private saved-session **write** to the existing load-only
+`--session-store`, behind an explicit driver option. It is disposable plaintext
+runtime staging; Kinet owns durable encryption and keys:
+
+- The save follows a successful authenticated named session and is keyed by the
+  binding digest.
+- The write is atomic, mode 0600, at most 1 MiB and refuses symlinks.
+- It records creation time/maximum age and uses the host opaque binding for
+  owner/agent, exact profile/authentication identity, credential revision, origins
+  and expiry. Invalid/expired state returns `session_expired`; fresh-context
+  fallback is host-owned and allowed only before dispatch.
+- Bounded staging access and join/cleanup hooks let Kinet prevent late saves
+  after revoke/archive/deletion, clean abandoned/restart state and exclude backups.
+- Storage state never crosses the protocol, and v2–v11 bytes stay unchanged. Only
+  if a per-request permission is unavoidable is an additive v12 introduced.
+
+Udon M53, Kinet M56 and Kinet M52 are downstream, and no live target action is included.
+The [Kinet Stage 12 coordinator](../../../kinet/docs/stage12.md) owns the order.
+See [status-M16.md](status-M16.md).
+
+**Depends on.** Kinet:M51. All required prerequisites must have
+accepted closure at exact revisions; sibling producer adoption also needs
+independently verified publication. A priority position never supplies authority.
+
+**Downstream impacts.** Udon:M53, Kinet:M56, Kinet:M52.
+
+**Write set.** The owning `browserdriver/` package's implementation, tests, ordinary
+documentation, manifests and qualification outputs only as required by this
+milestone's existing scope, plus `tabilet/memory-bank/status-M16.md` in its
+assigned worktree. Excludes `AGENTS.md`, `tabilet/GOAL.md`, shared memory-bank
+files, other statuses, evolution, stages, history/knowledge, the package audit
+database/sidecars, coordination docs and launch input. The coordinator alone applies shared-memory and closure
+changes serially; no child writes a sibling repository or user ledger.
+
+**Contracts read.** Immutable exact prerequisite artifacts listed above, the
+M51 native-owner-reviewed contract/fixtures when applicable, the assigned
+package baseline and frozen shared-memory/consumer snapshots captured at
+dispatch. Cross-package checks use read-only exact snapshots or approved
+published module inputs, never changing sibling checkouts. Record full source,
+artifact and fixture hashes in the later execution brief; contract drift pauses
+affected leases for coordinator reconciliation. Existing no-workspace/no-directory
+substitution requirements for ordinary published adoption remain in force.
+
+**Parallel-safe.** yes. Eligible only under the explicit Stage 12 lease opt-in, with no dependency path or bidirectional read/write conflict against any running lease.
+At most one live milestone per package. All tests use private lease ports,
+disposable stores/caches/browser profiles and unique output directories.
+
 
 M01 establishes the isolated v2 NDJSON process, closed authentication and
 browser macro execution, all planned MFA variants, exact-origin and ambiguity
