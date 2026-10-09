@@ -86,6 +86,10 @@ An opaque reuse binding is resolved only against the driver's private
 `--session-store`; inline or protocol-carried Playwright storage state is not
 accepted.
 
+Optional saving uses the paired launch-side plan and candidate root described
+in [private session candidates](session-save.md). It adds no protocol fields.
+
+
 Human challenge reads are self-bounded to 120 seconds by default. A trusted
 operator can set a different positive duration, up to 24 hours, with
 `--challenge-timeout` (for example, `--challenge-timeout 5m`). For

@@ -10,6 +10,7 @@ import {
 import { prepareModernAction } from "./action-templates.js";
 import { assertAllowedURL, credentialValue, exactOrigin, totp } from "./security.js";
 import type { SessionStateStore } from "./session-store.js";
+import { assertSessionSaveCurrent, authenticationRequestSHA256, type SessionSaveOptions, type SessionSavePermission } from "./session-save.js";
 import { RuntimeContexts, type BrowserTarget } from "./contexts.js";
 import { RegistrationGuard, assertRegistrationURL, validateRegistrationMessage, validateProfile } from "./registration.js";
 import { VerificationGuard, waitForVerification } from "./verification.js";
@@ -32,6 +33,7 @@ interface NamedSession {
 export interface PersistentBrowserDriverOptions {
   headed?: boolean;
   sessionStore?: SessionStateStore;
+  sessionSave?: SessionSaveOptions;
   challengeTimeoutMs?: number;
   registrationCheckpointTimeoutMs?: number;
   numberMatchSelector?: string;
@@ -45,6 +47,8 @@ export class PersistentBrowserDriver {
   private browser: Browser | undefined;
   private readonly sessions = new Map<string, NamedSession>();
   private readonly approvedRegistrations = new Set<string>();
+  private readonly consumedSavePermissions = new Set<string>();
+  private readonly pendingSaves = new Set<Promise<void>>();
 
   constructor(
     private readonly lines: MessageSource,
@@ -67,6 +71,7 @@ export class PersistentBrowserDriver {
     let context: BrowserContext | undefined;
     try {
       validateAuthenticationMessage(request);
+      const savePermission = this.consumeSavePermission(request);
       this.emit(status(request.requestId, "resolving", request.version));
       const allowed = new Set(request.allowedOrigins.map(exactOrigin));
       const flow = request.profile.flows[request.flow]!;
@@ -106,9 +111,11 @@ export class PersistentBrowserDriver {
       visited.length = 0;
       const previous = this.sessions.get(request.session);
       if (previous) await previous.context.close();
+      const authenticatedContext = context;
       this.sessions.set(request.session, { context, page, visited, navigation, ...(runtime ? { runtime } : {}) });
       context = undefined;
       this.emit(success(request.requestId, undefined, request.version));
+      if (savePermission) await this.saveAuthenticatedSession(savePermission, authenticatedContext);
     } catch (error) {
       await context?.close().catch(() => undefined);
       this.emit(failure(request.requestId, failureCode(error), request.version));
@@ -357,10 +364,43 @@ export class PersistentBrowserDriver {
   }
 
   async close(): Promise<void> {
+    await Promise.all(this.pendingSaves);
     for (const session of this.sessions.values()) await session.context.close().catch(() => undefined);
     this.sessions.clear();
     await this.browser?.close().catch(() => undefined);
     this.browser = undefined;
+    await this.options.sessionSave?.candidates.close();
+  }
+
+  private consumeSavePermission(request: AuthenticateMessage): Readonly<SessionSavePermission> | undefined {
+    const save = this.options.sessionSave;
+    if (!save) return undefined;
+    const permission = save.plan.permissions.find(entry => {
+      const auth = entry.authenticate;
+      return !this.consumedSavePermissions.has(entry.permissionId) &&
+        auth.version === request.version && auth.operationId === request.operationId && auth.sourceDigest === request.sourceDigest &&
+        auth.flow === request.flow && auth.session === request.session && auth.sessionBinding === (request.sessionBinding ?? null);
+    });
+    if (!permission) return undefined;
+    // A mismatched private digest never changes ordinary authentication behavior.
+    try { if (authenticationRequestSHA256(request) !== permission.authenticationRequestSHA256) return undefined; }
+    catch { return undefined; }
+    this.consumedSavePermissions.add(permission.permissionId);
+    return permission;
+  }
+
+  private async saveAuthenticatedSession(permission: Readonly<SessionSavePermission>, context: BrowserContext): Promise<void> {
+    const save = this.options.sessionSave!;
+    const operation = (async () => {
+      assertSessionSaveCurrent(save.plan, permission);
+      const capturedAt = new Date().toISOString();
+      const storageState = await context.storageState({ indexedDB: true });
+      assertSessionSaveCurrent(save.plan, permission);
+      await save.candidates.write(permission, save.planSHA256, capturedAt, storageState);
+    })().catch(() => { process.stderr.write("browserdriver session save failed\n"); });
+    this.pendingSaves.add(operation);
+    try { await operation; }
+    finally { this.pendingSaves.delete(operation); }
   }
 
   private async createContext(binding?: string): Promise<BrowserContext> {

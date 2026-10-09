@@ -6,19 +6,23 @@ import {
 import { ReadlineMessageSource } from "./line-source.js";
 import { DriverFailure, failure, maxMessageBytes, parseInput, protocolVersion, type ProtocolVersion } from "./protocol.js";
 import { FileSessionStateStore } from "./session-store.js";
+import { sessionSaveConfiguration, type SessionSaveOptions } from "./session-save.js";
 
 const input = createInterface({ input: process.stdin, crlfDelay: Number.POSITIVE_INFINITY, terminal: false });
 const lines = new ReadlineMessageSource(input);
 const emit = (message: object): void => { process.stdout.write(`${JSON.stringify(message)}\n`); };
 let driver: PersistentBrowserDriver | undefined;
+let sessionSave: SessionSaveOptions | undefined;
 
 try {
   const args = process.argv.slice(2);
   const sessionStorePath = optionValue(args, "--session-store");
   const numberMatchSelector = optionValue(args, "--number-match-selector");
+  sessionSave = await sessionSaveConfiguration(optionValue(args, "--session-save-plan"), optionValue(args, "--session-save-root"), sessionStorePath);
   driver = new PersistentBrowserDriver(lines, emit, {
     headed: args.includes("--headed"),
     ...(sessionStorePath ? { sessionStore: new FileSessionStateStore(sessionStorePath) } : {}),
+    ...(sessionSave ? { sessionSave } : {}),
     challengeTimeoutMs: durationOption(args, "--challenge-timeout", defaultChallengeTimeoutMs),
     registrationCheckpointTimeoutMs: durationOption(
       args, "--registration-checkpoint-timeout", defaultRegistrationCheckpointTimeoutMs,
@@ -49,7 +53,13 @@ try {
   process.stderr.write("browser driver configuration or protocol loop failed\n");
   process.exitCode = 1;
 } finally {
-  await driver?.close();
+  try {
+    if (driver) await driver.close();
+    else await sessionSave?.candidates.close();
+  } catch {
+    process.stderr.write("browserdriver session cleanup failed\n");
+    process.exitCode = 1;
+  }
 }
 
 function optionValue(args: string[], name: string): string | undefined {
