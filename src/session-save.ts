@@ -230,7 +230,8 @@ export async function sessionSavePlan(path: string, now = Date.now()): Promise<{
     const after = await handle.stat();
     const pathInfo = await lstat(path);
     await stablePath(path);
-    if (!same(before, after) || !same(before, pathInfo) || before.size !== after.size || length !== before.size || before.mtimeMs !== after.mtimeMs || before.ctimeMs !== after.ctimeMs || !same(parent, await lstat(dirname(path)))) invalid();
+    const currentParent = await lstat(dirname(path)); metadata(currentParent, true, 0o700);
+    if (!same(before, after) || !same(before, pathInfo) || before.size !== after.size || length !== before.size || before.mtimeMs !== after.mtimeMs || before.ctimeMs !== after.ctimeMs || !same(parent, currentParent)) invalid();
     metadata(after, false, 0o600); metadata(pathInfo, false, 0o600);
     const data = buffer.subarray(0, length);
     return { plan: parseSessionSavePlan(data, now), planSHA256: sha256(data) };
@@ -250,7 +251,8 @@ export async function sessionCandidateStore(root: string, plan: Readonly<Session
     const info = await handle.stat();
     metadata(info, true, 0o700);
     await stablePath(root);
-    if (!same(pathInfo, info) || !same(info, await lstat(root))) invalid();
+    const current = await lstat(root); metadata(current, true, 0o700);
+    if (!same(pathInfo, info) || !same(info, current) || (await readdir(`/proc/self/fd/${handle.fd}`)).length !== 0) invalid();
     return new FileSessionCandidateStore(root, handle, info, plan);
   } catch (error) {
     await handle.close();
@@ -286,6 +288,16 @@ class FileSessionCandidateStore implements SessionCandidateStore {
     metadata(pathInfo, true, 0o700); metadata(info, true, 0o700);
     if (!same(pathInfo, this.identity) || !same(info, this.identity)) invalid();
   }
+  private async unlinkOwned(path: string, identity: Stats, missingOK = false): Promise<void> {
+    try {
+      const current = await lstat(path);
+      if (!current.isFile() || !same(current, identity) || current.uid !== identity.uid || (current.mode & 0o777) !== 0o600) { this.unsafe = true; invalid(); }
+      await unlink(path);
+    } catch (error) {
+      if (missingOK && missing(error)) return;
+      throw error;
+    }
+  }
   private async publish(permission: Readonly<SessionSavePermission>, planSHA256: string, capturedAt: string, storageState: object): Promise<void> {
     if (this.unsafe) invalid();
     if (!this.plan.permissions.includes(permission)) invalid();
@@ -307,17 +319,24 @@ class FileSessionCandidateStore implements SessionCandidateStore {
     let published = false;
     let complete = false;
     let fileIdentity: Stats | undefined;
+    let temporaryRemoved = false;
     try {
       file = await open(temporary, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, 0o600);
+      // Capture custody immediately after exclusive creation, even if writing
+      // fails. A failed open never owns the colliding path.
+      fileIdentity = await file.stat(); metadata(fileIdentity, false, 0o600);
       await file.writeFile(data); await file.sync();
       const info = await file.stat(); metadata(info, false, 0o600);
-      fileIdentity = info;
-      if (info.size !== data.length) invalid();
+      if (!same(fileIdentity, info) || info.size !== data.length) invalid();
       await this.stable(); assertSessionSaveCurrent(this.plan, permission);
+      const temporaryInfo = await lstat(temporary); metadata(temporaryInfo, false, 0o600);
+      if (!same(fileIdentity, temporaryInfo) || temporaryInfo.size !== data.length) { this.unsafe = true; invalid(); }
       // Atomic no-clobber publication: unlike rename(), link() cannot replace
       // an existing candidate. Unlink and directory sync settle the single link.
       await link(temporary, final); published = true;
-      await unlink(temporary);
+      const linked = await lstat(final);
+      if (!same(fileIdentity, linked)) { this.unsafe = true; invalid(); }
+      await this.unlinkOwned(temporary, fileIdentity); temporaryRemoved = true;
       const finalInfo = await lstat(final); metadata(finalInfo, false, 0o600);
       if (!same(info, finalInfo)) invalid();
       await this.directory.sync();
@@ -329,16 +348,15 @@ class FileSessionCandidateStore implements SessionCandidateStore {
       if (!complete) {
         // Invalidate our still-open inode before erasure. A cleanup failure must
         // never leave complete bytes eligible for positive joined acceptance.
-        if (published && fileIdentity) {
-          try { await file!.truncate(0); await file!.sync(); } catch { this.unsafe = true; }
-          // Never erase a different file if a host has replaced our candidate.
-          try {
-            const current = await lstat(final);
-            if (same(current, fileIdentity)) await unlink(final);
-          } catch (error) { if (!missing(error)) this.unsafe = true; }
+        if (file) {
+          try { await file.truncate(0); await file.sync(); } catch { this.unsafe = true; }
+          if (!fileIdentity) this.unsafe = true;
+          else {
+            if (published) await this.unlinkOwned(final, fileIdentity, true).catch(() => { this.unsafe = true; });
+            if (!temporaryRemoved) await this.unlinkOwned(temporary, fileIdentity, true).catch(() => { this.unsafe = true; });
+          }
+          try { await this.directory.sync(); } catch { this.unsafe = true; }
         }
-        try { await unlink(temporary); } catch (error) { if (!missing(error)) this.unsafe = true; }
-        try { await this.directory.sync(); } catch { this.unsafe = true; }
       }
       try { await file?.close(); } catch { this.unsafe = true; }
       if (this.unsafe) invalid();

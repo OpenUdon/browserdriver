@@ -277,3 +277,14 @@ faults return session_expired without values or fallback; normal raw state and
 symlink-parent compatibility pass. Build and20 focused legacy/driver controls
 pass. Formal review remains0. Earlier prepared manifests/proposals are
 superseded during this correction pass; they activate no grant.
+
+P2-3 locally fixed: successful exclusive creation immediately captures its
+inode. Temp identity/owner/mode is checked before link and removal; failed
+exclusive open never unlinks the collision. All failed publication paths
+invalidate the owned open inode. Foreign temp/final replacement is preserved,
+unknown custody taints close, and cleanup erases only the captured inode.
+Collision, substitution before link/removal, owned-inode invalidation and joined
+cleanup fault fixtures pass. Build and19 native save/immutable-contract tests
+pass. This M16.3 correction also preserves independent U+2028/U+2029/HTML/braces
+private hash vectors and prior plan/root custody tightening. Formal review0;
+M16.4 protected qualification remains pending/uncommitted.

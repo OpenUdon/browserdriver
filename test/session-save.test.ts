@@ -289,3 +289,77 @@ test("original deadline and expiry refuse equality without renewing old creation
   assert.throws(() => assertSessionSaveCurrent(plan, plan.permissions[0]!, Date.parse(value.admittedDeadline)));
   assert.equal(plan.permissions[0]!.createdAt, permission.createdAt);
 });
+
+test("a replaced published inode is preserved as foreign and taints joined candidate custody", async () => {
+  const root = await mkdtemp(join(tmpdir(), "browserdriver-m16-foreign-candidate-")), plan = parse(), permission = plan.permissions[0]!;
+  const store = await sessionCandidateStore(root, plan), directory = (store as unknown as { directory: FileHandle }).directory;
+  const sync = directory.sync.bind(directory), name = sessionCandidateFileName(permission.saveBinding);
+  let calls = 0, replacement: Buffer | undefined;
+  directory.sync = async () => {
+    if (++calls === 1) {
+      const path = join(root, name); replacement = await readFile(path);
+      await fs.unlink(path); await writeFile(path, replacement, { mode: 0o600 });
+    }
+    await sync();
+  };
+  try {
+    await assert.rejects(() => store.write(permission, "d".repeat(64), new Date().toISOString(), { cookies: [] }));
+    assert.deepEqual(await readFile(join(root, name)), replacement);
+    await assert.rejects(() => store.close(), { message: "invalid private session save configuration" });
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test("exclusive-open collisions never own or unlink the existing temporary path", async (t) => {
+  const root = await mkdtemp(join(tmpdir(), "browserdriver-m16-collision-")), plan = parse(), store = await sessionCandidateStore(root, plan);
+  const originalOpen = fs.open, originalUnlink = fs.unlink;
+  let collidedPath = "", deletions = 0;
+  t.mock.method(fs, "open", async (...args: Parameters<typeof fs.open>) => {
+    if (String(args[0]).endsWith(".tmp")) {
+      collidedPath = String(args[0]);
+      const foreign = await originalOpen(args[0], "wx", 0o600); await foreign.writeFile("foreign-temporary-canary"); await foreign.close();
+      throw Object.assign(new Error("exclusive collision"), { code: "EEXIST" });
+    }
+    return originalOpen(...args);
+  });
+  t.mock.method(fs, "unlink", async (path: Parameters<typeof fs.unlink>[0]) => { deletions += 1; return originalUnlink(path); });
+  syncBuiltinESMExports();
+  try {
+    await assert.rejects(() => store.write(plan.permissions[0]!, "d".repeat(64), new Date().toISOString(), { cookies: [] }));
+    assert.equal(deletions, 0); assert.equal(await readFile(collidedPath, "utf8"), "foreign-temporary-canary");
+    await store.close();
+  } finally { t.mock.restoreAll(); syncBuiltinESMExports(); await rm(root, { recursive: true, force: true }); }
+});
+
+test("temporary substitution before link or removal preserves foreign bytes and taints close", async (t) => {
+  for (const phase of ["before-link", "before-removal"]) {
+    const root = await mkdtemp(join(tmpdir(), "browserdriver-m16-temp-swap-")), plan = parse(), store = await sessionCandidateStore(root, plan);
+    const originalOpen = fs.open, originalLink = fs.link, originalUnlink = fs.unlink;
+    let replacedPath = "", invalidatedOwnedInode = false;
+    const substitute = async (path: string) => {
+      replacedPath = path; await originalUnlink(path);
+      await writeFile(path, "foreign-replacement-canary", { mode: 0o600 });
+    };
+    if (phase === "before-link") {
+      t.mock.method(fs, "open", async (...args: Parameters<typeof fs.open>) => {
+        const handle = await originalOpen(...args);
+        if (String(args[0]).endsWith(".tmp")) {
+          const sync = handle.sync.bind(handle); let calls = 0;
+          t.mock.method(handle, "sync", async () => {
+            await sync();
+            if (++calls === 1) await substitute(String(args[0]));
+            else { assert.equal((await handle.stat()).size, 0); invalidatedOwnedInode = true; }
+          });
+        }
+        return handle;
+      });
+    } else t.mock.method(fs, "link", async (...args: Parameters<typeof fs.link>) => { await originalLink(...args); await substitute(String(args[0])); });
+    syncBuiltinESMExports();
+    try {
+      await assert.rejects(() => store.write(plan.permissions[0]!, "d".repeat(64), new Date().toISOString(), { cookies: [] }));
+      assert.equal(await readFile(replacedPath, "utf8"), "foreign-replacement-canary");
+      if (phase === "before-link") assert.equal(invalidatedOwnedInode, true);
+      assert.ok(!(await readdir(root)).some(path => path.endsWith(".candidate.json")));
+      await assert.rejects(() => store.close(), { message: "invalid private session save configuration" });
+    } finally { t.mock.restoreAll(); syncBuiltinESMExports(); await rm(root, { recursive: true, force: true }); }
+  }
+});

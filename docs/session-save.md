@@ -75,6 +75,12 @@ replacement cannot redirect plaintext. Success leaves complete fsynced bytes,
 one final link and no temporary. Join waits for writes, unlink and directory
 settlement. The immutable M51 contract/fixture manifest is unchanged.
 
+Exclusive creation immediately captures the temporary inode. Before link or
+removal, the path must still name that owned inode; a failed open never owns or
+erases its colliding path. Foreign substitution is preserved and taints close.
+Every failed publication invalidates the open owned inode, including failures
+before linking, and unsettled cleanup prevents candidate eligibility.
+
 Failed publication invalidates its still-open inode before erasure. Unsettled
 invalidation, erasure, directory fsync or file close taints the store, denies
 later saves and makes close fail. CLI finishes context/browser teardown, emits
