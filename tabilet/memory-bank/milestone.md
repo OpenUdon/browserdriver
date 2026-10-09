@@ -1064,3 +1064,10 @@ of the M13.23 diagnostic-only candidate. Three file runs and five native tests
 pass with clean teardown and bounded review. Publish exact diagnostic source
 8b63833; no production behavior change or historical cause is inferred.
 Full qualification/adoption and the existing human-ready probe remain later gates.
+
+## Stage 12 frozen consumer input checkpoint — 2026-10-09
+
+M16's status records exact Kinet:M51.3 contract/fixture input at `589b844628b358167fe0a0137eded11c1028875c`.
+M51 whole acceptance, producer qualification and independently verified
+publication remain required at their existing gates. No row or review starts;
+local-only source work grants no publication, browser or live authority.
