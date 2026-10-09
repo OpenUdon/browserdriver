@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { constants } from "node:fs";
+import { constants, type BigIntStats } from "node:fs";
 import { lstat, open, realpath } from "node:fs/promises";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { DriverFailure } from "./protocol.js";
@@ -31,7 +31,7 @@ export class FileSessionStateStore implements SessionStateStore {
     }
     let rootInfo;
     try {
-      rootInfo = await lstat(this.root);
+      rootInfo = await lstat(this.root, { bigint: true });
     } catch {
       this.fail("configured root is unavailable");
     }
@@ -56,16 +56,35 @@ export class FileSessionStateStore implements SessionStateStore {
     }
     let handle;
     try {
-      handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW);
+      handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
     } catch {
       this.fail("state file cannot be opened safely");
     }
     try {
-      const info = await handle.stat();
+      const info = await handle.stat({ bigint: true });
       const currentUID = typeof process.getuid === "function" ? process.getuid() : undefined;
-      const metadataFailure = sessionStateMetadataFailure(info, currentUID);
+      const metadataFailure = stateMetadataFailure(info, currentUID);
       if (metadataFailure) this.fail(metadataFailure);
-      const data = await handle.readFile();
+      const buffer = Buffer.alloc(maxStorageStateBytes + 1);
+      let length = 0;
+      while (length < buffer.length) {
+        const read = await handle.read(buffer, length, buffer.length - length, length);
+        if (read.bytesRead === 0) break;
+        length += read.bytesRead;
+      }
+      const after = await handle.stat({ bigint: true });
+      const currentPath = await lstat(path, { bigint: true });
+      const currentRoot = await lstat(this.root, { bigint: true });
+      for (const current of [after, currentPath]) {
+        const failure = stateMetadataFailure(current, currentUID);
+        if (failure) this.fail(failure);
+        if (!stableFile(info, current)) this.fail("state file changed during read");
+      }
+      if (length < 2 || length > maxStorageStateBytes || BigInt(length) !== info.size) this.fail("state file size is outside the accepted bounds");
+      if (!currentRoot.isDirectory() || currentRoot.dev !== rootInfo.dev || currentRoot.ino !== rootInfo.ino ||
+          currentRoot.uid !== rootInfo.uid || currentRoot.gid !== rootInfo.gid || currentRoot.mode !== rootInfo.mode ||
+          await realpath(this.root) !== canonicalRoot || await realpath(path) !== canonicalPath) this.fail("state root changed during read");
+      const data = buffer.subarray(0, length);
       let value: unknown;
       try {
         value = JSON.parse(data.toString("utf8"));
@@ -74,8 +93,11 @@ export class FileSessionStateStore implements SessionStateStore {
       }
       if (!isObject(value)) this.fail("state file does not contain an object");
       return value;
+    } catch (error) {
+      if (error instanceof DriverFailure) throw error;
+      return this.fail("state file custody cannot be verified");
     } finally {
-      await handle.close();
+      try { await handle.close(); } catch { this.fail("state file cannot be closed safely"); }
     }
   }
 
@@ -83,6 +105,16 @@ export class FileSessionStateStore implements SessionStateStore {
     this.diagnostic(`browserdriver session store: ${reason}\n`);
     throw new DriverFailure("session_expired");
   }
+}
+
+function stateMetadataFailure(info: BigIntStats, currentUID: number | undefined): string | undefined {
+  return sessionStateMetadataFailure({ isFile: () => info.isFile(), size: Number(info.size), mode: Number(info.mode), uid: Number(info.uid) }, currentUID);
+}
+
+function stableFile(before: BigIntStats, after: BigIntStats): boolean {
+  return before.dev === after.dev && before.ino === after.ino && before.size === after.size && before.uid === after.uid &&
+    before.gid === after.gid && before.mode === after.mode && before.nlink === after.nlink &&
+    before.mtimeNs === after.mtimeNs && before.ctimeNs === after.ctimeNs;
 }
 
 export function sessionStateFileName(reference: string): string {

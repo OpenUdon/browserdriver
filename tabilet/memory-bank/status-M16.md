@@ -1,6 +1,6 @@
 # Status M16 — Private saved-session write
 
-**State:** In progress in isolated lease `goal/M16`; M16.1–M16.3 locally verified, M16.4 active; qualification authority missing. Bounded review 0/10.
+**State:** In progress in isolated lease `goal/M16`; M16.1–M16.3 locally verified, M16.4 paused on missing qualification/publication authority; lease preserved. Bounded review 0/10.
 
 **Stage.** Kinet STG-12, Phase A. The [Stage 12 contract](../../../kinet/docs/stage12.md)
 coordinates the work; this milestone and status own acceptance. Planning was
@@ -180,3 +180,100 @@ partial options fail before browser launch with empty stdout/fixed private error
 The protocol implementation and all existing registration/verification envelopes
 remain untouched. Build and36 focused protocol/save controls pass; diff check
 passes. M16.1's full suite covers retained v4–v9 behavior. No new external action.
+
+## M16.4 local qualification candidate and blockers — 2026-10-09
+
+M16.1 task commit7096bdbfd5ccf3bdbf3d1e6cf1cba3c9576992a6; M16.2 commit
+3f890908bf393f1847ef89033598efae00d6611c; M16.3 commit
+0cbe4c44ba55b4e8234ae0c416d0bd81ea8ad6fc. M16.4 preparation and candidate
+pre-review fixes are included as declared uncommitted work under task policy;
+no complete M16.4 commit or acceptance is claimed.
+
+Resumed npm-ci --ignore-scripts --offline --no-audit --no-fund passes against
+private exact cached pins with CI/update-notifier disabled. Its log has only
+cache-hit artifacts; the interrupted earlier notifier GET remains a gap. Final
+full npm test passes208 tests (192 pass/16 browser/provider opt-in skips), focused
+save controls29 pass/1 skip; build, launcher syntax and diff checks pass. Existing
+lockSHA3dba6e3e… and Node/PW pins unchanged. Offline npm audit exit0/zeros is
+NOT advisory verification: installed npm11.18.0 Arborist returns null for offline
+and the debug log confirms audit report null. No valid cached advisory response.
+
+`docs/m16-qualification.md` and `docs/m16-qualification-proposal.md` prepare
+one GET-only46061 loopback fixture/two headed sandboxed driver launches, sealed
+existing Node/PW/Chromium/helper artifacts, explicit observed-process/display/
+private-state cleanup and one credential-free dependency-metadata audit. Exact
+672-file input manifestSHA256
+1c038175a76208d8fb2483f1d4ede4fee8ee063f7ba2206842d7e43f87bb9ab9.
+Native fixture/launcher is compiled/syntax checked but UNINVOKED. All browser
+authority is missing; M51's consumed grant never transfers. No audit-network
+query or source-publication permission exists. Existing source remote read-only
+identity is origin git@github.com-tabilet:OpenUdon/browserdriver.git, destination
+refs/heads/main; only coordinator may later publish after explicit policy
+reconciliation/approval, exact acceptance and closure. No remote request/push.
+
+Coordinator candidate pre-review tightened launcher timeout/cancel ownership,
+existing Python3.14.4 stdlib pidfd signal safety (no reused-PID fallback), renderer
+Seccomp2/NoNewPrivs1/distinct user namespace and positive display/Xauthority/home/
+tmp cleanup after all observed processes settle. Any signal/cancel/timeout or
+missing proof rejects qualification; uncertain owners remain preserved. This is
+NOT the authoritative whole review. Bounded review remains0/10 because required
+xvfb/advisory/publication work is unperformed; M16.4 stays `[~]` and blocked.
+
+Captured integration baseline remains b3a6287249ca8bb13fc3e063cad34ad3b9c2bd16,
+primary /home/peter/Workspace/browserdriver, refs/heads/main; no rebase was needed
+for unchanged tip and no integration/closure/retirement occurred. Review after
+required qualification must run on the current captured ref, record its full
+baseline and persist iteration before starting. Root owns final shared-memory
+and downstream M52/Udon reconciliation, including clean-exit/private-candidate
+acceptance and exact private JSON.stringify digest semantics (not public Go
+lossless canonical hashes).
+
+Final candidate pre-review extension: marker-only output-path matches are
+potential gaps, never signalling targets. Launch PID/start/uid/parent is captured
+once; positively observed lineage survives reparenting and cannot arise from
+reused PIDs. Four offline custody fixtures pass, including foreign/root human
+log readers, unavailable/ambiguous ownership and UID substitution. Potential
+unsettled owners also prevent staging erasure. Foreign final-candidate inode
+replacement is preserved and taints close; its fault fixture passes. Final full
+suite208 total/192 pass/16 skips. Current prepared manifest672 files, SHA256
+1c038175a76208d8fb2483f1d4ede4fee8ee063f7ba2206842d7e43f87bb9ab9.
+No browser, signal-controller operational invocation, audit network, publication
+or formal review occurred.
+
+## Candidate re-review findings — 2026-10-09
+
+Root revalidated the fresh read-only candidate review (0P1/4P2/0P3) within
+existing M16.2/M16.4 acceptance. Persisted before fixes; this is candidate
+pre-review, NOT authoritative closing iteration1. Formal counter stays0/10.
+
+- P2-1: Existing xvfb-run deletes private Xauthority before bare-PID killing its
+  server. That contradicts pidfd-only custody and no-hidden-signals proof.
+  Fix with directly owned Xvfb/private xauth, planned normal pidfd shutdown,
+  positive server settlement before auth erasure, and explicit normal-stop
+  versus timeout/cancel/escalation evidence. Owner M16.4.
+- P2-2: Legacy state pre-size metadata plus readFile is unbounded and misses
+  growth/path substitution during read. Bound maximum+1 and revalidate complete
+  file/path/root/owner/mode stability; normal raw bytes/wires stay unchanged.
+  Owner completed M16.2 correction.
+- P2-3: Temporary path unlink does not bind its captured inode; failed exclusive
+  open or foreign replacement can delete another file. Capture inode immediately
+  on successful exclusive open; verify before link/removal, invalidate owned
+  inode on failed publication, never unlink foreign/failed-open paths, taint
+  uncertain cleanup. Owner completed M16.3 candidate-lifecycle correction.
+- P2-4: Numeric parentage in an incoherent /proc scan can adopt an unrelated
+  child after parent PID reuse. Coherently reread child+parent identity around
+  admission, reject unavailable/changed ancestry and retain only positively
+  proven lineage across reparenting. Owner M16.4.
+
+The root approved these local corrections within the existing assignment and
+allows verified completed-row correction commits; required protected M16.4
+checks remain incomplete/uncommitted. No new browser, signalling, advisory,
+publication or other external authority. Frozen M51 inputs are preserved.
+
+P2-2 locally fixed: legacy loading now reads at most1MiB+1, checks exact
+post-read file/path metadata and nanosecond stability, and rechecks root
+identity/canonical path. Growth, file replacement, mode and root substitution
+faults return session_expired without values or fallback; normal raw state and
+symlink-parent compatibility pass. Build and20 focused legacy/driver controls
+pass. Formal review remains0. Earlier prepared manifests/proposals are
+superseded during this correction pass; they activate no grant.

@@ -14,6 +14,12 @@ read a plan, create a candidate store or snapshot a session. The old load-only
 Load failures still return `session_expired`. The host alone chooses any fresh
 context before dispatch.
 
+Legacy reads allocate at most1MiB+1 and never call unbounded readFile. After
+reading they recheck exact file/path device/inode, size, owner/group, mode, link
+count and nanosecond timestamps, plus root identity/canonical path. Growth or
+substitution refuses before returning raw state; ordinary formats and wires
+remain unchanged, including supported symlinked parent roots.
+
 Exact input: frozen Kinet M51 `session-save-contract.json` SHA256
 `7f829101443fb5b8404135f453fa0406d5b09e9d52a61b3340b9c918b32c873f`,
 accepted source `ec760d83b6e344e9e9cd7c034f9a92eba99f38b1`, fixture manifest

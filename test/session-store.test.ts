@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { chmod, mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
+import fs, { chmod, mkdir, mkdtemp, rename, rm, symlink, writeFile } from "node:fs/promises";
+import { syncBuiltinESMExports } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -102,4 +103,41 @@ test("invalid, missing, and oversize legacy state refuses without exposing conte
     await assert.rejects(() => store.load("unknown-private-binding"), (error: unknown) => error instanceof DriverFailure && error.code === "session_expired");
     assert.ok(!diagnostic.includes("canary")); assert.ok(!diagnostic.includes(reference)); assert.ok(!diagnostic.includes(root));
   } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test("legacy state reads are bounded and reject growth, replacement, mode and root races", async (t) => {
+  for (const race of ["growth", "replacement", "mode", "root"]) {
+    const base = await mkdtemp(join(tmpdir(), "browserdriver-session-race-")), root = join(base, "root"), moved = join(base, "previous");
+    await mkdir(root, { mode: 0o700 });
+    const binding = "private-race-binding", path = join(root, sessionStateFileName(binding));
+    await writeFile(path, '{"cookies":[],"origins":[]}', { mode: 0o600 });
+    const originalOpen = fs.open;
+    let calls = 0, received = 0;
+    t.mock.method(fs, "open", async (...args: Parameters<typeof fs.open>) => {
+      const handle = await originalOpen(...args), read = handle.read.bind(handle);
+      if (String(args[0]) !== path) return handle;
+      t.mock.method(handle, "readFile", async () => assert.fail("unbounded readFile must not run"));
+      // Observe real filesystem growth/substitution between bounded reads.
+      t.mock.method(handle, "read", async (...readArgs: [Buffer, number, number, number]) => {
+        const result = await (read as (buffer: Buffer, offset: number, length: number, position: number) => Promise<{ bytesRead: number; buffer: Buffer }>)(...readArgs);
+        received += result.bytesRead;
+        if (++calls === 1) {
+          if (race === "growth") await writeFile(path, "x".repeat((1 << 20) + 4096), { mode: 0o600 });
+          if (race === "replacement") { await rename(path, join(root, "old")); await writeFile(path, '{"cookies":[]}', { mode: 0o600 }); }
+          if (race === "mode") await chmod(path, 0o644);
+          if (race === "root") { await rename(root, moved); await mkdir(root, { mode: 0o700 }); await writeFile(path, '{"cookies":[]}', { mode: 0o600 }); }
+        }
+        return result;
+      });
+      return handle;
+    });
+    syncBuiltinESMExports();
+    let diagnostic = "";
+    try {
+      await assert.rejects(() => new FileSessionStateStore(root, value => { diagnostic += value; }).load(binding),
+        (error: unknown) => error instanceof DriverFailure && error.code === "session_expired");
+      assert.ok(received <= (1 << 20) + 1); assert.ok(calls > 0);
+      assert.ok(!diagnostic.includes(binding)); assert.ok(!diagnostic.includes(path));
+    } finally { t.mock.restoreAll(); syncBuiltinESMExports(); await rm(base, { recursive: true, force: true }); }
+  }
 });
