@@ -1,6 +1,6 @@
 # Status M16 — Private saved-session write
 
-**State:** All four tasks verified and committed in isolated lease `goal/M16`; actual v5 qualification and initial exact source handoff pass. Authoritative whole review1 PASSED,0P1/0P2 and one documentation P3 assigned to coordinator closure. Final integration/publication/acceptance remains pending. Lease preserved. Bounded review 1/10.
+**State:** Complete locally: all four tasks, authoritative whole review1 (no P1/P2/P3 remaining), primary integration and exact reviewed source/evidence publication verified. Coordinator final closure publication is required before downstream adoption; its exact proof is in the linked Stage12 handoff. Bounded review 1/10.
 
 **Stage.** Kinet STG-12, Phase A. The [Stage 12 contract](../../../kinet/docs/stage12.md)
 coordinates the work; this milestone and status own acceptance. Planning was
@@ -75,10 +75,10 @@ disposable stores/caches/browser profiles and unique output directories.
 
 | Item | State | Notes |
 | --- | --- | --- |
-| M16.1 — Define and implement the private save path | `[+]` | Behind an explicit driver option, save state after a successful authenticated named session to host-provided disposable plaintext staging, keyed by opaque binding digest. Atomic temp/rename, mode 0600, at most 1 MiB, bounded access, no symlinks/root escapes or partial writes. Kinet alone owns encryption, keys and durable acceptance; the driver never writes its durable store. Host controls staging lifetime and cleanup after joining workers. |
+| M16.1 — Define and implement the private save path | `[+]` | Behind an explicit driver option, save state after a successful authenticated named session to host-provided disposable plaintext staging, keyed by opaque binding digest. Exclusive0600 temp, fsync, atomic no-clobber hard-link publication/unlink and directory settlement, at most 1 MiB, bounded access, no symlinks/root escapes or partial writes. Kinet alone owns encryption, keys and durable acceptance; the driver never writes its durable store. Host controls staging lifetime and cleanup after joining workers. |
 | M16.2 — Record lifetime and fail closed | `[+]` | Record creation time and host-supplied maximum age; bind load/save to the current opaque host binding for owner/agent, exact profile/authentication identity, credential revision, origins and expiry. Invalid, expired or oversize state returns `session_expired` and is never loaded. Report no state values. The host decides any fresh-context fallback before dispatch only; no workflow restart or late save after revocation/archive/deletion becomes durable. |
 | M16.3 Preserve protocol compatibility | `[+]` | Preserve v2–v11 request/result bytes and absent-option behavior. Implement the exact M51-reviewed immutable host-private launch-side save plan and candidate envelope; no v12 is required. Save permission is one-use and matched to complete existing authentication identity; registration/actions never save. Independently qualify old-wire/default compatibility and the bounded candidate lifecycle. |
-| M16.4 — Verify, review and publish | `[+]` | Required cached offline npm-ci and exact successful v2 production-lock advisory proof retained; current offline244 tests/228 pass/16 skips, focused candidate reviews and actual v5 sandboxed save/raw-reuse/positive joined cleanup pass. Coordinator initial exact source handoff6b is independently fetched/verified. This row's verification/focused review/initial publication handoff is complete; authoritative whole review and final reviewed source/evidence/closure publication remain separate acceptance gates. Kinet revoke/save-race/encrypted restart/backup proof remains downstream. |
+| M16.4 — Verify, review and publish | `[+]` | Required cached offline npm-ci and exact successful v2 production-lock advisory proof retained; current offline244 tests/228 pass/16 skips, focused candidate reviews and actual v5 sandboxed save/raw-reuse/positive joined cleanup pass. Coordinator initial exact source handoff6b is independently fetched/verified. This row and authoritative whole review1 are complete; integration244/228 pass16 skip and reviewed source/evidence publication7890c77068ef40c724333c11a2a7a553e0f35bd9 are verified. Coordinator final closure publication is independently checked before adoption. Kinet revoke/save-race/encrypted restart/backup proof remains downstream. |
 
 ## Review Gate
 
@@ -89,10 +89,12 @@ status initialization delta that records this start. The review covers the
 whole M16 assignment from that baseline through the task4 tip and this delta,
 not only the latest qualification fixes. Coordinator full source/core/tests/
 contracts/assignment inspection and both read-only reviewers report0P1/0P2.
-Their duplicated documentation finding is one P3: current docs/session-save.md
-still says actual browser/advisory checks are pending. Coordinator owns its
-correction during closure; it changes no runtime/contract and requires no
-counter reset. Final integration/publication/acceptance remain separate gates.
+Their duplicated documentation finding was one P3: current docs/session-save.md
+still said actual browser/advisory checks were pending. Coordinator corrected
+that current guidance during closure; no finding remains. Runtime/contracts
+are unchanged and the counter remains1. Integration and reviewed source/evidence
+publication pass; final closure-publication proof is recorded by the coordinator
+before consumer adoption.
 
 ## Acceptance
 
@@ -1281,3 +1283,41 @@ pending. This substantive status-only review record is committed under task
 policy; no child code/docs/shared-memory/other-status edit, test/probe, browser,
 network/push, integration, retirement or closure is performed. Browserauthority
 ended at firstsuccess2 used/1 unused; no new grant or v6, auditdisabled.
+
+## Coordinator integration and closure — 2026-10-10
+
+Whole review1 passed with0P1/0P2 and one deduplicated documentationP3. The
+coordinator corrected current session-save.md guidance to the passedv5 fixture
+and retainedv2 advisory evidence; no finding remains and counter1/10 is retained.
+The primary was clean at reviewedb3, assignment paths were inspected, and local
+integration fast-forwarded to review evidence7890c77068ef40c724333c11a2a7a553e0f35bd9.
+No rebase or published history rewrite occurred.
+
+Primary build and full42-file compiled integration suite pass244 tests:228pass,
+16 opt-in skips,0failures/cancellations. Full log419f58c9f041946ce50809138c9e1f7feecc4a55968d464b6b5d1b640e116ead.
+The successful174-test pre-build enumeration subset is retained but does not
+qualify the complete integration; the following full enumeration does. No
+browser flag, install or advisory query occurred. Production/source/package/lock
+and qualified fixture bytes are unchanged; current closure edits are metadata.
+All400 rebuilt primary runtime inputs match the original799-file manifest.
+Independent closure documentation inspection reports0P1/P2/P3, verifies the
+publication/integration receipts and resolves all local links. This checks the
+metadata/P3 correction, not a new whole-review iteration or browser invocation.
+
+Coordinator normal publication of reviewed source/evidence7890c77068ef40c724333c11a2a7a553e0f35bd9
+to the exact approvedorigin/main passes; independent fresh fetch verifies
+tree6276cb03d465ad044e6dd01cfdb6bf9b4d6da4b5, receiptc099f384c473aed3c4804079039605b980dc748dd28fe66a0cdfc3f0edb059fd.
+The coordinator publishes the substantive metadata closure under that same
+envelope and records the independent exact final revision in the Stage12
+coordinator before any consumer adoption. See docs/m16-publication.md.
+
+All four task rows are completed and retained with the specification under
+this package's existing convention. No adopted retirement layout is invented.
+The coordinator consolidates shared memory and direct Udon:M53/Kinet:M56/M52
+assumptions; their other prerequisite, containment, encryption/race/backup and
+qualification gates remain pending. No new scheduling edge or evolution version.
+
+Actual runtime provenance remains core6b+original sealed799-row4 context; later
+commits do not relabel it. Failed/consumed history stays frozen. Standing browser
+authority ended at firstsuccess2 used/1 unused; v6 remains uninvoked/unavailable.
+Audit staysdisabled, installed releases/pins/wires and unrelated work unchanged.

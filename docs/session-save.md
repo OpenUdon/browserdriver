@@ -24,7 +24,10 @@ Exact input: frozen Kinet M51 `session-save-contract.json` SHA256
 `7f829101443fb5b8404135f453fa0406d5b09e9d52a61b3340b9c918b32c873f`,
 accepted source `ec760d83b6e344e9e9cd7c034f9a92eba99f38b1`, fixture manifest
 `0c445a5c90d2c09be561e713c364747f4ab9a3698ea8ab46e7b7b774ccf16bad`.
-This document describes a local producer candidate, not accepted publication.
+M16 is locally accepted after whole review1 and independently verified source
+publication; [publication and qualification](m16-publication.md) records the
+exact evidence. Kinet adoption still needs the coordinator's final publication
+proof and the remaining consumer prerequisites.
 
 The immutable `browserdriver.session-save-plan.v1` has `launchNonce`, original
 `admittedDeadline` and at most100 permissions. Input is <=256KiB and refuses
@@ -100,6 +103,11 @@ Revoke/archive/deletion wins over late saves. Reuse stages only decrypted,
 revalidated raw `storageState` into the old format without lifetime renewal.
 
 Browser-free tests model Playwright and inject filesystem/cleanup failures.
-They prove local ordering and filesystem controls, not real-browser or encrypted
-host acceptance. M16.4 still needs scoped xvfb loopback checks, dependency audit,
-bounded whole review and exact reviewed source-publication handoff.
+They prove local ordering and filesystem controls. The separately authorized
+v5 xvfb loopback fixture passed two sandboxed launches, save/raw reuse and
+joined cleanup; retained v2 advisory evidence qualifies the unchanged lock.
+Whole review1 and the integration suite pass. These checks do not establish
+encrypted host acceptance. See [publication and qualification](m16-publication.md)
+for exact provenance and the coordinator's final publication gate. Standing
+browser authority ended at the first success, with two attempts used and one
+unused; no further browser check is authorized by that grant.

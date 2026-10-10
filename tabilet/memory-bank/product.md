@@ -1,5 +1,16 @@
 # Product
 
+## Accepted M16 private session staging
+
+M16 completes optional saved-session staging under an immutable, one-use
+host-private save plan. Paired launch options permit a successful authenticated
+named context to produce a bounded private candidate before driver Join;
+absent options retain load-only behavior. Protocols v2–v11 are unchanged.
+Kinet owns durable encryption, keys, binding/current-generation acceptance,
+revocation, restart cleanup and backup exclusion. This producer does not
+enable Kinet browser execution or all-traffic containment. See
+[M16 evidence](../../docs/m16-publication.md) and [status](status-M16.md).
+
 W16.4i.39d passes one fresh acceptance-v2 qualification: all 39 native stages
 and three W8M synthetic journeys. Independent canonical report, source/runtime,
 fixture, preservation and cleanup checks pass, followed by bounded reviews 3–5.

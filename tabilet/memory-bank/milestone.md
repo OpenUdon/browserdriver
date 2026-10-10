@@ -1,5 +1,16 @@
 # Milestones
 
+## Current M16 completion — 2026-10-10
+
+M16 completes all four rows, authoritative whole review1 and primary integration
+verification. Reviewed source/evidence7890c77068ef40c724333c11a2a7a553e0f35bd9
+is independently verified published. The coordinator's final exact closure
+publication is required before downstream adoption; see
+[qualification/publication](../../docs/m16-publication.md) and the
+[Stage 12 handoff](../../../kinet/docs/stage12.md). M16 records remain in place
+under this package's completed-record convention. Kinet containment/encrypted
+custody and other native producers remain pending; audit is disabled.
+
 ## Stage 12 approved planning — 2026-10-09
 
 **Approved reconciliation.** Stage 12 planning review, 2026-10-09; source priority
@@ -254,7 +265,7 @@ See [status-M11.md](status-M11.md). Existing v2-v4 contracts remain unchanged.
 | M13 | [status-M13.md](status-M13.md) | Verification and provider repairs qualified/adopted through W16.4i.2; consumed history preserved; evolution v12 |
 | M14 | [status-M14.md](status-M14.md) | Browser 1.8/1.9 action execution through additive persistent driver v10; Udon integration follows |
 | M15 | [status-M15.md](status-M15.md) | Complete: Browser 1.10 v11 count protocol and execution published at source commit `1f0e0d8`; verification/review closeout `fb084d2`; Udon M43 is next |
-| M16 | [status-M16.md](status-M16.md) | Pending (Kinet STG-12 R65): private, bounded saved-session write; v2–v11 unchanged |
+| M16 | [status-M16.md](status-M16.md) | Complete locally: four rows, whole review1, sandboxed v5 fixture and integration244/228 pass16 skip; exact source publication7890c77068ef40c724333c11a2a7a553e0f35bd9 verified; final closure proof in Stage12 handoff |
 
 M14 is the September 24 downstream adoption owner for Browser 1.8/1.9.
 It is independent of M13's separately authorized verification and provider work.
@@ -287,8 +298,9 @@ runtime staging; Kinet owns durable encryption and keys:
   fallback is host-owned and allowed only before dispatch.
 - Bounded staging access and join/cleanup hooks let Kinet prevent late saves
   after revoke/archive/deletion, clean abandoned/restart state and exclude backups.
-- Storage state never crosses the protocol, and v2–v11 bytes stay unchanged. Only
-  if a per-request permission is unavoidable is an additive v12 introduced.
+- Storage state never crosses the protocol, and v2–v11 bytes stay unchanged.
+  The accepted immutable launch-side save plan supplies one-use permissions;
+  no v12 is introduced.
 
 Udon M53, Kinet M56 and Kinet M52 are downstream, and no live target action is included.
 The [Kinet Stage 12 coordinator](../../../kinet/docs/stage12.md) owns the order.

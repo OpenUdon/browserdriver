@@ -1,5 +1,24 @@
 # Architecture
 
+## Accepted M16 save-plan and candidate boundary
+
+`--session-save-plan` and `--session-save-root` are a paired private launch ABI,
+separate from raw legacy `--session-store`. The driver consumes an exact
+complete-authentication permission before authentication, emits unchanged
+success bytes, then settles a snapshot while its context is alive. Plan input
+is bounded to256KiB; the candidate envelope is bounded to1MiB. Open-directory
+anchoring, exclusive0600 temporary creation, fsync, atomic no-clobber hard-link
+publication and temporary unlink settle one final link. Unsettled invalidation
+or cleanup taints close and produces a fixed diagnostic/nonzero CLI exit.
+
+Join waits for candidate work. The host independently validates the original
+expiry, exact plan/binding and current generation before encrypted durable
+acceptance; positive process absence alone does not establish eligibility.
+Kinet:M52 owns that handoff and Kinet:M56 owns all-traffic containment.
+The qualification subreaper/controller is test tooling, not a production host
+adapter. [Private ABI](../../docs/session-save.md) and
+[exact evidence](../../docs/m16-publication.md) retain the qualified boundaries.
+
 W16.4i.39d passes one fresh acceptance-v2 qualification: all 39 native stages
 and three W8M synthetic journeys. Independent canonical report, source/runtime,
 fixture, preservation and cleanup checks pass, followed by bounded reviews 3–5.

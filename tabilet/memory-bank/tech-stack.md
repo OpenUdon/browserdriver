@@ -1,5 +1,17 @@
 # Tech Stack
 
+## M16 qualification and retained tools
+
+M16 retains Node24.14.1, Playwright1.62.1, Chromium151.0.7922.34 and all dependency
+locks/tool bytes. Private staging uses Node core and Linux file descriptors;
+no dependency was added. Existing Python3.14.4, its83-file closure and Xvfb are
+qualification-only tools. Whole review1 and integration checks pass244 tests:
+228 passed,16 unchanged opt-in skips. Prior cached offline npm-ci and the exact
+successful v2 production-lock advisory check remain the required install/audit
+evidence; neither was repeated. The single passing v5 browser invocation ended
+the standing grant at2 used/1 unused. See [evidence](../../docs/m16-publication.md).
+Developer audit remains disabled.
+
 W16.4i.39d passes one fresh acceptance-v2 qualification: all 39 native stages
 and three W8M synthetic journeys. Independent canonical report, source/runtime,
 fixture, preservation and cleanup checks pass, followed by bounded reviews 3–5.
