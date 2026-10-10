@@ -1,6 +1,6 @@
 # Status M16 — Private saved-session write
 
-**State:** All four tasks verified in isolated lease `goal/M16`; actual v5 qualification and initial exact source handoff pass. Whole milestone review and final coordinator publication/acceptance remain pending. Lease preserved. Bounded review 0/10.
+**State:** All four tasks verified and committed in isolated lease `goal/M16`; actual v5 qualification and initial exact source handoff pass. Authoritative whole review1 PASSED,0P1/0P2 and one documentation P3 assigned to coordinator closure. Final integration/publication/acceptance remains pending. Lease preserved. Bounded review 1/10.
 
 **Stage.** Kinet STG-12, Phase A. The [Stage 12 contract](../../../kinet/docs/stage12.md)
 coordinates the work; this milestone and status own acceptance. Planning was
@@ -82,7 +82,17 @@ disposable stores/caches/browser profiles and unique output directories.
 
 ## Review Gate
 
-Not started. Persist each iteration before reviewing.
+Iteration1 was persisted STARTED before review and now PASSED. Full reviewed primary baseline
+`b3a6287249ca8bb13fc3e063cad34ad3b9c2bd16`, unpublished task4 tip
+`5bd70c4814f934e56cbf90315c1309daf0b18bf6`, including only the declared local
+status initialization delta that records this start. The review covers the
+whole M16 assignment from that baseline through the task4 tip and this delta,
+not only the latest qualification fixes. Coordinator full source/core/tests/
+contracts/assignment inspection and both read-only reviewers report0P1/0P2.
+Their duplicated documentation finding is one P3: current docs/session-save.md
+still says actual browser/advisory checks are pending. Coordinator owns its
+correction during closure; it changes no runtime/contract and requires no
+counter reset. Final integration/publication/acceptance remain separate gates.
 
 ## Acceptance
 
@@ -1199,3 +1209,75 @@ No additional browser/Xvfb/helper/privileged probe or actual invocation occurred
 This package does not declare its own status/spec retirement procedure or
 history layout; coordinator closure must report/use the governing policy rather
 than inventing a package retirement procedure.
+
+## Task4 committed; authoritative whole review1 STARTED
+
+Verified task4 commit5bd70c4814f934e56cbf90315c1309daf0b18bf6 records46 assigned
+qualification source/test/ordinary documentation/status/immutable evidence files,
+with no private runtime reports, profiles/state/credentials, raw logs, ignored
+compiled outputs, absolute tool blobs, cache or shared-memory changes. Task tree
+bd9e75a4d414753a5905359c4e69c5d07b708e70. The existing five published commits
+ending6b2348d… remain unchanged; no amend/rebase/rewrite occurred.
+
+After commit the lease was clean and primary was independently rechecked clean,
+refs/heads/main atb3a6287249ca8bb13fc3e063cad34ad3b9c2bd16, with originalgoalbase
+ffbb9bd716093143106cf4a2c356a7ef05fda55d preserved. That baseline is already an
+ancestor of task4 tip, so alignment is a no-op. Runtime/qualified799 bytes are
+unchanged; metadata-only task completion/initial-handoff documentation does not
+require another offline suite, browser, installation or advisory query. Retain
+current244 offline/228pass16skip, focused19/Python12, actualv5 and exact source
+publication/outcome proof. Diff/staging checks pass.
+
+AUTHORITATIVE WHOLE REVIEW1 is now persisted STARTED before any whole review:
+reviewed baselineb3a6287249ca8bb13fc3e063cad34ad3b9c2bd16; task4tip
+5bd70c4814f934e56cbf90315c1309daf0b18bf6 plus this explicitly included uncommitted
+own-status start annotation. Counter1/10, findings pending, no previous
+preparation/outcome inspection promoted into this pass. Return the frozen whole
+assignment and status delta for coordinator/read-only reviewers; child performs
+no independent whole-gate close, integration, retirement or publication.
+
+All four terminal task rows remain unaccepted until whole review, coordinator
+final source/evidence/closure publication and independent exact proof pass.
+Tested provenance stays immutablecore6b+sealed799-row4 context; the new task4
+commit does not relabel the earlier browser-tested source. Browser authority
+ended at firstsuccess2 used/1 unused, auditdisabled, no live/privileged/new
+network/browser/advisory action. Package retirement procedure remains undeclared.
+
+## Authoritative whole review1 consolidated PASS
+
+Root independent whole source/core/test/contracts/assignment inspection and
+both read-only reviewers (candidate/static) complete the same authoritative
+iteration1:0P1/0P2, one deduplicated P3. Reviewed primary baseline
+b3a6287249ca8bb13fc3e063cad34ad3b9c2bd16, task4tip
+5bd70c4814f934e56cbf90315c1309daf0b18bf6/treebd9e75a4d414753a5905359c4e69c5d07b708e70,
+plus declared review-start own-status delta SHA
+2e743839a269f45d4434e66ca0c5945d2af41037279722081e6b5ffa94a85e27.
+Frozen whole-assignment snapshot manifestbebf09ad… and full baseline-to-task4
+diff3481da05… preserve the reviewed context. This review does not promote earlier
+candidate/outcome inspections or reset the persisted counter; whole review1/10
+passes on its own complete inspection.
+
+P3 owner/coordinator correction: docs/session-save.md104–105 incorrectly lists
+scopedxvfb/dependency-audit checks as outstanding. Actualv5 qualification and
+retained successfulv2 advisory already satisfy those checks for unchanged
+lock/inventory. Coordinator will correct the current feature/handoff prose in
+its closure change; frozen historical proposals/manifests/remediation/results
+stay intact. Carrying this ordinary documentation correction to that immediate
+named owner changes no runtime, private ABI, public wire, verification scope or
+acceptance requirement and does not start another iteration.
+
+Qualification provenance remains immutablecore6b2348d61d79587e924a0d344955ae55518fc31f
+PLUS sealed799-row4 source/runtime/tool fixture context, not the entire later
+task/metadata checkout or standalone clean core. Passedv5 receipts and244 offline
+tests/228pass16skip, focused19/Python12, required prior npm-ci and successfulv2
+advisory for unchangedlock are retained without rerun. Initial sourcecheckpoint
+6b publication/tree6830e00b… is independently verified; its five published
+commits remain immutable. Primaryrefs/heads/main is clean atcaptured b3, original
+goalbaseffbb9bd… preserved, and alignment remains a no-op.
+
+All four rows remainterminal while coordinator finalintegration, P3 correction,
+finalsource/evidence/closure publication and independent exact proof remain
+pending. This substantive status-only review record is committed under task
+policy; no child code/docs/shared-memory/other-status edit, test/probe, browser,
+network/push, integration, retirement or closure is performed. Browserauthority
+ended at firstsuccess2 used/1 unused; no new grant or v6, auditdisabled.
