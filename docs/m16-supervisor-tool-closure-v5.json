@@ -1,0 +1,673 @@
+{
+  "files": {
+    "/usr/bin/python3.14": {
+      "bytes": 7477160,
+      "gid": 0,
+      "links": 1,
+      "mode": 493,
+      "sha256": "52e0a13e60a981d8c4b6478be2ba5176f69da07948a056bf49cf6f077e30cb41",
+      "uid": 0
+    },
+    "/usr/lib/locale/C.utf8/LC_CTYPE": {
+      "bytes": 369120,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "40680545df4f92443c15e7c6f51a7fdc9154ebedd9eff1ed5c48437039add365",
+      "uid": 0
+    },
+    "/usr/lib/locale/locale-archive": {
+      "bytes": 3064432,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "74336f094157053703fe153f9fe4efa9efd7589bfc4e9695ac8195cf8d5fa4c4",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/__pycache__/_weakrefset.cpython-314.pyc": {
+      "bytes": 9401,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "946fe36b8a10d90b421956ab2ee18a46373c4f9f43ae7f4cdc15a3ef1c9f9385",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/__pycache__/base64.cpython-314.pyc": {
+      "bytes": 26610,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "530cd285df25906afdd83a00c4473247d63b886d2be05716175274b44aa627e9",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/__pycache__/bisect.cpython-314.pyc": {
+      "bytes": 3592,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "69d0b04c8372696671d42570273d4d72607431d0cbf9096dbdd9c42c25bac975",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/__pycache__/copyreg.cpython-314.pyc": {
+      "bytes": 7916,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "b16c7f674f367c28feb00dcd0959d9e903e9646b9ca9d57b4c9b875eaa00061c",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/__pycache__/enum.cpython-314.pyc": {
+      "bytes": 88026,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "a1034abad64882057064254928a6308eae4de78e4187200d858fa5d678126d63",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/__pycache__/functools.cpython-314.pyc": {
+      "bytes": 48007,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "e18ac01de2a2133bbb15284f62cc76a8ce57c0ed05f5dda35ed693c5fe45ba7d",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/__pycache__/hashlib.cpython-314.pyc": {
+      "bytes": 8347,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "914bbb531d646996f9a38a6d55fae1016dd11b578c2a1dd351262d6747bcaf0e",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/__pycache__/hmac.cpython-314.pyc": {
+      "bytes": 12199,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "ac92dcbd286c700b84b251a80b5861f794b9dcc4b582b0564eff7978f4154940",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/__pycache__/keyword.cpython-314.pyc": {
+      "bytes": 1531,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "81c5feda700a88405253f7fe700bb756c3916670897c36558559afdbc2703cf2",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/__pycache__/operator.cpython-314.pyc": {
+      "bytes": 18996,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "c3cf638b7fbbe12f044bb50fd1663918bbc103ced67fd5ab5a9dc8ee1948a219",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/__pycache__/random.cpython-314.pyc": {
+      "bytes": 37777,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "a220099402ff7cc73396c12148bfb4a58f88eb57dc3b5a3246eb71bba3d54e0b",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/__pycache__/reprlib.cpython-314.pyc": {
+      "bytes": 11680,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "d35fd127ff56c7c66fa1ffca978fa6d3f4c930b489f05aa002ce6f686c9f947c",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/__pycache__/secrets.cpython-314.pyc": {
+      "bytes": 2495,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "34badfae120a900a1b243a04ce64689d7bd9196da57addfab480fe6f52f589e5",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/__pycache__/signal.cpython-314.pyc": {
+      "bytes": 4583,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "2496e339c6680bc7865b49b76404c1e375d1cdb525891709ac45be11de673c9b",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/__pycache__/socket.cpython-314.pyc": {
+      "bytes": 42963,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "5ad2aedb0c832a699e1a7c352aecf49e0ea6d9568d1419d2c6b4c9bbac9e22c7",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/__pycache__/struct.cpython-314.pyc": {
+      "bytes": 327,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "1489f75a88c4b804e9b5dd04f5abc154f6851d9e902b403e8395f52e7f5fda6a",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/__pycache__/threading.cpython-314.pyc": {
+      "bytes": 66488,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "83468710e986467d8dc4259c07dd61a6c71dbd26b77b3f9655ab449616419eeb",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/__pycache__/types.cpython-314.pyc": {
+      "bytes": 15840,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "8de2ddfdeddc4e5e043cc448e526c3b016928b00fdccd83e79f2a99c24d94ea8",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/_weakrefset.py": {
+      "bytes": 3962,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "2dd7cb459d654fe78b00c5c47ee8e786c037ee77763304603f5e976dd62cbf81",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/base64.py": {
+      "bytes": 22029,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "202d288f0b6d25ed1b206640f86e934381e6766fa0496f6f8d87d9c1bf92cdef",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/bisect.py": {
+      "bytes": 3423,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "f1cf7b85fc36b5da249813fc5ab97d9464f8cc1bc817f7146206fa2713e35999",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/collections/__init__.py": {
+      "bytes": 52903,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "dbd563752a57c6633b7566b1e9c95bc8ea81df1a1d213b23f61c5335424e5af5",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/collections/__pycache__/__init__.cpython-314.pyc": {
+      "bytes": 74759,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "48f63bd69764593092bf5e9649a1dbe3c97724e57bf8fb27551fd59f424d1cb0",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/copyreg.py": {
+      "bytes": 7716,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "6376eb5722806396f5842997ac18add369ea9ac3ff4fcfe1460c41a088cac425",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/ctypes/__init__.py": {
+      "bytes": 22131,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "72f2df568380c275a5596944810953124ff2ee8d678c5f8ddcf50f0f77577eb3",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/ctypes/__pycache__/__init__.cpython-314.pyc": {
+      "bytes": 29676,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "b0b49fd3c48612589ff84787d59f4090dbb20b84b5c4c0df62e4366e5d41743f",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/ctypes/__pycache__/_endian.cpython-314.pyc": {
+      "bytes": 3682,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "15e316e88328b69fe626d5f7c94b865f3b509503c6d9a060bd5465590c92879f",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/ctypes/_endian.py": {
+      "bytes": 2557,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "499773a028a41ee18153fedfe0a00a26efb2a650f568b9bc17e2f3a914a23468",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/encodings/__init__.py": {
+      "bytes": 5945,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "2b708410495acf12a6fad9d2de928dd89e567537c253eaa2b51aaae578e96c59",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/encodings/__pycache__/__init__.cpython-314.pyc": {
+      "bytes": 6738,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "deacaafec7d53909273eff8ce447e92c112161b185fb514467026ea8df048ed7",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/encodings/__pycache__/aliases.cpython-314.pyc": {
+      "bytes": 12556,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "62e6d89d23275e7c8f1f52646f538e5e9bcdcaa2356bb911293a95ad376a3ba9",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/encodings/__pycache__/utf_8.cpython-314.pyc": {
+      "bytes": 2330,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "8c0acaa713983fa85a08f2872bee1fc780baf3b2c68749435fb1bb9f8c0d77f8",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/encodings/aliases.py": {
+      "bytes": 15957,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "e38fc524cc8b2355807921411c918c0d971419c4d6ba6147409785db42d257a3",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/encodings/utf_8.py": {
+      "bytes": 1005,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "ba0cac060269583523ca9506473a755203037c57d466a11aa89a30a5f6756f3d",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/enum.py": {
+      "bytes": 85442,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "982843c2dd6dbec992bfed44abe9ef5464be81876a180d977ccd1a69e26ec16d",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/functools.py": {
+      "bytes": 43561,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "046ec9660146db48862c7b22c78e2ef3818eaed6920e5cbf35f551ef09fec6cd",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/hashlib.py": {
+      "bytes": 9459,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "88fa624821fbdee7eb2ef87c2437b207afe328cf117c7463367e2db5eb1af492",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/hmac.py": {
+      "bytes": 9589,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "10e8952ae06300f63a1a8f4898f7f828e8e5ad17bf29240d4e2d106418f0226b",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/json/__init__.py": {
+      "bytes": 14066,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "95022d150a27a2bfd54ac21bfce35812c96b53c420bb7b018dcb573f13e52da0",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/json/__pycache__/__init__.cpython-314.pyc": {
+      "bytes": 14149,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "7180d3bc67e7bf64c4f8293e0866e6b278812d5443b0acec68d437435232062a",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/json/__pycache__/decoder.cpython-314.pyc": {
+      "bytes": 14453,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "a32b59ed15a4701cc7ccfbddc514ed076001513d5b9a6f6f45bfab2a0a1c5b81",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/json/__pycache__/encoder.cpython-314.pyc": {
+      "bytes": 17027,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "41eb0c71a84294f4111ce96434504fc346443bcdfa61c553a98ef490a2838332",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/json/__pycache__/scanner.cpython-314.pyc": {
+      "bytes": 3542,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "d95234c506f8fe0a06ed6a4eb1a4dec0e2d77d14e89210a1dd436c959fb04fae",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/json/decoder.py": {
+      "bytes": 12873,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "302ce57cb6f411122d7ef2ad2997c1fc0f184849fab3f1f585752f18f2195c73",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/json/encoder.py": {
+      "bytes": 16990,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "d68a4d04d2cfd95897498307f29349058b42c3f48ea6aa6739714a09200a7d01",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/json/scanner.py": {
+      "bytes": 2434,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "572958017eae8842eeddd0e3d18d3c56cc0a197348224915e1d87ce937841764",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/keyword.py": {
+      "bytes": 1073,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "18c2be738c04ad20ad375f6a71db34b3823c7f40b0340f5294d0e89f3c9b093b",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/lib-dynload/_ctypes.cpython-314-x86_64-linux-gnu.so": {
+      "bytes": 158368,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "140e837f2bc9344f3a98dea90e8bdf6f208370e45f3eccbac759c59e59d4d045",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/lib-dynload/_hashlib.cpython-314-x86_64-linux-gnu.so": {
+      "bytes": 64448,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "f57bc22cc1b6f3b48c43778634af1a7e79c5ae0632350fa5144d050c7848112c",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/lib-dynload/_hmac.cpython-314-x86_64-linux-gnu.so": {
+      "bytes": 151584,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "fcbf64f591f96b8e2a2abf86ae56efc7ed08bb3ee64201ff368767d9bd12d4c6",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/operator.py": {
+      "bytes": 11158,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "a9f9910965c31f841caad0447ee47299ac539a371422aefe200c86c60f3b4697",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/random.py": {
+      "bytes": 37259,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "62dca8cdae7482513b99bb093ff038afd5131954e7eb78166d673a772cee871c",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/re/__init__.py": {
+      "bytes": 17876,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "741a9de729ed8207bfa19db990f8826f1bf3661f33d0970a80c08cd1338ebc35",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/re/__pycache__/__init__.cpython-314.pyc": {
+      "bytes": 19965,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "79392864f0bc1849f4a90a787cbd923eb6c83aa0c5a8fb4080458c15fcf7bec6",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/re/__pycache__/_casefix.cpython-314.pyc": {
+      "bytes": 1808,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "a31d1018da814c31c5627584d05d9f47d5f3e95ce2f81d4aeecbb45ed1bf538d",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/re/__pycache__/_compiler.cpython-314.pyc": {
+      "bytes": 29663,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "43d5974eb3799c8053b879d5dbdab0b4d4efcb063c39ab6b81841f9b575950e3",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/re/__pycache__/_constants.cpython-314.pyc": {
+      "bytes": 5623,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "ee675a106a412b51bd280958040621c2b7b87d05099338ee247a72d037bfbb39",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/re/__pycache__/_parser.cpython-314.pyc": {
+      "bytes": 45253,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "5a1121e45be8b6d0f93aab302f1f3a84bf6d5157ab573c094c05003009e68109",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/re/_casefix.py": {
+      "bytes": 5444,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "1b12d9136f23db6c3f6f26053fefc15ca964b886838c7b9c1fabf8d2efc1e5c8",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/re/_compiler.py": {
+      "bytes": 26855,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "d49f30cf9a1dbae33b200ed8befd9d0ce3ac612783a10ac35196536f98923e91",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/re/_constants.py": {
+      "bytes": 6036,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "42253b3181b81aad6c46392f44a0ab26dcfa31feea411296f43ba16616a1ab0b",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/re/_parser.py": {
+      "bytes": 40353,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "e57bd194a2d42398355ae7c1ccc2ddfb78421dd431eb81e3809dbe8ca9057dc4",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/reprlib.py": {
+      "bytes": 8064,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "b04872e10d76252e44eae50cc785eb0fe478491afc4d7f0825a93f82b2eaba5f",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/secrets.py": {
+      "bytes": 1984,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "277000574358a6ecda4bb40e73332ae81a3bc1c8e1fa36f50e5c6a7d4d3f0f17",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/signal.py": {
+      "bytes": 2495,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "0363c964c90ac0b3e515de5749205e6e6454051a1211058375d84d91eab6071a",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/socket.py": {
+      "bytes": 37275,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "6d223ec9cbaff437546a1bfadd8bfc5c8044a8e61962bf32f81d6eb9967787e4",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/struct.py": {
+      "bytes": 285,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "50c14e55f94957804c1e45e975fedbe8e86f7e1dbb745b150370ff681155370a",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/sysconfig/__init__.py": {
+      "bytes": 30830,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "516073395817d4babe5c301c1fa4a01b61f2dc56f69d3245cabe1d2fa512b533",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/sysconfig/__pycache__/__init__.cpython-314.pyc": {
+      "bytes": 29833,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "fe12721c2b9722765796dad0bf73b246c98a9779cc7c49d02325a968436c4cd1",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/threading.py": {
+      "bytes": 56923,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "5323909624ec2165e70b6d31333e4191b63d383d2dc5a7d7d516a3475ea2b7e3",
+      "uid": 0
+    },
+    "/usr/lib/python3.14/types.py": {
+      "bytes": 11459,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "fcfdd1c5ae56a9c35f207743d774e236da0153bf78e6e4629193a8e0e9438a6b",
+      "uid": 0
+    },
+    "/usr/lib/x86_64-linux-gnu/gconv/gconv-modules.cache": {
+      "bytes": 27028,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "52c227df9d53248238602c1ddaccd2c8ddc4cc6a61aa45d7c425af590b8806a5",
+      "uid": 0
+    },
+    "/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2": {
+      "bytes": 254864,
+      "gid": 0,
+      "links": 1,
+      "mode": 493,
+      "sha256": "bda779ea9e9ad234f60315477d7cfd0bdde861cd8ddd9df8cdaf62f18c4cec14",
+      "uid": 0
+    },
+    "/usr/lib/x86_64-linux-gnu/libc.so.6": {
+      "bytes": 2190608,
+      "gid": 0,
+      "links": 1,
+      "mode": 493,
+      "sha256": "85e64f97e348786a8fb4d9f3d52fec289e2fb86bba20f0731dfe61990525e0f7",
+      "uid": 0
+    },
+    "/usr/lib/x86_64-linux-gnu/libcrypto.so.3": {
+      "bytes": 6386528,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "5385f0436ac2e284ba8c5fb1488874057c29c04be72dea32add832694f381e28",
+      "uid": 0
+    },
+    "/usr/lib/x86_64-linux-gnu/libexpat.so.1.11.2": {
+      "bytes": 186704,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "2e5f66e2784c2746775567ff9916f6e7503182a8f1f2deb8ca729dfc1463849f",
+      "uid": 0
+    },
+    "/usr/lib/x86_64-linux-gnu/libffi.so.8.2.0": {
+      "bytes": 64184,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "1a0dc86f787f73e025a6e521056360afcbe70f2a82cd808132fefc2b4ee95daa",
+      "uid": 0
+    },
+    "/usr/lib/x86_64-linux-gnu/libm.so.6": {
+      "bytes": 1198376,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "1c488db6f4fe8cecb72456bc018de000b7a9b539c2994864b0416b5e8371b3d8",
+      "uid": 0
+    },
+    "/usr/lib/x86_64-linux-gnu/libz.so.1.3.1": {
+      "bytes": 121272,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "47b61967895b30e8c0c6818dd633ffeb87711cf637c688f981896f0dd84ce23b",
+      "uid": 0
+    },
+    "/usr/lib/x86_64-linux-gnu/libzstd.so.1.5.7": {
+      "bytes": 796824,
+      "gid": 0,
+      "links": 1,
+      "mode": 420,
+      "sha256": "060eeb79531d435306665fd78329d8a9dd579f95876c5960bb67937825362a80",
+      "uid": 0
+    }
+  },
+  "isolatedInvocation": "/usr/bin/python3.14 -I -S -B",
+  "python": "3.14.4",
+  "scope": "Only standard-library import source/existing cache, imported native modules and their loaded regular mapped libraries for the fixture supervisor; no site/user packages.",
+  "state": "existing-tool-bytes-offline-captured-no-install",
+  "version": "browserdriver.m16-supervisor-tool-closure.v1"
+}

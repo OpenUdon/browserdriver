@@ -1,0 +1,105 @@
+{
+  "version": "browserdriver.m16-diagnostic-source-grounding.v1",
+  "staticSourceOnly": true,
+  "notFailureCauseProof": true,
+  "markers": [
+    {
+      "id": "termination_record",
+      "source": "node_modules/playwright-core/lib/coreBundle.js",
+      "sourceSHA256": "9393fa79e1c67c74edc26b610d65a4f7ed73d345a762465cc88340a33a2454ac",
+      "offset": 339628,
+      "bytes": 58
+    },
+    {
+      "id": "crashpad_database_required",
+      "source": "/home/peter/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome_crashpad_handler",
+      "sourceSHA256": "0aa3f05a2ed9b7ac64148bf975f33ec580307abca1c77e1e562e68dd8e20606f",
+      "offset": 155522,
+      "bytes": 22
+    },
+    {
+      "id": "crashpad_handler_marker",
+      "source": "/home/peter/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome_crashpad_handler",
+      "sourceSHA256": "0aa3f05a2ed9b7ac64148bf975f33ec580307abca1c77e1e562e68dd8e20606f",
+      "offset": 1940923,
+      "bytes": 16
+    },
+    {
+      "id": "profile_singleton_marker",
+      "source": "/home/peter/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome",
+      "sourceSHA256": "0b20b130e7edd9dd51873be867761295fe0cfad490c2b9a64f95bd3cfc08fa71",
+      "offset": 27232857,
+      "bytes": 16
+    },
+    {
+      "id": "temp_directory_operation",
+      "source": "node_modules/playwright-core/lib/coreBundle.js",
+      "sourceSHA256": "9393fa79e1c67c74edc26b610d65a4f7ed73d345a762465cc88340a33a2454ac",
+      "offset": 1341420,
+      "bytes": 7
+    },
+    {
+      "id": "disk_space_marker",
+      "source": "/home/peter/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome",
+      "sourceSHA256": "0b20b130e7edd9dd51873be867761295fe0cfad490c2b9a64f95bd3cfc08fa71",
+      "offset": 30273291,
+      "bytes": 23
+    },
+    {
+      "id": "disk_quota_marker",
+      "source": "/usr/lib/x86_64-linux-gnu/libc.so.6",
+      "sourceSHA256": "85e64f97e348786a8fb4d9f3d52fec289e2fb86bba20f0731dfe61990525e0f7",
+      "offset": 1950380,
+      "bytes": 19
+    },
+    {
+      "id": "memory_thread_marker",
+      "source": "/home/peter/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome",
+      "sourceSHA256": "0b20b130e7edd9dd51873be867761295fe0cfad490c2b9a64f95bd3cfc08fa71",
+      "offset": 30082156,
+      "bytes": 32
+    },
+    {
+      "id": "sandbox_marker",
+      "source": "/home/peter/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome",
+      "sourceSHA256": "0b20b130e7edd9dd51873be867761295fe0cfad490c2b9a64f95bd3cfc08fa71",
+      "offset": 33013710,
+      "bytes": 17
+    },
+    {
+      "id": "namespace_marker",
+      "source": "/home/peter/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome_sandbox",
+      "sourceSHA256": "18391bf9d217ddbde9956347cbb1346d2808a73ade4baa3f88a610447cf946b4",
+      "offset": 5767,
+      "bytes": 31
+    },
+    {
+      "id": "display_marker",
+      "source": "/home/peter/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome",
+      "sourceSHA256": "0b20b130e7edd9dd51873be867761295fe0cfad490c2b9a64f95bd3cfc08fa71",
+      "offset": 31507417,
+      "bytes": 16
+    },
+    {
+      "id": "dependency_marker",
+      "source": "node_modules/playwright-core/lib/coreBundle.js",
+      "sourceSHA256": "9393fa79e1c67c74edc26b610d65a4f7ed73d345a762465cc88340a33a2454ac",
+      "offset": 1571256,
+      "bytes": 35
+    },
+    {
+      "id": "executable_marker",
+      "source": "node_modules/playwright-core/lib/coreBundle.js",
+      "sourceSHA256": "9393fa79e1c67c74edc26b610d65a4f7ed73d345a762465cc88340a33a2454ac",
+      "offset": 1620047,
+      "bytes": 24
+    },
+    {
+      "id": "permission_marker",
+      "source": "/home/peter/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome",
+      "sourceSHA256": "0b20b130e7edd9dd51873be867761295fe0cfad490c2b9a64f95bd3cfc08fa71",
+      "offset": 30460052,
+      "bytes": 23
+    }
+  ]
+}

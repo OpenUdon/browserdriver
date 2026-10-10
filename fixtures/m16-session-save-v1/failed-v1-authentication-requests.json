@@ -1,0 +1,99 @@
+{
+  "version": "browserdriver.m16-failed-v1-auth-requests.v1",
+  "fixtureOnly": true,
+  "preservedCompiledFixtureSHA256": "a579ef1b32c640e06b8e68b11531a4b466738fbd0f39a937c28f0552b1243a24",
+  "provenance": "Exact approved v1 compiled auth literal, evaluated with only its two synthetic phase/origin/binding inputs; no browser.",
+  "requests": [
+    {
+      "version": "udon.browser-driver.v3",
+      "type": "authenticate",
+      "requestId": "start",
+      "operationId": "fixture-start",
+      "sourceDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "flow": "login",
+      "session": "member",
+      "allowedOrigins": [
+        "http://127.0.0.1:46061"
+      ],
+      "credentialBindings": {},
+      "credentialEnvironment": {},
+      "profile": {
+        "profile": "uws.browser-authentication.1.1",
+        "info": {
+          "title": "M16 disposable fixture",
+          "applicationOrigins": [
+            "http://127.0.0.1:46061"
+          ],
+          "authenticationOrigins": []
+        },
+        "credentialSlots": {},
+        "flows": {
+          "login": {
+            "effects": [
+              "establishes_session"
+            ],
+            "sequence": [
+              {
+                "navigate": "http://127.0.0.1:46061/start"
+              }
+            ],
+            "success": {
+              "origin": "http://127.0.0.1:46061",
+              "path": "/start",
+              "locator": {
+                "role": "heading",
+                "name": "Member"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "version": "udon.browser-driver.v3",
+      "type": "authenticate",
+      "requestId": "reuse",
+      "operationId": "fixture-reuse",
+      "sourceDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "flow": "login",
+      "session": "member",
+      "sessionBinding": "m16-live-disposable-binding",
+      "allowedOrigins": [
+        "http://127.0.0.1:46061"
+      ],
+      "credentialBindings": {},
+      "credentialEnvironment": {},
+      "profile": {
+        "profile": "uws.browser-authentication.1.1",
+        "info": {
+          "title": "M16 disposable fixture",
+          "applicationOrigins": [
+            "http://127.0.0.1:46061"
+          ],
+          "authenticationOrigins": []
+        },
+        "credentialSlots": {},
+        "flows": {
+          "login": {
+            "effects": [
+              "establishes_session"
+            ],
+            "sequence": [
+              {
+                "navigate": "http://127.0.0.1:46061/reuse"
+              }
+            ],
+            "success": {
+              "origin": "http://127.0.0.1:46061",
+              "path": "/reuse",
+              "locator": {
+                "role": "heading",
+                "name": "Member"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}
